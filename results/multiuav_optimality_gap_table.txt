@@ -1,0 +1,20 @@
+Multi-UAV (Fleet) Optimality-Gap Analysis  —  split battery (Emax_each = Emax/K)
+========================================================================================================================
+MLP-greedy = shared-policy sequential-commit fleet rollout (greedy)
+MLP+pp     = + per-chain 2-opt + cross-UAV cheapest insertion
+LR(est)    = K-aware Lagrangian dual ESTIMATE (positional WAoI surrogate)  [NOT certified]
+Knap(est)  = fractional priority knapsack, round-trip costs                [NOT certified]
+CertLB     = certified lower bound, hover-energy knapsack                  [valid, loose]
+Exact      = B&B certified optimum (only M<=7, K<=2)
+Gap-pp%    = (MLP+pp - LR(est)) / |LR(est)| * 100   SIGNED, single-UAV-consistent reference
+             negative => policy is BELOW the relaxed estimate (surrogate is not a true bound)
+TrueGap    = MLP+pp - Exact   (CERTIFIED gap from global optimum, where Exact exists)
+BLimp%     = (best fleet baseline - MLP+pp) / |best baseline| * 100
+NOTE: Exact completes only for M<=7; trained fleet models start at M=50, so certified
+      TrueGap is n/a for trained cells. The B&B here certifies the bound machinery
+      (CertLB <= Exact); to get one certified TrueGap point, train a tiny M=6-7 fleet model.
+========================================================================================================================
+   M   K   MLP-greedy      MLP+pp     LR(est)   Knap(est)      CertLB       Exact   Gap-g%  Gap-pp%     TrueGap   BLimp%
+------------------------------------------------------------------------------------------------------------------------
+   7   2      -24.129     -25.200     -24.392     -38.133     -38.133     -27.718     1.1%    -3.3%      +2.518   +26.2%
+------------------------------------------------------------------------------------------------------------------------

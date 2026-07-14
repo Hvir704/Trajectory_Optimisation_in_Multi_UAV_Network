@@ -1,0 +1,58 @@
+K=2 anomaly diagnosis   device=cuda   model-dir=C:\Users\harsh\Downloads\uav_aoi\models_multi_uav
+greedy rollout only (post-process OFF, to expose the rollout itself)
+imbal: 0=even load, ->1 one UAV hogs   minshare: share of least-used UAV (0=starved)
+leftE%: avg leftover battery per UAV (high=>stops early)   nodes: total served
+============================================================================================
+
+############  M=150   (N=30 instances/seed)  ############
+
+  --- K=1 ---
+     seed        obj   obj_std    nodes   imbal  minshare   leftE%      WAoI  priority
+       42     -22.29     23.48     22.2    0.00      1.00     3.7%   9405.73    116.35
+      123     -39.48     17.28     33.7    0.00      1.00     2.7%  14928.98    188.77
+        7     -38.54     24.09     21.1    0.00      1.00     3.2%   7308.22    111.62
+
+  --- K=2 ---
+     seed        obj   obj_std    nodes   imbal  minshare   leftE%      WAoI  priority
+       42     -88.58     25.19     66.5    0.09      0.46     7.5%  31868.24    407.26
+      123     -71.99     26.05     76.1    0.07      0.46     7.7%  37956.79    451.56
+        7     -85.80     18.91     68.3    0.06      0.47     7.1%  32891.42    414.72
+
+  --- K=3 ---
+     seed        obj   obj_std    nodes   imbal  minshare   leftE%      WAoI  priority
+       42    -162.31     24.22     71.6    0.09      0.29    11.4%  25824.05    420.55
+      123    -163.94     21.08     71.7    0.09      0.29    11.7%  26710.16    431.04
+        7    -167.30     25.03     70.6    0.09      0.29    12.9%  25818.86    425.49
+
+############  M=200   (N=30 instances/seed)  ############
+
+  --- K=1 ---
+     seed        obj   obj_std    nodes   imbal  minshare   leftE%      WAoI  priority
+       42     -39.09     19.71     38.7    0.00      1.00     2.9%  17478.87    213.88
+      123     -50.63     19.18     39.2    0.00      1.00     2.5%  16372.04    214.35
+        7     -33.51     29.21     44.1    0.00      1.00     3.2%  20932.79    242.84
+
+  --- K=2 ---
+     seed        obj   obj_std    nodes   imbal  minshare   leftE%      WAoI  priority
+       42     -55.95     26.15     90.7    0.06      0.47     6.1%  49601.63    551.96
+      123     -60.28     32.10     89.8    0.06      0.47     6.5%  48246.35    542.74
+        7     -61.81     30.40     88.6    0.06      0.47     7.3%  47383.05    535.64
+
+  --- K=3 ---
+     seed        obj   obj_std    nodes   imbal  minshare   leftE%      WAoI  priority
+       42    -199.11     27.49     81.6    0.08      0.29    10.7%  32311.41    522.22
+      123    -198.80     24.48     83.6    0.07      0.30    11.0%  32426.12    523.07
+        7    -199.98     24.68     84.2    0.06      0.30     9.8%  32488.27    524.86
+
+============================================================================================
+AUTOMATIC READOUT (heuristic — confirm against the numbers above)
+
+  M=150 K=2: obj per seed s42=-88.6, s123=-72.0, s7=-85.8   (seed-spread 16.6  vs  per-seed instance-std 23.4)
+    (A) seeds CONSISTENT — spread 16.6 is within instance noise 23.4; the aggregation 'disagreement' was low-N noise, not bad seeds.
+    (B) load BALANCED — both UAVs ~46% share; scheduler is fine.
+    (C) ROOT CAUSE = LONG-CHAIN WAoI. K=2 serves ~70 nodes (~same as K=3's 71) but WAoI 34239 >> K=3's 26118. Two long chains accumulate cumulative-priority WAoI that nearly cancels the priority reward. This is EXPECTED physics, not a bug. The raw greedy ORDERING is weak for long chains (post-process recovers it ~3x), so beam search / better rollout ordering is the lever — NOT retraining or rescheduling.
+
+  M=200 K=2: obj per seed s42=-55.9, s123=-60.3, s7=-61.8   (seed-spread 5.9  vs  per-seed instance-std 29.6)
+    (A) seeds CONSISTENT — spread 5.9 is within instance noise 29.6; the aggregation 'disagreement' was low-N noise, not bad seeds.
+    (B) load BALANCED — both UAVs ~47% share; scheduler is fine.
+    (C) ROOT CAUSE = LONG-CHAIN WAoI. K=2 serves ~90 nodes (~same as K=3's 83) but WAoI 48410 >> K=3's 32409. Two long chains accumulate cumulative-priority WAoI that nearly cancels the priority reward. This is EXPECTED physics, not a bug. The raw greedy ORDERING is weak for long chains (post-process recovers it ~3x), so beam search / better rollout ordering is the lever — NOT retraining or rescheduling.

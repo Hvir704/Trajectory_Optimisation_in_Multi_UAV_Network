@@ -1,0 +1,57 @@
+Deconfliction launch-scheduler   device=cuda   delta=25.0m   dt=0.25s
+model-dir=C:\Users\harsh\Downloads\uav_aoi\models_multi_uav   instances=30
+cost = launch delay (model-free) AND theta1*sum(o_k*W_total_k) objective penalty
+theta1=0.01, theta2=1.0
+================================================================================================
+
+  ===== M=100 K=4  (30 instances) =====
+    conflicts after scheduling:   greedy 0/30   best 0/30   (should be 0)
+                    makespan(s)  wDelay(s*pri)  objPenalty  penalty %obj
+    GREEDY                 10.4         1192.4       11.92          7.6%
+    BEST(order)             6.9          912.3        9.12          5.8%
+    optimizing launch order cuts weighted delay by 23% vs greedy
+
+  ===== M=100 K=6  (30 instances) =====
+    conflicts after scheduling:   greedy 0/30   best 0/30   (should be 0)
+                    makespan(s)  wDelay(s*pri)  objPenalty  penalty %obj
+    GREEDY                 17.8         1655.4       16.55          9.5%
+    BEST(order)            10.9         1176.8       11.77          6.8%
+    optimizing launch order cuts weighted delay by 29% vs greedy
+
+  ===== M=100 K=8  (30 instances) =====
+    conflicts after scheduling:   greedy 0/30   best 0/30   (should be 0)
+                    makespan(s)  wDelay(s*pri)  objPenalty  penalty %obj
+    GREEDY                 27.2         1593.5       15.93         10.0%
+    BEST(order)            16.7         1277.3       12.77          8.1%
+    optimizing launch order cuts weighted delay by 20% vs greedy
+
+  ===== M=200 K=4  (30 instances) =====
+    conflicts after scheduling:   greedy 0/30   best 0/30   (should be 0)
+                    makespan(s)  wDelay(s*pri)  objPenalty  penalty %obj
+    GREEDY                 10.4         2039.3       20.39          8.0%
+    BEST(order)             7.3         1485.3       14.85          5.8%
+    optimizing launch order cuts weighted delay by 27% vs greedy
+
+  ===== M=200 K=6  (30 instances) =====
+    conflicts after scheduling:   greedy 0/30   best 0/30   (should be 0)
+                    makespan(s)  wDelay(s*pri)  objPenalty  penalty %obj
+    GREEDY                 16.0         2571.2       25.71          9.2%
+    BEST(order)            10.6         1968.7       19.69          7.0%
+    optimizing launch order cuts weighted delay by 23% vs greedy
+
+  ===== M=200 K=8  (30 instances) =====
+    conflicts after scheduling:   greedy 0/30   best 0/30   (should be 0)
+                    makespan(s)  wDelay(s*pri)  objPenalty  penalty %obj
+    GREEDY                 31.2         3119.0       31.19         12.7%
+    BEST(order)            17.2         2208.5       22.09          8.9%
+    optimizing launch order cuts weighted delay by 29% vs greedy
+
+================================================================================================
+READING IT:
+  * conflicts after scheduling should be 0/0 -> staggering fully deconflicts (no spatial
+    coupling needed; per-chain separability and the optimality-gap machinery all survive).
+  * 'penalty %obj' is the AoI price of deconfliction as a fraction of the fleet objective,
+    UNDER a common-t=0 AoI model. Watch how it grows with K -> that is your AoI-cost-vs-
+    fleet-size tradeoff (and a mechanism-backed version of 'optimal fleet size').
+  * makespan(s) is model-free: the extra wall-clock to launch the whole fleet safely.
+  * greedy-vs-best gap = value of optimizing the launch order (your algorithmic content).

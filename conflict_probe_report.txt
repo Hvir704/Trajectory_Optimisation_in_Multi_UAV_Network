@@ -1,0 +1,80 @@
+Spacetime conflict probe v2   device=cuda   model-dir=C:\Users\harsh\Downloads\uav_aoi\models_multi_uav
+instances=30  dt=0.1s  depot-R=50.0m  ref-delta=25.0m
+RAW=incl depot stack (fixed by staggering)   MID=mid-mission (needs deconfliction)
+================================================================================================
+
+PHASE 1 — baseline conflict rate vs safety distance (synchronized launch)
+
+  ===== M=100 K=4 (30 rollouts) =====
+     delta    RAW%    MID%  median min-sep
+        10    100%     47%           12.1m
+        25    100%     80%           12.1m
+        50    100%    100%           12.1m
+       100    100%    100%           12.1m
+  ===== M=100 K=6 (30 rollouts) =====
+     delta    RAW%    MID%  median min-sep
+        10    100%     67%            5.5m
+        25    100%     97%            5.5m
+        50    100%    100%            5.5m
+       100    100%    100%            5.5m
+  ===== M=100 K=8 (30 rollouts) =====
+     delta    RAW%    MID%  median min-sep
+        10    100%     90%            4.4m
+        25    100%    100%            4.4m
+        50    100%    100%            4.4m
+       100    100%    100%            4.4m
+  ===== M=200 K=4 (30 rollouts) =====
+     delta    RAW%    MID%  median min-sep
+        10    100%     50%           10.5m
+        25    100%     83%           10.5m
+        50    100%    100%           10.5m
+       100    100%    100%           10.5m
+  ===== M=200 K=6 (30 rollouts) =====
+     delta    RAW%    MID%  median min-sep
+        10    100%     67%            6.4m
+        25    100%    100%            6.4m
+        50    100%    100%            6.4m
+       100    100%    100%            6.4m
+  ===== M=200 K=8 (30 rollouts) =====
+     delta    RAW%    MID%  median min-sep
+        10    100%     93%            3.0m
+        25    100%    100%            3.0m
+        50    100%    100%            3.0m
+       100    100%    100%            3.0m
+
+PHASE 2 — mitigations at delta=25m  (does timing fix it?)
+
+  ===== M=100 K=4 =====   baseline MID%=80%
+    launch-stagger Delta(s): 0->80%  5->37%  10->10%  20->23%  30->7%
+    speed-jitter j:          0->80%  0.05->77%  0.1->80%
+    pairwise resolvable by a practical relative offset: 44/44 = 100%
+  ===== M=100 K=6 =====   baseline MID%=97%
+    launch-stagger Delta(s): 0->97%  5->43%  10->40%  20->23%  30->10%
+    speed-jitter j:          0->97%  0.05->93%  0.1->94%
+    pairwise resolvable by a practical relative offset: 98/98 = 100%
+  ===== M=100 K=8 =====   baseline MID%=100%
+    launch-stagger Delta(s): 0->100%  5->70%  10->63%  20->23%  30->47%
+    speed-jitter j:          0->100%  0.05->100%  0.1->100%
+    pairwise resolvable by a practical relative offset: 158/158 = 100%
+  ===== M=200 K=4 =====   baseline MID%=83%
+    launch-stagger Delta(s): 0->83%  5->33%  10->13%  20->10%  30->13%
+    speed-jitter j:          0->83%  0.05->86%  0.1->84%
+    pairwise resolvable by a practical relative offset: 43/43 = 100%
+  ===== M=200 K=6 =====   baseline MID%=100%
+    launch-stagger Delta(s): 0->100%  5->37%  10->27%  20->17%  30->10%
+    speed-jitter j:          0->100%  0.05->100%  0.1->98%
+    pairwise resolvable by a practical relative offset: 96/96 = 100%
+  ===== M=200 K=8 =====   baseline MID%=100%
+    launch-stagger Delta(s): 0->100%  5->67%  10->60%  20->23%  30->47%
+    speed-jitter j:          0->100%  0.05->100%  0.1->100%
+    pairwise resolvable by a practical relative offset: 178/178 = 100%
+
+================================================================================================
+VERDICT (mitigations at delta=25m)
+  largest stagger tried Delta=30s: worst residual MID% = 47%
+  median pairwise resolvability by a practical offset: 100%
+
+  => PARTIALLY TIMING-RESOLVABLE. Timing removes much but not all contention.
+     A hybrid (stagger + light spatial penalty) is likely the right scope; the fully
+     coupled model may be more machinery than needed. Inspect the residual cells.
+  (All delta-sensitive; rerun --ref-delta at your true UAV safety radius.)

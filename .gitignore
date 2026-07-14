@@ -1,0 +1,21 @@
+@"
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Environments
+uav_env/
+.venv/
+env/
+
+# Model checkpoints (large binaries, not useful to reviewers)
+models_multi_uav/
+*.pt
+*.pth
+*.ckpt
+
+# OS / editor
+.DS_Store
+.vscode/
+"@ | Out-File -FilePath .gitignore -Encoding utf8
