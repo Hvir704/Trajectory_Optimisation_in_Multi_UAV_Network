@@ -1,0 +1,3 @@
+M,K,Emax,delta,instances,perturb,J_route,Phi,J_FINAL,Phi_pct,order_spread,best_dPhi,best_dJroute,best_dNet,net_gain_pct
+100,6,100000.0,50.0,4,40,-333.725,40.714,-293.011,12.2,19.321,0.0,0.0,0.0,0.0
+100,8,100000.0,50.0,4,40,-362.507,56.109,-306.397,15.48,14.724,0.0,0.0,0.0,0.0
