@@ -44,8 +44,7 @@ from sa_routes import sa_best_with_routes
 # measured single-UAV primitives (kstar_primitives.py, saturation-corrected fit)
 PRIM = {50:  dict(a=0.00094956, e_min=730.0),
         100: dict(a=0.00136285, e_min=928.0),
-        200: dict(a=0.00171,    e_min=514.0),
-        400: dict(a=0.0022447,  e_min=861.0)}
+        200: dict(a=0.00171,    e_min=514.0)}
 
 
 def r_single(e, a, e_min):
