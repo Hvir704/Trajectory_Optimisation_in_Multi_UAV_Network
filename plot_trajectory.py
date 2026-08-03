@@ -60,19 +60,19 @@ from matplotlib.lines import Line2D
 # import UAV_COLORS from this module so the colour scheme is consistent.
 # --------------------------------------------------------------------------
 UAV_COLORS = [
-    "#1f77b4",  # blue
-    "#d62728",  # red
-    "#2ca02c",  # green
-    "#ff7f0e",  # orange
-    "#9467bd",  # purple
-    "#8c564b",  # brown
-    "#17becf",  # cyan
-    "#e377c2",  # pink
-    "#7f7f7f",  # grey
-    "#bcbd22",  # olive
+    "#1b9e77",  # teal
+    "#d95f02",  # orange
+    "#7570b3",  # purple
+    "#e7298a",  # magenta
+    "#66a61e",  # green
+    "#e6ab02",  # gold
+    "#a6761d",  # brown
+    "#666666",  # grey
+    "#1f78b4",  # blue
+    "#b2182b",  # dark red
 ]
-UNSERVED_COLOR = "#cccccc"
-DEPOT_COLOR = "#111111"
+UNSERVED_COLOR = "#c8c8c8"
+DEPOT_COLOR = "#ffd21f"
 
 BANKED = {  # (M, K, Emax) -> 30-instance MEAN objective, CONTEXT_00_SHARED_FACTS
     (100, 4, 50000): -235.45,
@@ -150,7 +150,8 @@ def strip_depot_indices(trajs, pos, home, tol=1e-9):
 # --------------------------------------------------------------------------
 # plotting
 # --------------------------------------------------------------------------
-def marker_sizes(w, smin=18.0, smax=160.0, wlo=1.0, whi=10.0):
+def ring_sizes(w, smin=70.0, smax=330.0, wlo=1.0, whi=10.0):
+    """Outer priority ring area, scaled by weight w_i."""
     w = np.clip(np.asarray(w, float), wlo, whi)
     return smin + (w - wlo) / (whi - wlo) * (smax - smin)
 
@@ -165,88 +166,97 @@ def plot(pos, wi, trajs, obj, chain_vals, chain_e, args, Ee, out_path):
     for chain in trajs:
         for i in chain:
             served[i] = True
-    sizes = marker_sizes(wi)
+    rings = ring_sizes(wi)
+    waoi = float(sum(m.chain_waoi(t, pos, wi, tcd_of(args), ) for t in [])) \
+        if False else None  # placeholder replaced below
 
-    fig, ax = plt.subplots(figsize=(8.2, 8.6))
-    ax.add_patch(plt.Rectangle((0, 0), L, L, fill=False, lw=1.0,
-                               edgecolor="#999999", zorder=1))
+    fig, ax = plt.subplots(figsize=(9.0, 8.2))
 
+    # --- unserved sensors: grey ring + grey fill ---
     if (~served).any():
-        ax.scatter(pos[~served, 0], pos[~served, 1], s=sizes[~served],
-                   c=UNSERVED_COLOR, edgecolors="#9e9e9e", linewidths=0.4,
-                   zorder=2)
+        idx = np.where(~served)[0]
+        ax.scatter(pos[idx, 0], pos[idx, 1], s=rings[idx],
+                   facecolors=UNSERVED_COLOR, edgecolors="#8f8f8f",
+                   linewidths=0.9, zorder=2)
+        if args.labels:
+            for i in idx:
+                ax.annotate("%d" % int(round(wi[i])),
+                            (pos[i, 0], pos[i, 1]),
+                            textcoords="offset points", xytext=(7, 6),
+                            fontsize=7, color="#7a7a7a", zorder=2)
 
+    # --- routes and served sensors ---
     handles = []
     for k, chain in enumerate(trajs):
         col = UAV_COLORS[k % len(UAV_COLORS)]
         if chain:
             xs = [home[0]] + [pos[i, 0] for i in chain] + [home[0]]
             ys = [home[1]] + [pos[i, 1] for i in chain] + [home[1]]
-            ax.plot(xs, ys, "-", color=col, lw=1.5, alpha=0.85, zorder=3)
-            if args.arrows:
-                for a in range(len(xs) - 1):
-                    ax.annotate("", xy=(xs[a + 1], ys[a + 1]),
-                                xytext=(xs[a], ys[a]),
-                                arrowprops=dict(arrowstyle="-|>", color=col,
-                                                lw=0.0, alpha=0.7,
-                                                shrinkA=6, shrinkB=6),
-                                zorder=3)
+            ax.plot(xs, ys, "-", color=col, lw=1.6, alpha=0.95, zorder=3,
+                    solid_capstyle="round")
             idx = np.asarray(chain, dtype=int)
-            ax.scatter(pos[idx, 0], pos[idx, 1], s=sizes[idx], c=col,
-                       edgecolors="white", linewidths=0.5, zorder=4)
+            # hollow priority ring
+            ax.scatter(pos[idx, 0], pos[idx, 1], s=rings[idx],
+                       facecolors="none", edgecolors="#3a3a3a",
+                       linewidths=0.9, zorder=4)
+            # solid centre dot in the UAV colour
+            ax.scatter(pos[idx, 0], pos[idx, 1], s=34, c=col,
+                       edgecolors=col, linewidths=0.4, zorder=5)
+            if args.labels:
+                for i in idx:
+                    ax.annotate("%d" % int(round(wi[i])),
+                                (pos[i, 0], pos[i, 1]),
+                                textcoords="offset points", xytext=(7, 6),
+                                fontsize=7, color="#2a2a2a", zorder=6)
         handles.append(Line2D([0], [0], color=col, lw=2.0, marker="o",
-                              markersize=6, markeredgecolor="white",
-                              label="UAV %d: %d nodes, $J_k$=%.2f"
-                                    % (k + 1, len(chain), chain_vals[k])))
+                              markersize=6, markerfacecolor=col,
+                              markeredgecolor=col,
+                              label="UAV %d (%d nodes)" % (k + 1, len(chain))))
 
-    ax.scatter([home[0]], [home[1]], s=260, marker="*", c=DEPOT_COLOR,
-               edgecolors="white", linewidths=0.8, zorder=6)
-    ax.annotate("depot", (home[0], home[1]), textcoords="offset points",
-                xytext=(10, -14), fontsize=9, color=DEPOT_COLOR, zorder=6)
+    # --- depot ---
+    ax.scatter([home[0]], [home[1]], s=520, marker="*", c=DEPOT_COLOR,
+               edgecolors="#000000", linewidths=1.1, zorder=7)
 
-    n_unserved = int((~served).sum())
-    handles.append(Line2D([0], [0], color="none", marker="o",
-                          markerfacecolor=UNSERVED_COLOR,
-                          markeredgecolor="#9e9e9e", markersize=7,
-                          label="unserved: %d nodes" % n_unserved))
-    handles.append(Line2D([0], [0], color="none", marker="*",
-                          markerfacecolor=DEPOT_COLOR,
-                          markeredgecolor="white", markersize=13,
-                          label="depot (%.0f, %.0f)" % tuple(home)))
-
-    ax.set_xlim(-0.04 * L, 1.04 * L)
-    ax.set_ylim(-0.04 * L, 1.10 * L)
+    ax.set_xlim(-30, L + 30)
+    ax.set_ylim(-30, L + 30)
     ax.set_aspect("equal")
-    ax.set_xlabel("x (m)")
-    ax.set_ylabel("y (m)")
-    ax.grid(True, lw=0.3, alpha=0.3)
+    ax.set_xlabel("x (m)", fontsize=11)
+    ax.set_ylabel("y (m)", fontsize=11)
+    ax.grid(True, lw=0.5, alpha=0.4, color="#cccccc")
     ax.set_axisbelow(True)
-    ax.set_title(
-        "M=%d sensors, K=%d UAVs, $E_{\\max}$=%s J (%s J per UAV)\n"
-        "SA objective J = %.2f   (instance seed %d, SA seed %d, %d iters)"
-        % (M, args.K, "{:,}".format(int(args.Emax)),
-           "{:,}".format(int(round(Ee))), obj, args.seed, args.sa_seed,
-           args.iters), fontsize=12)
-    ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.085),
-              ncol=2, frameon=False, fontsize=9)
+    for sp in ax.spines.values():
+        sp.set_edgecolor("#444444")
 
-    fig.text(0.5, 0.015,
-             "marker size $\\propto$ priority weight $w_i \\in [1,10]$;  "
-             "served %d / %d nodes;  chain energy %.0f-%.0f J vs %.0f J budget"
-             % (int(served.sum()), M, min(chain_e), max(chain_e), Ee),
-             ha="center", fontsize=8.5, color="#555555")
+    n_served = int(served.sum())
+    W = float(sum(m.chain_waoi(t, pos, wi, args._tcd) for t in trajs))
+    ax.set_title("Fleet trajectory  M=%d, K=%d, served=%d\n"
+                 "Fleet WAoI=%.1f  Obj=%.2f" % (M, args.K, n_served, W, obj),
+                 fontsize=13)
+    ax.legend(handles=handles, loc="upper right", frameon=True,
+              framealpha=0.95, edgecolor="#999999", fontsize=9.5)
+
+    if args.footnote:
+        fig.text(0.5, 0.045,
+                 "ring size $\\propto$ priority $w_i$ (label = $w_i$);  "
+                 "$E_{\\max}$=%s J, %s J per UAV;  instance seed %d, "
+                 "%d SA iters"
+                 % ("{:,}".format(int(args.Emax)),
+                    "{:,}".format(int(round(Ee))), args.seed, args.iters),
+                 ha="center", fontsize=8.5, color="#555555")
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".",
                 exist_ok=True)
-    fig.savefig(out_path, dpi=args.dpi, bbox_inches="tight")
+    fig.savefig(out_path, dpi=args.dpi, bbox_inches="tight",
+                facecolor="white")
     plt.close(fig)
-    return n_unserved
+    return M - n_served
 
 
 # --------------------------------------------------------------------------
 # driver
 # --------------------------------------------------------------------------
-def run(args, make_figure=True):
+def run(args, make_figure=True, quiet=False):
+    _p = (lambda *a, **k: None) if quiet else print
     m = cb()
     require(m, ["gen", "chain_waoi", "chain_energy", "fleet_obj",
                 "TH1", "TH2", "HOME", "AREA"])
@@ -254,18 +264,19 @@ def run(args, make_figure=True):
     Ee = float(args.Emax) if args.ee_is_total else float(args.Emax) / args.K
     gen_seed, sa_seed, label = resolve_seeds(args)
     args.seed, args.sa_seed = gen_seed, sa_seed
-    print("  %s" % label)
+    _p("  %s" % label)
 
     pos, wi, tcd = load_instance(args.M, args.seed)
     if pos.shape[0] != args.M:
-        print("  [warn] gen(%d,%d) returned %d positions"
+        _p("  [warn] gen(%d,%d) returned %d positions"
               % (args.M, args.seed, pos.shape[0]))
 
+    args._tcd = tcd
     obj, trajs = solve(pos, wi, tcd, args.K, Ee, args.M, args.iters,
                        args.sa_seed)
     trajs, dropped = strip_depot_indices(trajs, pos, home)
     if dropped:
-        print("  [info] stripped %d depot index/indices from routes" % dropped)
+        _p("  [info] stripped %d depot index/indices from routes" % dropped)
 
     # (a) do the routes reproduce the reported objective?
     recomputed = float(m.fleet_obj(trajs, pos, wi, tcd))
@@ -282,43 +293,43 @@ def run(args, make_figure=True):
         g_trajs, _ = m.greedy_init(pos, wi, tcd, args.K, Ee, args.M)
         g_obj = float(m.fleet_obj(g_trajs, pos, wi, tcd))
 
-    print("  SA objective:            %.4f" % obj)
-    print("  fleet_obj(trajs):        %.4f   (|d|=%.2e %s)"
+    _p("  SA objective:            %.4f" % obj)
+    _p("  fleet_obj(trajs):        %.4f   (|d|=%.2e %s)"
           % (recomputed, d_a, "OK" if d_a < 1e-6 else "MISMATCH"))
-    print("  sum of per-chain J_k:    %.4f   (|d|=%.2e %s)"
+    _p("  sum of per-chain J_k:    %.4f   (|d|=%.2e %s)"
           % (sum(chain_vals), d_b, "OK" if d_b < 1e-6 else "MISMATCH"))
     if d_a >= 1e-6:
-        print("  [warn] the returned routes do not reproduce the returned "
+        _p("  [warn] the returned routes do not reproduce the returned "
               "objective. The figure would show a different solution than the "
               "number in its title -- investigate before using it.")
     if infeasible:
-        print("  [warn] chains over the %.0f J budget: %s"
+        _p("  [warn] chains over the %.0f J budget: %s"
               % (Ee, ", ".join("UAV %d" % (k + 1) for k in infeasible)))
     if g_obj is not None:
         imp = g_obj - obj
-        print("  greedy_init objective:   %.4f   (SA improved by %.4f, %.2f%%)"
+        _p("  greedy_init objective:   %.4f   (SA improved by %.4f, %.2f%%)"
               % (g_obj, imp, 100.0 * imp / abs(g_obj) if g_obj else 0.0))
         if abs(imp) < 1e-9:
-            print("  [warn] SA returned greedy_init's solution unchanged -- it "
+            _p("  [warn] SA returned greedy_init's solution unchanged -- it "
                   "accepted no improving move in %d iters. Chains near the "
                   "energy cap reject most moves; raise --iters before trusting "
                   "this as an SA-quality solution." % args.iters)
 
     key = (args.M, args.K, int(args.Emax))
     if key in BANKED:
-        print("  note: the banked %s value %.2f is a MEAN over instances; a "
+        _p("  note: the banked %s value %.2f is a MEAN over instances; a "
               "single instance is not expected to match it. Use --selftest."
               % (str(key), BANKED[key]))
 
     for k, t in enumerate(trajs):
-        print("  UAV %d: %3d nodes, energy %8.1f J (%5.1f%% of Ee), J_k=%.3f"
+        _p("  UAV %d: %3d nodes, energy %8.1f J (%5.1f%% of Ee), J_k=%.3f"
               % (k + 1, len(t), chain_e[k], 100.0 * chain_e[k] / Ee,
                  chain_vals[k]))
 
     if make_figure:
         n_un = plot(pos, wi, trajs, obj, chain_vals, chain_e, args, Ee,
                     args.out)
-        print("  served %d / %d nodes; wrote %s at %d dpi"
+        _p("  served %d / %d nodes; wrote %s at %d dpi"
               % (args.M - n_un, args.M, args.out, args.dpi))
     return obj
 
@@ -330,11 +341,11 @@ def selftest(args):
     key = (args.M, args.K, int(args.Emax))
     target = BANKED.get(key)
     if target is None:
-        print("  note: no banked mean for %s -- running as a DIAGNOSTIC "
+        _p("  note: no banked mean for %s -- running as a DIAGNOSTIC "
               "(mean + freeze rate reported, no pass/fail)." % str(key))
     Ee = float(args.Emax) / args.K
     seeds = instance_seeds(args.meta_seed, args.instances)
-    print("SELFTEST: M=%d K=%d Emax=%d, mean over %d instances, iters=%d%s\n"
+    _p("SELFTEST: M=%d K=%d Emax=%d, mean over %d instances, iters=%d%s\n"
           % (args.M, args.K, int(args.Emax), args.instances, args.iters,
              ("\n          expecting %.2f" % target) if target is not None
              else ""))
@@ -352,29 +363,29 @@ def selftest(args):
             gvals.append(g)
             line += "  greedy %9.4f (SA better by %.2f%%)" % (
                 g, 100.0 * (g - obj) / abs(g) if g else 0.0)
-        print(line)
+        _p(line)
 
     mean = float(np.mean(vals))
-    print("\n  SA mean over %d instances: %.4f" % (len(vals), mean))
+    _p("\n  SA mean over %d instances: %.4f" % (len(vals), mean))
     if target is not None:
         d = abs(mean - target)
-        print("  banked value:              %.4f   (|d|=%.4f)" % (target, d))
+        _p("  banked value:              %.4f   (|d|=%.4f)" % (target, d))
     if args.with_greedy:
         gm = float(np.mean(gvals))
         inert = sum(1 for g, v in zip(gvals, vals) if abs(g - v) < 1e-9)
-        print("  greedy_init mean:          %.4f   (SA better by %.2f%%)"
+        _p("  greedy_init mean:          %.4f   (SA better by %.2f%%)"
               % (gm, 100.0 * (gm - mean) / abs(gm) if gm else 0.0))
-        print("  instances where SA found no improvement: %d / %d"
+        _p("  instances where SA found no improvement: %d / %d"
               % (inert, len(vals)))
     if target is None:
-        print("\nDIAGNOSTIC COMPLETE -- no banked value for this cell.")
+        _p("\nDIAGNOSTIC COMPLETE -- no banked value for this cell.")
         return 0
     if abs(mean - target) < TOL:
-        print("\nSELFTEST PASSED -- pipeline reproduces the banked mean. Use "
+        _p("\nSELFTEST PASSED -- pipeline reproduces the banked mean. Use "
               "--iters %d and index into the same seed list for figures."
               % args.iters)
         return 0
-    print("\nSELFTEST FAILED -- treat as a discrepancy to investigate, not a "
+    _p("\nSELFTEST FAILED -- treat as a discrepancy to investigate, not a "
           "number to overwrite. Check --instances and --iters first.")
     return 1
 
@@ -435,6 +446,145 @@ def sweep_k(args):
     return 0
 
 
+def pair_k(args):
+    """Paired per-instance comparison of two K values, with a CI on the gap."""
+    from sa_routes import sa_with_routes
+    K1, K2 = args.pair_k[0], args.pair_k[1]
+    seeds = instance_seeds(args.meta_seed, args.instances)
+    print("PAIRED K=%d vs K=%d: M=%d Emax=%d, %d instances x %d SA seeds, "
+          "iters=%d\n" % (K1, K2, args.M, int(args.Emax), args.instances,
+                          args.reps, args.iters))
+    print("  %-5s %-10s %-11s %-11s %-11s %-11s %s"
+          % ("inst", "gen seed", "K%d best" % K1, "K%d best" % K2,
+             "K%d mean" % K1, "K%d mean" % K2, "diff(best)"))
+
+    d_best, d_mean = [], []
+    for si, sd in enumerate(seeds):
+        pos, wi, tcd = load_instance(args.M, sd)
+        got = {}
+        for K in (K1, K2):
+            Ee = float(args.Emax) / K
+            runs = []
+            for r in range(args.reps):
+                obj, _ = sa_with_routes(pos, wi, tcd, K, Ee, args.M,
+                                        args.iters, si + 1000 * r)
+                runs.append(float(obj))
+            got[K] = (min(runs), float(np.mean(runs)))
+        db = got[K1][0] - got[K2][0]
+        dm = got[K1][1] - got[K2][1]
+        d_best.append(db)
+        d_mean.append(dm)
+        print("  %-5d %-10d %-11.4f %-11.4f %-11.4f %-11.4f %+.4f"
+              % (si, sd, got[K1][0], got[K2][0], got[K1][1], got[K2][1], db))
+
+    for label, d in (("best-of-%d" % args.reps, d_best),
+                     ("mean-of-%d" % args.reps, d_mean)):
+        a = np.asarray(d, float)
+        n = len(a)
+        mean = float(a.mean())
+        sd_ = float(a.std(ddof=1)) if n > 1 else 0.0
+        se = sd_ / np.sqrt(n) if n > 1 else 0.0
+        lo, hi = mean - 1.96 * se, mean + 1.96 * se
+        wins = int((a < 0).sum())
+        print("\n  --- %s ---" % label)
+        print("  paired mean diff J(K=%d) - J(K=%d): %+.4f  (SD %.4f, SE %.4f)"
+              % (K1, K2, mean, sd_, se))
+        print("  95%% CI: [%+.4f, %+.4f]" % (lo, hi))
+        print("  instances where K=%d is better: %d/%d" % (K1, wins, n))
+        if lo < 0 < hi:
+            print("  VERDICT: NOT RESOLVED -- CI contains 0, the two fleet "
+                  "sizes are statistically indistinguishable here.")
+        elif hi < 0:
+            print("  VERDICT: K=%d better, CI excludes 0." % K1)
+        else:
+            print("  VERDICT: K=%d better, CI excludes 0." % K2)
+    return 0
+
+
+def batch(args):
+    """Grid of trajectory figures over M x K, one PNG per cell + contact sheet."""
+    import time as _time
+    Ms, Ks = args.batch_m, args.batch_k
+    os.makedirs(args.out_dir, exist_ok=True)
+    print("BATCH: %d M-values x %d K-values = %d figures, Emax=%d, iters=%d, "
+          "instance-index %d\n  out-dir %s\n"
+          % (len(Ms), len(Ks), len(Ms) * len(Ks), int(args.Emax), args.iters,
+             args.instance_index, args.out_dir))
+
+    grid, done, skipped, failed = {}, 0, 0, []
+    t_all = _time.time()
+    for M in Ms:
+        for K in Ks:
+            out = os.path.join(
+                args.out_dir, "traj_M%d_K%d_E%d_i%d.png"
+                % (M, K, int(args.Emax), args.instance_index))
+            grid[(M, K)] = out
+            if os.path.exists(out) and not args.overwrite:
+                print("  [skip] M=%-4d K=%-2d exists" % (M, K))
+                skipped += 1
+                continue
+            sub = argparse.Namespace(**vars(args))
+            sub.M, sub.K, sub.out = M, K, out
+            t0 = _time.time()
+            try:
+                run(sub, make_figure=True, quiet=True)
+                dt = _time.time() - t0
+                done += 1
+                print("  [ ok ] M=%-4d K=%-2d  %6.1fs  -> %s"
+                      % (M, K, dt, os.path.basename(out)))
+            except Exception as exc:  # keep the batch going
+                failed.append((M, K, repr(exc)))
+                print("  [FAIL] M=%-4d K=%-2d  %s" % (M, K, exc))
+
+    print("\n  %d written, %d skipped, %d failed in %.1f s"
+          % (done, skipped, len(failed), _time.time() - t_all))
+    for M, K, e in failed:
+        print("    M=%d K=%d: %s" % (M, K, e))
+
+    if args.contact_sheet:
+        sheet = os.path.join(args.out_dir, "contact_sheet_E%d.png"
+                             % int(args.Emax))
+        make_contact_sheet(Ms, Ks, grid, sheet, args)
+    return 1 if failed else 0
+
+
+def make_contact_sheet(Ms, Ks, grid, out, args):
+    """Tile the per-cell PNGs into one M x K overview image."""
+    import matplotlib.image as mpimg
+    have = [(mk, p) for mk, p in grid.items() if os.path.exists(p)]
+    if not have:
+        print("  [skip] contact sheet: no figures on disk")
+        return
+    fig, axes = plt.subplots(len(Ms), len(Ks),
+                             figsize=(2.5 * len(Ks), 2.6 * len(Ms)),
+                             squeeze=False)
+    for i, M in enumerate(Ms):
+        for j, K in enumerate(Ks):
+            ax = axes[i][j]
+            ax.set_xticks([])
+            ax.set_yticks([])
+            for sp in ax.spines.values():
+                sp.set_edgecolor("#dddddd")
+            p = grid.get((M, K))
+            if p and os.path.exists(p):
+                ax.imshow(mpimg.imread(p))
+            else:
+                ax.text(0.5, 0.5, "missing", ha="center", va="center",
+                        fontsize=8, color="#bbbbbb", transform=ax.transAxes)
+            if i == 0:
+                ax.set_title("K=%d" % K, fontsize=11)
+            if j == 0:
+                ax.set_ylabel("M=%d" % M, fontsize=11)
+    fig.suptitle("Example trajectories, $E_{\\max}$=%s J, instance %d, "
+                 "%d SA iters" % ("{:,}".format(int(args.Emax)),
+                                  args.instance_index, args.iters),
+                 fontsize=13)
+    fig.tight_layout(rect=[0, 0, 1, 0.985])
+    fig.savefig(out, dpi=args.sheet_dpi, bbox_inches="tight")
+    plt.close(fig)
+    print("  wrote contact sheet %s" % out)
+
+
 DEFAULT_OUT = "figs/traj.png"
 
 
@@ -467,17 +617,38 @@ def main():
     p.add_argument("--dpi", type=int, default=300)
     p.add_argument("--ee-is-total", action="store_true",
                    help="pass Emax rather than Emax/K as Ee")
+    p.add_argument("--no-labels", dest="labels", action="store_false",
+                   help="omit the per-node priority-weight labels")
+    p.add_argument("--no-footnote", dest="footnote", action="store_false",
+                   help="omit the settings footnote under the plot")
     p.add_argument("--arrows", action="store_true",
                    help="draw direction arrowheads on route segments")
     p.add_argument("--skip-greedy-check", action="store_true",
                    help="skip the greedy_init comparison (it is slow at large M)")
     p.add_argument("--selftest", action="store_true")
+    p.add_argument("--batch-m", type=int, nargs="+", default=None,
+                   metavar="M", help="batch mode: M values for the grid")
+    p.add_argument("--batch-k", type=int, nargs="+", default=None,
+                   metavar="K", help="batch mode: K values for the grid")
+    p.add_argument("--out-dir", default="figs",
+                   help="batch mode: directory for the per-cell PNGs")
+    p.add_argument("--overwrite", action="store_true",
+                   help="batch mode: redraw cells whose PNG already exists")
+    p.add_argument("--contact-sheet", action="store_true",
+                   help="batch mode: also tile the cells into one overview PNG")
+    p.add_argument("--sheet-dpi", type=int, default=150,
+                   help="dpi for the contact sheet")
+    p.add_argument("--pair-k", type=int, nargs=2, default=None,
+                   metavar=("K1", "K2"),
+                   help="paired per-instance comparison of two fleet sizes")
+    p.add_argument("--reps", type=int, default=5,
+                   help="SA seeds per instance for --pair-k")
     p.add_argument("--sweep-k", type=int, nargs="+", default=None,
                    help="locate K* = argmin_K mean J over the population")
     args = p.parse_args()
 
     m = cb()
-    print("  plot_trajectory.py rev5 (K-sweep mode)")
+    print("  plot_trajectory.py rev8 (fleet-style trajectories)")
     if args.Emax is None:
         args.Emax = float(getattr(m, "EMAX", 50000.0))
     if args.meta_seed is None:
@@ -487,6 +658,12 @@ def main():
           % (m.TH1, m.TH2, m.V, m.AREA, m.PF, m.PH,
              np.asarray(m.HOME).ravel()[0], np.asarray(m.HOME).ravel()[1]))
 
+    if args.batch_m or args.batch_k:
+        if not (args.batch_m and args.batch_k):
+            sys.exit("batch mode needs BOTH --batch-m and --batch-k")
+        sys.exit(batch(args))
+    if args.pair_k:
+        sys.exit(pair_k(args))
     if args.sweep_k:
         sys.exit(sweep_k(args))
     if args.selftest:
