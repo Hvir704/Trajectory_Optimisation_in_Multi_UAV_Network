@@ -1,0 +1,37 @@
+Emax,Kstar,M,abar,coverage,model,n,regime
+25000,2,50,,0.34,STATIC (delivery age) [VALIDATION GATE],8.46,under-served
+50000,5,50,,0.61,STATIC (delivery age) [VALIDATION GATE],6.1,well-served
+100000,9,50,,1.29,STATIC (delivery age) [VALIDATION GATE],7.15,OVER-SERVED
+25000,2,100,,0.23,STATIC (delivery age) [VALIDATION GATE],11.4,under-served
+50000,4,100,,0.46,STATIC (delivery age) [VALIDATION GATE],11.4,under-served
+100000,9,100,,0.86,STATIC (delivery age) [VALIDATION GATE],9.55,well-served
+25000,2,200,,0.16,STATIC (delivery age) [VALIDATION GATE],15.6,under-served
+50000,4,200,,0.31,STATIC (delivery age) [VALIDATION GATE],15.6,under-served
+100000,8,200,,0.62,STATIC (delivery age) [VALIDATION GATE],15.6,well-served
+25000,2,50,177.35,0.34,DYNAMIC (field age) T_r=60s,8.46,under-served
+50000,4,50,88.67,0.68,DYNAMIC (field age) T_r=60s,8.46,well-served
+100000,13,50,60.0,1.02,DYNAMIC (field age) T_r=60s,3.93,OVER-SERVED
+25000,2,100,263.16,0.23,DYNAMIC (field age) T_r=60s,11.4,under-served
+50000,4,100,131.58,0.46,DYNAMIC (field age) T_r=60s,11.4,under-served
+100000,8,100,65.79,0.91,DYNAMIC (field age) T_r=60s,11.4,well-served
+25000,2,200,384.72,0.16,DYNAMIC (field age) T_r=60s,15.6,under-served
+50000,4,200,192.36,0.31,DYNAMIC (field age) T_r=60s,15.6,under-served
+100000,8,200,96.18,0.62,DYNAMIC (field age) T_r=60s,15.6,well-served
+25000,2,50,354.7,0.34,DYNAMIC (field age) T_r=120s,8.46,under-served
+50000,3,50,161.47,0.74,DYNAMIC (field age) T_r=120s,12.39,well-served
+100000,13,50,120.0,1.02,DYNAMIC (field age) T_r=120s,3.93,OVER-SERVED
+25000,2,100,500.0,0.23,DYNAMIC (field age) T_r=120s,11.4,under-served
+50000,3,100,235.91,0.51,DYNAMIC (field age) T_r=120s,16.96,under-served
+100000,6,100,120.0,1.02,DYNAMIC (field age) T_r=120s,16.96,OVER-SERVED
+25000,2,200,500.0,0.16,DYNAMIC (field age) T_r=120s,15.6,under-served
+50000,3,200,341.11,0.35,DYNAMIC (field age) T_r=120s,23.45,under-served
+100000,5,200,161.41,0.74,DYNAMIC (field age) T_r=120s,29.74,well-served
+25000,1,50,500.0,0.4,DYNAMIC (field age) T_r=240s,20.24,under-served
+50000,2,50,296.4,0.81,DYNAMIC (field age) T_r=240s,20.24,well-served
+100000,13,50,240.0,1.02,DYNAMIC (field age) T_r=240s,3.93,OVER-SERVED
+25000,1,100,500.0,0.28,DYNAMIC (field age) T_r=240s,28.07,under-served
+50000,2,100,427.55,0.56,DYNAMIC (field age) T_r=240s,28.07,under-served
+100000,6,100,240.0,1.02,DYNAMIC (field age) T_r=240s,16.96,OVER-SERVED
+25000,1,200,500.0,0.2,DYNAMIC (field age) T_r=240s,39.17,under-served
+50000,2,200,500.0,0.39,DYNAMIC (field age) T_r=240s,39.17,under-served
+100000,4,200,306.39,0.78,DYNAMIC (field age) T_r=240s,39.17,well-served

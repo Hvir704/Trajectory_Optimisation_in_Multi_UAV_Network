@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-make_all_figures.py -- every figure for the paper, from one file.
+make_all_figures.py -- every figure for the paper, from one file.  [rev2]
 
 Three sections, each independent. A section that cannot run (missing module,
 missing CSV) reports why and the others still run.
@@ -441,6 +441,58 @@ def find_policy_fn(ms, override):
     return None, None
 
 
+def ckpt_path(a, M, K):
+    return os.path.join(a.models_dir,
+                        a.ckpt_pattern.format(M=M, K=K, seed=a.model_seed))
+
+
+def load_policy(ms, a, M, K, cache):
+    """Load the (M,K) checkpoint into a MultiUAVPolicy. None if unavailable."""
+    key = (M, K)
+    if key in cache:
+        return cache[key]
+    path = ckpt_path(a, M, K)
+    if not os.path.exists(path):
+        cache[key] = None
+        return None
+    try:
+        import torch
+        cls = getattr(ms, "MultiUAVPolicy", None)
+        if cls is None:
+            raise RuntimeError("multi_uav_solver has no MultiUAVPolicy")
+        pol = cls()
+        ck = torch.load(path, map_location=a.device, weights_only=False)
+        state = ck.get("policy", ck) if isinstance(ck, dict) else ck
+        pol.load_state_dict(state)
+        pol.eval()
+        pol.to(a.device)
+        cache[key] = pol
+    except Exception as exc:
+        print("      [ckpt FAIL] %s: %r" % (os.path.basename(path), exc))
+        cache[key] = None
+    return cache[key]
+
+
+def ckpt_inventory(a, Ms, Ks):
+    have = [(M, K) for M in Ms for K in Ks
+            if os.path.exists(ckpt_path(a, M, K))]
+    total = len(Ms) * len(Ks)
+    print("  checkpoints: %d/%d cells found under %s (pattern %s, seed %d)"
+          % (len(have), total, a.models_dir, a.ckpt_pattern, a.model_seed))
+    if not have:
+        print("      none found -- the MLP series will be OMITTED and the "
+              "figures will show baselines only.")
+    elif len(have) < total:
+        missing_M = sorted({M for M in Ms
+                            if not any(m == M for m, _ in have)})
+        if missing_M:
+            print("      no checkpoint at all for M=%s"
+                  % ", ".join(str(m) for m in missing_M))
+        print("      cells without a checkpoint are skipped for the MLP line "
+              "only; baselines are unaffected.")
+    return set(have)
+
+
 def base_colors(ms):
     c = dict(FALLBACK_BASE_COLORS)
     c.update(getattr(ms, "_C_BASE", {}) or {})
@@ -459,12 +511,12 @@ def collect(ms, args):
     """-> rows: list of dicts, one per (M, K, method)."""
     pol_name, pol_fn = find_policy_fn(ms, args.policy_fn)
     if pol_fn is None:
-        print("  [warn] no fleet-policy evaluator found in multi_uav_solver "
-              "(tried: %s)." % ", ".join(POLICY_FN_NAMES))
-        print("         Figures will show BASELINES ONLY. Re-run with "
-              "--policy-fn <name> once you know it.")
+        print("  [warn] no fleet-policy evaluator found (tried: %s); "
+              "baselines only." % ", ".join(POLICY_FN_NAMES))
     else:
         print("  policy evaluator: multi_uav_solver.%s" % pol_name)
+    have = ckpt_inventory(args, args.M, args.K) if pol_fn else set()
+    cache = {}
 
     rows = []
     for M in args.M:
@@ -478,17 +530,22 @@ def collect(ms, args):
                 rows.append(dict(M=M, K=K, Emax_each=Ee, method=name,
                                  obj=float(d["obj"]),
                                  nodes=float(d.get("nodes", float("nan")))))
-            if pol_fn is not None:
-                try:
-                    p = pol_fn(M, K, n=args.instances, seed=args.seed,
-                               Emax_each=Ee)
-                    rows.append(dict(M=M, K=K, Emax_each=Ee,
-                                     method=POLICY_LABEL,
-                                     obj=float(p["obj"]),
-                                     nodes=float(p.get("nodes",
-                                                       float("nan")))))
-                except Exception as exc:
-                    print("  [policy FAILED: %s]" % exc, end="")
+            if pol_fn is not None and (M, K) in have:
+                pol = load_policy(ms, args, M, K, cache)
+                if pol is not None:
+                    try:
+                        p = pol_fn(pol, M, K, n=args.instances,
+                                   seed=args.seed, device=args.device,
+                                   Emax_each=Ee,
+                                   use_postprocess=args.use_postprocess)
+                        rows.append(dict(M=M, K=K, Emax_each=Ee,
+                                         method=POLICY_LABEL,
+                                         obj=float(p["obj"]),
+                                         nodes=float(p.get("nodes",
+                                                           float("nan")))))
+                        print("  +MLP", end="")
+                    except Exception as exc:
+                        print("  [policy FAILED: %s]" % exc, end="")
             print("  done")
     return rows
 
@@ -1029,7 +1086,10 @@ def section_fleet(a):
              instances=a.fleet_instances, seed=a.fleet_seed,
              policy_fn=a.policy_fn,
              coverage_baselines=a.coverage_baselines, out_dir=out_dir,
-             csv=None, dpi=a.dpi, grid_dpi=a.grid_dpi)
+             csv=None, dpi=a.dpi, grid_dpi=a.grid_dpi,
+             models_dir=a.models_dir, ckpt_pattern=a.ckpt_pattern,
+             model_seed=a.model_seed, device=a.device,
+             use_postprocess=not a.no_postprocess)
     print("  energy convention: %s" % a.energy.upper())
     rows = collect(ms, sub)
     if not rows:
@@ -1105,6 +1165,16 @@ def main():
     g.add_argument("--fleet-seed", type=int, default=42)
     g.add_argument("--policy-fn", default=None)
     g.add_argument("--coverage-baselines", action="store_true")
+    g.add_argument("--models-dir", default="models_multi_uav")
+    g.add_argument("--ckpt-pattern",
+                   default="fleet_M{M}_K{K}_split_seed{seed}.pt")
+    g.add_argument("--model-seed", type=int, default=42,
+                   help="trained-model seed; only 7, 42, 123 exist")
+    g.add_argument("--device", default="cpu",
+                   help="cpu or cuda, for the policy rollout")
+    g.add_argument("--no-postprocess", action="store_true",
+                   help="evaluate the raw MLP rollout without post-processing "
+                        "(default matches the banked rollout+pp numbers)")
     g.add_argument("--fleet-subdir", default="fleet_vs_K")
     g.add_argument("--grid-dpi", type=int, default=140)
 

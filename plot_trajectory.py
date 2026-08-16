@@ -341,11 +341,11 @@ def selftest(args):
     key = (args.M, args.K, int(args.Emax))
     target = BANKED.get(key)
     if target is None:
-        _p("  note: no banked mean for %s -- running as a DIAGNOSTIC "
+        print("  note: no banked mean for %s -- running as a DIAGNOSTIC "
               "(mean + freeze rate reported, no pass/fail)." % str(key))
     Ee = float(args.Emax) / args.K
     seeds = instance_seeds(args.meta_seed, args.instances)
-    _p("SELFTEST: M=%d K=%d Emax=%d, mean over %d instances, iters=%d%s\n"
+    print("SELFTEST: M=%d K=%d Emax=%d, mean over %d instances, iters=%d%s\n"
           % (args.M, args.K, int(args.Emax), args.instances, args.iters,
              ("\n          expecting %.2f" % target) if target is not None
              else ""))
@@ -363,29 +363,29 @@ def selftest(args):
             gvals.append(g)
             line += "  greedy %9.4f (SA better by %.2f%%)" % (
                 g, 100.0 * (g - obj) / abs(g) if g else 0.0)
-        _p(line)
+        print(line)
 
     mean = float(np.mean(vals))
-    _p("\n  SA mean over %d instances: %.4f" % (len(vals), mean))
+    print("\n  SA mean over %d instances: %.4f" % (len(vals), mean))
     if target is not None:
         d = abs(mean - target)
-        _p("  banked value:              %.4f   (|d|=%.4f)" % (target, d))
+        print("  banked value:              %.4f   (|d|=%.4f)" % (target, d))
     if args.with_greedy:
         gm = float(np.mean(gvals))
         inert = sum(1 for g, v in zip(gvals, vals) if abs(g - v) < 1e-9)
-        _p("  greedy_init mean:          %.4f   (SA better by %.2f%%)"
+        print("  greedy_init mean:          %.4f   (SA better by %.2f%%)"
               % (gm, 100.0 * (gm - mean) / abs(gm) if gm else 0.0))
-        _p("  instances where SA found no improvement: %d / %d"
+        print("  instances where SA found no improvement: %d / %d"
               % (inert, len(vals)))
     if target is None:
-        _p("\nDIAGNOSTIC COMPLETE -- no banked value for this cell.")
+        print("\nDIAGNOSTIC COMPLETE -- no banked value for this cell.")
         return 0
     if abs(mean - target) < TOL:
-        _p("\nSELFTEST PASSED -- pipeline reproduces the banked mean. Use "
+        print("\nSELFTEST PASSED -- pipeline reproduces the banked mean. Use "
               "--iters %d and index into the same seed list for figures."
               % args.iters)
         return 0
-    _p("\nSELFTEST FAILED -- treat as a discrepancy to investigate, not a "
+    print("\nSELFTEST FAILED -- treat as a discrepancy to investigate, not a "
           "number to overwrite. Check --instances and --iters first.")
     return 1
 
@@ -648,7 +648,7 @@ def main():
     args = p.parse_args()
 
     m = cb()
-    print("  plot_trajectory.py rev8 (fleet-style trajectories)")
+    print("  plot_trajectory.py rev9 (selftest NameError fixed)")
     if args.Emax is None:
         args.Emax = float(getattr(m, "EMAX", 50000.0))
     if args.meta_seed is None:
