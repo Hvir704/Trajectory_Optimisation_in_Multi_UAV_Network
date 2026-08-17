@@ -1,0 +1,2 @@
+M,K,Ee,greedy,SA_base,SA_repair2,base_frozen,repair_frozen,repair_gain_pct,rep_attempted,rep_feasible,rep_accepted,instances,iters,restarts,sec
+200,4,12500.0,-348.3869,-348.3869,-357.3736,12,6,2.58,50005,12634,4740,12,6000,2,1097.2

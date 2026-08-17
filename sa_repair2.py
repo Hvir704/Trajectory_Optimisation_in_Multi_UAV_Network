@@ -1,4 +1,3 @@
-
 """
 sa_repair2.py  --  COST-AWARE energy repair, with move-level diagnostics.
 ==========================================================================
@@ -37,8 +36,41 @@ READ THE OUTPUT IN THIS ORDER:
   2. rep-frz vs base-frz -- did the freeze actually break?
   3. argmin -- only meaningful once (1) and (2) show real search happened.
 
+--------------------------------------------------------------------------
+SEEDING CORRECTION (17 Aug 2026) -- read this before comparing against banked
+numbers produced by an EARLIER copy of this script.
+
+The previous version passed the RESTART INDEX `r` as the SA seed, for both arms:
+
+    Jb = min(sa_baseline(..., r) for r in range(a.restarts))     # WRONG
+    Jr = min(sa_repaired2(..., r) for r in range(a.restarts))    # WRONG
+
+Two consequences:
+  (i)  the baseline arm did not match `compare_baseline.py`, which uses
+       SA seed = INSTANCE INDEX (`si`) and has NO restart loop at all;
+  (ii) every instance drew the same two seeds {0,1}, so `--restarts 2`
+       replayed identical trajectories instead of sampling two.
+
+Now:
+  * baseline  = a SINGLE `sa_baseline(..., si)` call -- bit-comparable with
+    `compare_baseline.sa` on the same instance;
+  * repaired  = min over restarts with seed `1000*si + r`, genuinely distinct.
+
+This is NUMERICALLY INERT for the baseline arm at M>=100, where SA is frozen
+(returns greedy_init verbatim regardless of seed), so the M=100 / M=200 argmin
+findings stand unchanged. It DOES change the baseline arm at low-M / slack-budget
+cells where SA actually searches -- those must be re-run, not carried over.
+
+INSTANCE COUNT. Banked cross-checks (M100K4 = -235.45, M100K1 = -89.56,
+M200K4 = -348.39) are 12-instance means. `--instances 8` runs optimistic by
+0.6-2.6% and its absolute objectives must NOT be quoted alongside banked values.
+Use `--instances 12` for anything paper-facing. Paired `gain%` is unaffected,
+since both arms see identical draws.
+--------------------------------------------------------------------------
+
 Run:
-    python sa_repair2.py --M 100 --K 3 4 5 --Emax 50000 --instances 8 --iters 4000
+    python sa_repair2.py --M 100 --K 4 --Emax 50000 --instances 12 --iters 6000 \
+        --out-dir mlp_vs_repair
 """
 import os, csv, time, argparse
 import numpy as np
@@ -192,9 +224,13 @@ def main():
     ap.add_argument('--Emax', type=float, default=EMAX)
     ap.add_argument('--instances', type=int, default=8)
     ap.add_argument('--iters', type=int, default=4000)
-    ap.add_argument('--restarts', type=int, default=2)
+    ap.add_argument('--restarts', type=int, default=2,
+                    help='restarts for the REPAIRED arm only; baseline is a '
+                         'single seed=instance-index call, matching '
+                         'compare_baseline.sa which has no restart loop')
     ap.add_argument('--repair-p', type=float, default=0.35)
-    ap.add_argument('--seed', type=int, default=INSTANCE_SEED)
+    ap.add_argument('--seed', type=int, default=INSTANCE_SEED,
+                    help='META-seed: instance seeds are drawn from it')
     ap.add_argument('--out-dir', default='sa_repair2')
     a = ap.parse_args()
 
@@ -206,6 +242,11 @@ def main():
     print('=' * 104)
     print(f'  COST-AWARE SA repair | M={M} Emax={a.Emax:.0f} K={a.K} '
           f'| inst={a.instances} iters={a.iters} rp={a.repair_p}')
+    print(f'  baseline seed = instance index (matches compare_baseline.sa, '
+          f'no restarts) | repaired restarts = {a.restarts}')
+    if a.instances != 12:
+        print(f'  NOTE: instances={a.instances} != 12. Absolute objectives are '
+              f'NOT comparable with banked 12-instance values.')
     print('=' * 104)
     print(f'{"K":>2} {"Ee":>7} {"greedy":>10} {"SA_base":>10} {"SA_rep2":>10} '
           f'{"base-frz":>9} {"rep-frz":>8} {"gain%":>7} '
@@ -217,14 +258,17 @@ def main():
         g, sb, sr, fz_b, fz_r = [], [], [], 0, 0
         st = dict(att=0, feas=0, acc=0)
         t0 = time.time()
-        for s in seeds:
+        for si, s in enumerate(seeds):
             pos, wi, tcd = gen(M, s)
             gtr, _ = greedy_init(pos, wi, tcd, K, Ee, M)
             Jg = fleet_obj(gtr, pos, wi, tcd)
-            Jb = min(sa_baseline(pos, wi, tcd, K, Ee, M, a.iters, r)
+            # baseline: single call, SA seed = instance index -> identical to
+            # compare_baseline.sa(pos, wi, tcd, K, Ee, M, iters, si)
+            Jb = sa_baseline(pos, wi, tcd, K, Ee, M, a.iters, si)
+            # repaired: distinct seed per (instance, restart)
+            Jr = min(sa_repaired2(pos, wi, tcd, K, Ee, M, a.iters,
+                                  1000 * si + r, a.repair_p, st)
                      for r in range(a.restarts))
-            Jr = min(sa_repaired2(pos, wi, tcd, K, Ee, M, a.iters, r,
-                                  a.repair_p, st) for r in range(a.restarts))
             g.append(Jg); sb.append(Jb); sr.append(Jr)
             fz_b += int(abs(Jb - Jg) < 1e-9)
             fz_r += int(abs(Jr - Jg) < 1e-9)
@@ -237,7 +281,7 @@ def main():
                          repair_gain_pct=round(gain, 3),
                          rep_attempted=st['att'], rep_feasible=st['feas'],
                          rep_accepted=st['acc'], instances=a.instances,
-                         iters=a.iters, sec=round(dt, 1)))
+                         iters=a.iters, restarts=a.restarts, sec=round(dt, 1)))
         print(f'{K:>2} {Ee:>7.0f} {G:>10.3f} {B:>10.3f} {R:>10.3f} '
               f'{fz_b:>4}/{a.instances:<4} {fz_r:>3}/{a.instances:<4} {gain:>7.2f} '
               f'{st["att"]:>8} {st["feas"]:>9} {st["acc"]:>8} {dt:>6.1f}')
@@ -262,6 +306,9 @@ def main():
         print('  Either retry with --repair-p 0.5 --iters 8000, or conclude that')
         print('  cap-packed optima are genuinely inescapable under exchange moves')
         print('  and report the freeze as a STRUCTURAL finding with this evidence.')
+    elif len(rows) < 2:
+        print('\n  Single K in this run -- no argmin to report. Read gain% and')
+        print('  rep_feas only; K* requires >=3 K values to bracket.')
     else:
         print(f'\n  argmin K  baseline = {kb}   repaired = {kr}')
         if kb == kr:
