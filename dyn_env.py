@@ -354,9 +354,25 @@ class DynSim:
     lands is replaced immediately by a charged one, so ground time and the
     airframe pool are outside the model -- deferred extension 9.2.
 
-    Implementation: event queue keyed on landing time. On landing, the drone
-    relaunches at once. Age is integrated in closed form between events, not
-    by stepping, so results do not depend on a timestep.
+    Implementation -- REWRITTEN (CONTEXT_67): a single GLOBAL discrete-event
+    loop. Every drone's sortie is decomposed into individual leg-completion
+    events (fly-to-node, visit, fly-home, land) pushed onto ONE shared heap
+    keyed on absolute time. The shared field is advanced and queried only at
+    the true global minimum time on each pop.
+
+    WHY THE REWRITE. The previous version executed each sortie ATOMICALLY using
+    a local time variable that ran ahead of the shared clock. If drone A's
+    sortie took long enough to run past drone B's already-scheduled launch,
+    A's visits were stamped with timestamps LATER than B's subsequent launch
+    time -- so B, planning "now", could see itself at t=150 while a node's
+    last-visit was stamped t=160 by A, giving negative age. Confirmed
+    numerically (age = -10 in the minimal repro) and confirmed to affect every
+    prior dynamic result in this session, stub and SA alike -- the stub never
+    crashed on it only because argmax over a signed score doesn't validate
+    sign. This version cannot exhibit that failure mode: the field is only
+    ever touched at the monotonically increasing sequence of popped event
+    times, so no drone can act on, or write, a timestamp another drone hasn't
+    reached yet.
     """
 
     def __init__(self, p: DynParams, planner: SortiePlanner = greedy_ratio_planner,
@@ -366,124 +382,155 @@ class DynSim:
         self.field = SensorField(p, self.rng)
         self.planner = planner
         self.records: List[SortieRecord] = []
-        # objective accumulator: integral of sum_i w_i * age_i dt, post burn-in
         self._age_integral = 0.0
         self._measure_time = 0.0
         self._empty_sorties = 0
+        self._truncated_sorties = 0   # CONTEXT_69: reserve breach mid-route
+        self._clock = 0.0          # global simulation clock -- monotonic
+        self._seq = 0               # heap tiebreaker
 
     # -- age integration -------------------------------------------------
     def _accumulate(self, t0: float, t1: float) -> None:
-        """Integrate weighted age over [t0, t1], counting only post-burn-in time.
-
-        Age grows linearly between visits, so over an interval with no visit to
-        node i the integral is w_i * (age0 + age1)/2 * dt exactly. Weights are
-        held at their t0 value across the interval, which is exact except across
-        an event boundary -- acceptable, since sortie boundaries are frequent
-        relative to event lifetimes.
-        """
+        """Integrate weighted age over [t0, t1], counting only post-burn-in time."""
         t0 = max(t0, self.p.T_burnin)
         if t1 <= t0:
             return
-        dt = t1 - t0
         w = self.field.weights(t0)
         a0 = self.field.age(t0)
         a1 = self.field.age(t1)
-        self._age_integral += float((w * 0.5 * (a0 + a1)).sum()) * dt
-        self._measure_time += dt
+        self._age_integral += float((w * 0.5 * (a0 + a1)).sum()) * (t1 - t0)
+        self._measure_time += (t1 - t0)
 
-    # -- one sortie ------------------------------------------------------
-    def _fly_sortie(self, t_launch: float) -> SortieRecord:
+    def _advance_global(self, t_to: float) -> None:
+        """Advance the shared world and the objective from the current global
+        clock up to t_to, then move the clock. The ONLY place either happens."""
+        if t_to <= self._clock:
+            return
+        self.field.advance(self._clock, t_to)
+        self._accumulate(self._clock, t_to)
+        self._clock = t_to
+
+    # -- per-drone state --------------------------------------------------
+    class _Drone:
+        __slots__ = ("route", "ri", "pos", "E", "t_launch", "commute", "travel",
+                     "dwell", "tour_len", "n_visited", "phase")
+
+    def _launch(self, k: int, t: float) -> "_Drone":
         p, F = self.p, self.field
-
-        # Planner sees age exactly, but must ESTIMATE dwell. The estimate uses
-        # the NOMINAL rate, not each sensor's true heterogeneous rate -- this is
-        # the partial observability of CONTEXT_60 §1.11.
-        dwell_est = np.minimum(F.age(t_launch) * p.lam_bits, p.B_bits) / p.R
-
-        req = SortieRequest(
-            pos=F.pos, home=p.home, age=F.age(t_launch),
-            weight_est=F.wi_base.copy(), dwell_est=dwell_est,
-            E_usable=p.E_usable, p=p,
-        )
+        dwell_est = np.minimum(F.age(t) * p.lam_bits, p.B_bits) / p.R
+        req = SortieRequest(pos=F.pos, home=p.home, age=F.age(t),
+                             weight_est=F.wi_base.copy(), dwell_est=dwell_est,
+                             E_usable=p.E_usable, p=p)
         route = self.planner(req)
+        d = self._Drone()
+        d.route, d.ri = route, 0
+        d.pos = p.home.copy()
+        d.E = p.E_usable
+        d.t_launch = t
+        d.commute = d.travel = d.dwell = d.tour_len = 0.0
+        d.n_visited = 0
+        d.phase = "flying"
+        return d
 
-        t = t_launch
-        cur = p.home.copy()
-        E = p.E_usable
-        commute = travel = dwell = 0.0
-        tour_len = 0.0
-        n_done = 0
+    def _next_event_time(self, d: "_Drone") -> tuple:
+        """Time of this drone's next action, and what that action is."""
+        p, F = self.p, self.field
+        if d.ri < len(d.route):
+            j = d.route[d.ri]
+            dist = float(np.linalg.norm(F.pos[j] - d.pos))
+            return self._clock + dist / p.v, ("arrive_node", j, dist)
+        else:
+            dist = float(np.linalg.norm(p.home - d.pos))
+            return self._clock + dist / p.v, ("arrive_home", None, dist)
 
-        for j in route:
-            d = float(np.linalg.norm(F.pos[j] - cur))
-            t_fly = d / p.v
-            # true dwell is only revealed on arrival
-            F.advance(t, t + t_fly)
-            self._accumulate(t, t + t_fly)
-            t += t_fly
-            td_true = F.dwell_time(j)
-            d_home = float(np.linalg.norm(F.pos[j] - p.home))
-            e_step = p.e_fly(d) + p.e_hover(td_true)
-            # reserve check against TRUE cost; abort the rest of the route if
-            # the leg plus the trip home would breach it.
-            if e_step + p.e_fly(d_home) > E:
-                t -= t_fly          # undo -- we never actually flew this leg
-                break
-
-            if n_done == 0:
-                commute += t_fly
-            else:
-                travel += t_fly
-                tour_len += d
-
-            F.advance(t, t)
-            td = F.visit(t, j)
-            self._accumulate(t, t + td)
-            t += td
-            dwell += td
-            E -= e_step
-            cur = F.pos[j].copy()
-            n_done += 1
-
-        d_back = float(np.linalg.norm(cur - p.home))
-        t_back = d_back / p.v
-        F.advance(t, t + t_back)
-        self._accumulate(t, t + t_back)
-        t += t_back
-        commute += t_back
-        E -= p.e_fly(d_back)
-        F.expire_check(t)
-
-        return SortieRecord(
-            t_launch=t_launch, t_land=t, n_visited=n_done,
-            commute_time=commute, travel_time=travel, dwell_time=dwell,
-            energy_used=p.E_usable - E, tour_len=tour_len,
-        )
-
-    # -- main loop -------------------------------------------------------
+    # -- main loop ---------------------------------------------------------
     def run(self) -> dict:
         p = self.p
-        # K drones, staggered launches so landings do not synchronise
-        queue = [(i * p.t_c / max(p.K, 1), i) for i in range(p.K)]
-        heapq.heapify(queue)
+        drones: dict = {}
+        heap: list = []
 
-        while queue:
-            t_launch, k = heapq.heappop(queue)
-            if t_launch >= p.T_horizon:
+        for k in range(p.K):
+            t0 = k * p.t_c / max(p.K, 1)
+            heapq.heappush(heap, (t0, self._seq, "launch", k))
+            self._seq += 1
+
+        while heap:
+            t_event, _, kind, k = heapq.heappop(heap)
+            if kind == "launch":
+                if t_event >= p.T_horizon:
+                    continue
+                self._advance_global(t_event)
+                d = self._launch(k, t_event)
+                drones[k] = d
+                t_next, action = self._next_event_time(d)
+                heapq.heappush(heap, (t_next, self._seq, action, k))
+                self._seq += 1
                 continue
-            rec = self._fly_sortie(t_launch)
-            self.records.append(rec)
-            # GUARD: an empty sortie (no feasible node, or the first leg blocked
-            # by the reserve) lands at its launch time. Relaunching at the same
-            # instant spins forever. Advance the clock by a nominal turnaround
-            # so the world can change before the drone tries again.
-            t_next = rec.t_land
-            if t_next <= t_launch + 1e-9:
-                self._empty_sorties += 1
-                t_next = t_launch + p.t_c
-                self.field.advance(t_launch, t_next)
-                self._accumulate(t_launch, t_next)
-            heapq.heappush(queue, (t_next, k))   # relaunch
+
+            # action tuple was stashed as `kind` above for non-launch events
+            action = kind
+            d = drones[k]
+            self._advance_global(t_event)  # world catches up to THIS event, globally
+
+            if action[0] == "arrive_node":
+                j = action[1]
+                td_true = self.field.dwell_time(j)
+                d_home = float(np.linalg.norm(self.field.pos[j] - p.home))
+                dist_leg = action[2]
+                e_step = p.e_fly(dist_leg) + p.e_hover(td_true)
+                if e_step + p.e_fly(d_home) > d.E:
+                    # reserve breached -- do not serve this node, head home instead
+                    if d.ri < len(d.route) - 1:
+                        # nodes remained in the PLANNED route beyond this one:
+                        # a genuine mid-route truncation (CONTEXT_69), not just
+                        # the route's last stop happening to be tight.
+                        self._truncated_sorties += 1
+                    d.ri = len(d.route)  # force "arrive_home" branch next
+                    t_next, nxt = self._next_event_time(d)
+                    heapq.heappush(heap, (t_next, self._seq, nxt, k))
+                    self._seq += 1
+                    continue
+
+                if d.n_visited == 0:
+                    d.commute += dist_leg / p.v
+                else:
+                    d.travel += dist_leg / p.v
+                    d.tour_len += dist_leg
+
+                td = self.field.visit(t_event, j)
+                self._advance_global(t_event + td)   # dwell consumes time too
+                d.dwell += td
+                d.E -= e_step
+                d.pos = self.field.pos[j].copy()
+                d.n_visited += 1
+                d.ri += 1
+
+                t_next, nxt = self._next_event_time(d)
+                heapq.heappush(heap, (t_next, self._seq, nxt, k))
+                self._seq += 1
+
+            else:  # arrive_home -> land, record, relaunch
+                dist_leg = action[2]
+                d.commute += dist_leg / p.v
+                d.E -= p.e_fly(dist_leg)
+                self.field.expire_check(t_event)
+
+                rec = SortieRecord(
+                    t_launch=d.t_launch, t_land=t_event, n_visited=d.n_visited,
+                    commute_time=d.commute, travel_time=d.travel,
+                    dwell_time=d.dwell, energy_used=p.E_usable - d.E,
+                    tour_len=d.tour_len,
+                )
+                self.records.append(rec)
+
+                t_next_launch = t_event
+                if d.n_visited == 0:
+                    # empty sortie landed instantly -- force a turnaround so we
+                    # do not spin (CONTEXT_65's original guard, same rationale)
+                    self._empty_sorties += 1
+                    t_next_launch = t_event + p.t_c
+                heapq.heappush(heap, (t_next_launch, self._seq, "launch", k))
+                self._seq += 1
 
         return self.metrics()
 
@@ -519,7 +566,9 @@ class DynSim:
             "measured_s": self._measure_time,
             # --- crit 6: T_s/t_c, predicted 1 + sqrt(P_bar/Pf) in [2, 2.16] ---
             "T_s_over_t_c": float(T_s.mean() / p.t_c),
-            "T_s_over_t_c_pred": 1.0 + math.sqrt(P_bar / p.Pf),
+            "T_s_over_t_c_pred": 1.0 + math.sqrt(p.Pf / P_bar),
+            "commute_measured": float(commute.mean()),
+            "commute_over_tc": float(commute.mean() / p.t_c),
             # --- crit 3: P_bar, must lie in [Pf, Ph] ---
             "P_bar": P_bar,
             "P_bar_frac": (P_bar - p.Pf) / (p.Ph - p.Pf),
@@ -545,6 +594,8 @@ class DynSim:
             "commute_frac": float(commute.sum() / max(T_s.sum(), 1e-9)),
             "bits_dropped": F.bits_dropped,
             "empty_sorties": self._empty_sorties,
+            "truncated_sorties": self._truncated_sorties,
+            "n_sorties_total": len(self.records),
         }
 
 
