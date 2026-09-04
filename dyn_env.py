@@ -1,0 +1,567 @@
+"""
+dyn_env.py -- Continuous-operation dynamic UAV AoI environment.
+
+Implements the settled problem statement (CONTEXT_60 rev2) and instruments the
+C4 criteria (CONTEXT_64 §5).
+
+WHAT THIS IS NOT
+----------------
+This is NOT a modification of env.py / uav_aoi_solver.py. Those model ONE sortie
+with a fixed per-sensor data volume and no wall clock. This models continuous
+operation: drones fly repeated sorties, buffers refill between visits, events
+fire and decay, and the objective is a time-average over a horizon.
+
+It deliberately exposes the SAME attribute names as Env (pos, wi, tcd, M) so an
+existing sortie solver can be dropped into plan_sortie() unchanged -- but the
+internals differ, because tcd is no longer a constant per sensor. It is
+backlog/R and changes at every visit.
+
+SETTLED DECISIONS IMPLEMENTED (CONTEXT_60 rev2)
+----------------------------------------------
+  §1.1  continuous operation, no rounds; T is a measurement window
+  §1.3  age accounting: A~_i = time since last visit (see §2 of CONTEXT_60)
+  §1.4  drop-head eviction -- LOAD-BEARING, see note in SensorField.advance()
+  §1.5  buffer size out of objective, in the energy constraint (dwell cap)
+  §1.6  abandonment permitted -- no coverage constraint anywhere
+  §1.9  fixed 20% reserve
+  §1.10 exactly K airborne at all times
+  §1.11 dwell cost unknown to the planner before arrival
+  §3    events: hotspots, unknown firing, own decay, cleared early by a visit
+
+Energy model follows uav_aoi_solver.Env.e_segment: Pf for flight, Ph for hover.
+CONTEXT_64: hover is more expensive than flight, and this drives the law.
+"""
+
+from __future__ import annotations
+
+import heapq
+import math
+from dataclasses import dataclass, field
+from typing import Callable, List, Optional, Sequence
+
+import numpy as np
+
+# ==============================================================================
+# 1. PARAMETERS
+# ==============================================================================
+
+
+@dataclass
+class DynParams:
+    """Dynamic-extension parameters. See CONTEXT_63 §1 and CONTEXT_64 §4."""
+
+    # --- field / fleet ---
+    M: int = 100                  # sensors
+    K: int = 4                    # drones AIRBORNE (held fixed, CONTEXT_60 §1.10)
+    L: float = 12_600.0           # field side, m (CONTEXT_64 §4)
+    Emax: float = 1.5e6           # total airborne energy, J (>= 1.5M)
+    rho: float = 0.20             # reserve fraction (CONTEXT_60 §1.9)
+
+    # --- flight physics (CONTEXT_64 §4: ratio from code, absolutes rescaled) ---
+    Pf: float = 300.0             # W, flight power
+    Ph: float = 400.0             # W, hover power   (Ph/Pf = 4/3, preserved)
+    v: float = 20.0               # m/s
+
+    # --- data (CONTEXT_63 §1) ---
+    R: float = 2e6                # bits/s, air-to-ground link
+    lam_bits: float = 5e3         # bits/s generated per sensor
+    B_bits: float = 5e7           # buffer capacity, bits (~167 min of generation)
+    # CONTEXT_65 §4: was 6e6, which saturated in 20 min against 17-67 min revisit
+    # intervals. Dwell pinned at B/R, P_bar inert, two-power correction dead.
+
+    # --- events (CONTEXT_60 rev2 §3) ---
+    n_hotspots: int = 15          # many small pockets
+    hotspot_radius: float = 0.06  # as fraction of L
+    tau_e_lo: float = 45 * 60.0   # s, event lifetime lower  (45 min)
+    tau_e_hi: float = 90 * 60.0   # s, event lifetime upper  (90 min)
+    event_rate_hot: float = 1 / (3600.0)    # per-sensor firing rate inside hotspot
+    event_rate_cold: float = 1 / (6 * 3600.0)
+    event_gain: float = 5.0       # multiplier on wi while an event is live
+
+    # --- priority baseline ---
+    wi_lo: float = 1.0
+    wi_hi: float = 10.0
+
+    # --- measurement protocol (CONTEXT_60 §7) ---
+    T_horizon: float = 12 * 3600.0   # s, evaluation window
+    T_burnin: float = 3 * 3600.0     # s, discarded before measuring
+
+    # ---- derived ----
+    @property
+    def home(self) -> np.ndarray:
+        return np.array([self.L / 2.0, self.L / 2.0])
+
+    @property
+    def E_each(self) -> float:
+        """Per-drone energy per sortie."""
+        return self.Emax / self.K
+
+    @property
+    def E_usable(self) -> float:
+        """Per-drone energy actually spendable before the reserve bites."""
+        return (1.0 - self.rho) * self.E_each
+
+    @property
+    def t_c(self) -> float:
+        """Expected out-and-back commute time. 0.7652 = 2 x mean centre->uniform
+        distance in a square (CONTEXT_62 §2). Survives static->dynamic."""
+        return 0.7652 * self.L / self.v
+
+    def e_fly(self, d: float) -> float:
+        return self.Pf * d / self.v
+
+    def e_hover(self, t: float) -> float:
+        return self.Ph * t
+
+    # ---- a priori predictions, for comparison against measurement ----
+    def kstar_predicted(self, P_bar: float) -> float:
+        """CONTEXT_64 §2. P_bar must be MEASURED, not assumed."""
+        return (1.0 - self.rho) * self.Emax / (self.t_c * (self.Pf + math.sqrt(self.Pf * P_bar)))
+
+    def kstar_band(self) -> tuple:
+        """(lo, hi) over the full range P_bar in [Pf, Ph]. CONTEXT_64 §3.
+        The width of this band IS the predicted M-drift."""
+        return (self.kstar_predicted(self.Ph), self.kstar_predicted(self.Pf))
+
+
+# ==============================================================================
+# 2. SENSOR FIELD
+# ==============================================================================
+
+
+class SensorField:
+    """
+    Sensors, buffers, and events. Owns the age accounting.
+
+    AGE ACCOUNTING (CONTEXT_60 §2) -- the non-obvious part:
+
+      Node cost is A~_i = time since last visit, ALWAYS, saturated or not.
+      Under drop-head, observed age pins at tau_i = B/lambda while dropped
+      packets accumulate at exactly lambda, so the two terms hand off cleanly:
+          tau_i + (t - t_last - tau_i) = t - t_last
+      Buffer size and arrival rate both cancel from the objective.
+
+      Therefore this class does NOT need to track dropped packets to compute
+      the objective -- t - t_last is sufficient and exact. It tracks backlog
+      only because backlog drives DWELL TIME, which is an energy cost.
+
+      This is provable, not assumed. Do not "fix" it by adding a drop penalty:
+      that double-charges (CONTEXT_60 §4).
+    """
+
+    def __init__(self, p: DynParams, rng: np.random.Generator):
+        self.p = p
+        self.rng = rng
+        M = p.M
+
+        # --- hotspot centres, then sensors clustered around them ---
+        self.hotspots = rng.uniform(0.15, 0.85, (p.n_hotspots, 2)) * p.L
+        self.in_hotspot = np.zeros(M, dtype=bool)
+        pos = np.empty((M, 2))
+        # 70% of sensors sit in hotspots, 30% scattered -- keeps the field
+        # covered while giving the policy structure to learn.
+        n_hot = int(0.70 * M)
+        for i in range(M):
+            if i < n_hot:
+                c = self.hotspots[rng.integers(0, p.n_hotspots)]
+                off = rng.normal(0.0, p.hotspot_radius * p.L, 2)
+                pos[i] = np.clip(c + off, 0.0, p.L)
+                self.in_hotspot[i] = True
+            else:
+                pos[i] = rng.uniform(0.0, p.L, 2)
+        self.pos = pos.astype(np.float64)
+
+        # --- baseline priority ---
+        self.wi_base = rng.uniform(p.wi_lo, p.wi_hi, M)
+
+        # --- per-sensor generation rate (heterogeneous, UNKNOWN to planner) ---
+        self.lam_bits = p.lam_bits * rng.uniform(0.5, 1.5, M)
+
+        # --- dynamic state ---
+        self.t_last_visit = np.zeros(M)      # wall-clock of last visit
+        self.backlog = np.zeros(M)           # bits held (capped at B)
+        self.event_until = np.full(M, -np.inf)   # event live while t < this
+        self.next_event_at = np.empty(M)
+        for i in range(M):
+            self.next_event_at[i] = self._draw_next_event(0.0, i)
+
+        # --- diagnostics ---
+        self.events_fired = 0
+        self.events_caught = 0
+        self.events_expired = 0
+        self.bits_dropped = 0.0
+
+    # -- events ----------------------------------------------------------
+    def _rate(self, i: int) -> float:
+        return self.p.event_rate_hot if self.in_hotspot[i] else self.p.event_rate_cold
+
+    def _draw_next_event(self, t: float, i: int) -> float:
+        return t + self.rng.exponential(1.0 / self._rate(i))
+
+    def advance(self, t_from: float, t_to: float) -> None:
+        """Advance world state. Buffers fill; events fire and expire."""
+        dt = t_to - t_from
+        if dt <= 0:
+            return
+
+        # buffers fill, drop-head clamps at capacity.
+        # We record dropped bits for DIAGNOSTICS ONLY -- see class docstring.
+        grown = self.backlog + self.lam_bits * dt
+        over = np.maximum(0.0, grown - self.p.B_bits)
+        self.bits_dropped += float(over.sum())
+        self.backlog = np.minimum(grown, self.p.B_bits)
+
+        # events fire / expire
+        for i in np.where(self.next_event_at <= t_to)[0]:
+            fire_t = self.next_event_at[i]
+            if fire_t < t_from:
+                fire_t = t_from
+            tau = self.rng.uniform(self.p.tau_e_lo, self.p.tau_e_hi)
+            self.event_until[i] = fire_t + tau
+            self.events_fired += 1
+            self.next_event_at[i] = self._draw_next_event(fire_t, i)
+
+    def expire_check(self, t: float) -> None:
+        """Count events that died unvisited. Called once per sortie boundary."""
+        dead = (self.event_until > -np.inf) & (self.event_until <= t)
+        n = int(dead.sum())
+        if n:
+            self.events_expired += n
+            self.event_until[dead] = -np.inf
+
+    # -- observables -----------------------------------------------------
+    def age(self, t: float) -> np.ndarray:
+        """A~_i = time since last visit. Exact under overflow (see docstring)."""
+        return t - self.t_last_visit
+
+    def weights(self, t: float) -> np.ndarray:
+        """Effective priority: baseline, boosted while an event is live."""
+        w = self.wi_base.copy()
+        live = self.event_until > t
+        w[live] *= self.p.event_gain
+        return w
+
+    def dwell_time(self, i: int) -> float:
+        """Hover time to drain sensor i. UNKNOWN to the planner before arrival
+        (CONTEXT_60 §1.11) -- planners must use an estimate, not this."""
+        return self.backlog[i] / self.p.R
+
+    def visit(self, t: float, i: int) -> float:
+        """Service sensor i at time t. Returns actual dwell time."""
+        td = self.dwell_time(i)
+        self.backlog[i] = 0.0
+        self.t_last_visit[i] = t
+        if self.event_until[i] > t:      # event cleared early (CONTEXT_60 §3)
+            self.events_caught += 1
+            self.event_until[i] = -np.inf
+        return td
+
+    # -- interface compatibility with Env (for drop-in sortie solvers) ----
+    @property
+    def M(self) -> int:
+        return self.p.M
+
+    @property
+    def wi(self) -> np.ndarray:
+        return self.wi_base
+
+
+# ==============================================================================
+# 3. SORTIE PLANNING INTERFACE
+# ==============================================================================
+
+
+@dataclass
+class SortieRequest:
+    """Everything a planner may legitimately see at launch.
+
+    Note what is ABSENT: true backlog, true generation rates, event state at
+    unvisited nodes, and remaining horizon (CONTEXT_60 §7 -- a planner that sees
+    the clock learns to slack off near T).
+    """
+    pos: np.ndarray            # (M,2) sensor positions
+    home: np.ndarray           # depot
+    age: np.ndarray            # (M,) time since last visit -- fully observable
+    weight_est: np.ndarray     # (M,) baseline priority (event state NOT visible)
+    dwell_est: np.ndarray      # (M,) ESTIMATED dwell, from age (not truth)
+    E_usable: float            # spendable energy this sortie
+    p: DynParams
+
+
+SortiePlanner = Callable[[SortieRequest], List[int]]
+
+
+def greedy_ratio_planner(req: SortieRequest) -> List[int]:
+    """
+    STUB PLANNER -- weighted-age-per-unit-energy greedy with reserve check.
+
+    Rationale for this specific rule:
+      * It is the natural dynamic lift of the static `pdr` baseline already in
+        multi_uav_solver.fleet_baseline, so it is comparable to banked work.
+      * It scores w_i * age_i / (marginal energy), i.e. value per joule -- the
+        right currency when energy is the binding constraint.
+      * It is myopic and event-blind, which makes it the correct C3 floor:
+        RL must beat it on anticipation, not on arithmetic.
+
+    Replace with SA (replan-each-sortie) for C4. Interface is stable.
+    """
+    p = req.p
+    chosen: List[int] = []
+    cur = req.home.copy()
+    E = req.E_usable
+    used = np.zeros(len(req.age), dtype=bool)
+
+    while True:
+        d_to = np.linalg.norm(req.pos - cur, axis=1)
+        d_home = np.linalg.norm(req.pos - req.home, axis=1)
+        e_need = p.e_fly(d_to + d_home) + p.e_hover(req.dwell_est)
+        feasible = (~used) & (e_need <= E)
+        if not feasible.any():
+            break
+
+        e_marginal = np.maximum(p.e_fly(d_to) + p.e_hover(req.dwell_est), 1.0)
+        score = np.where(feasible, req.weight_est * req.age / e_marginal, -np.inf)
+        j = int(np.argmax(score))
+
+        E -= p.e_fly(d_to[j]) + p.e_hover(req.dwell_est[j])
+        cur = req.pos[j].copy()
+        used[j] = True
+        chosen.append(j)
+
+    return chosen
+
+
+# ==============================================================================
+# 4. CONTINUOUS-OPERATION SIMULATOR
+# ==============================================================================
+
+
+@dataclass
+class SortieRecord:
+    t_launch: float
+    t_land: float
+    n_visited: int
+    commute_time: float
+    travel_time: float      # in-field, excluding commute
+    dwell_time: float
+    energy_used: float
+    tour_len: float         # in-field path length (for the exponent test)
+
+
+class DynSim:
+    """
+    Exactly K drones airborne at all times (CONTEXT_60 §1.10). A drone that
+    lands is replaced immediately by a charged one, so ground time and the
+    airframe pool are outside the model -- deferred extension 9.2.
+
+    Implementation: event queue keyed on landing time. On landing, the drone
+    relaunches at once. Age is integrated in closed form between events, not
+    by stepping, so results do not depend on a timestep.
+    """
+
+    def __init__(self, p: DynParams, planner: SortiePlanner = greedy_ratio_planner,
+                 seed: int = 0):
+        self.p = p
+        self.rng = np.random.default_rng(seed)
+        self.field = SensorField(p, self.rng)
+        self.planner = planner
+        self.records: List[SortieRecord] = []
+        # objective accumulator: integral of sum_i w_i * age_i dt, post burn-in
+        self._age_integral = 0.0
+        self._measure_time = 0.0
+        self._empty_sorties = 0
+
+    # -- age integration -------------------------------------------------
+    def _accumulate(self, t0: float, t1: float) -> None:
+        """Integrate weighted age over [t0, t1], counting only post-burn-in time.
+
+        Age grows linearly between visits, so over an interval with no visit to
+        node i the integral is w_i * (age0 + age1)/2 * dt exactly. Weights are
+        held at their t0 value across the interval, which is exact except across
+        an event boundary -- acceptable, since sortie boundaries are frequent
+        relative to event lifetimes.
+        """
+        t0 = max(t0, self.p.T_burnin)
+        if t1 <= t0:
+            return
+        dt = t1 - t0
+        w = self.field.weights(t0)
+        a0 = self.field.age(t0)
+        a1 = self.field.age(t1)
+        self._age_integral += float((w * 0.5 * (a0 + a1)).sum()) * dt
+        self._measure_time += dt
+
+    # -- one sortie ------------------------------------------------------
+    def _fly_sortie(self, t_launch: float) -> SortieRecord:
+        p, F = self.p, self.field
+
+        # Planner sees age exactly, but must ESTIMATE dwell. The estimate uses
+        # the NOMINAL rate, not each sensor's true heterogeneous rate -- this is
+        # the partial observability of CONTEXT_60 §1.11.
+        dwell_est = np.minimum(F.age(t_launch) * p.lam_bits, p.B_bits) / p.R
+
+        req = SortieRequest(
+            pos=F.pos, home=p.home, age=F.age(t_launch),
+            weight_est=F.wi_base.copy(), dwell_est=dwell_est,
+            E_usable=p.E_usable, p=p,
+        )
+        route = self.planner(req)
+
+        t = t_launch
+        cur = p.home.copy()
+        E = p.E_usable
+        commute = travel = dwell = 0.0
+        tour_len = 0.0
+        n_done = 0
+
+        for j in route:
+            d = float(np.linalg.norm(F.pos[j] - cur))
+            t_fly = d / p.v
+            # true dwell is only revealed on arrival
+            F.advance(t, t + t_fly)
+            self._accumulate(t, t + t_fly)
+            t += t_fly
+            td_true = F.dwell_time(j)
+            d_home = float(np.linalg.norm(F.pos[j] - p.home))
+            e_step = p.e_fly(d) + p.e_hover(td_true)
+            # reserve check against TRUE cost; abort the rest of the route if
+            # the leg plus the trip home would breach it.
+            if e_step + p.e_fly(d_home) > E:
+                t -= t_fly          # undo -- we never actually flew this leg
+                break
+
+            if n_done == 0:
+                commute += t_fly
+            else:
+                travel += t_fly
+                tour_len += d
+
+            F.advance(t, t)
+            td = F.visit(t, j)
+            self._accumulate(t, t + td)
+            t += td
+            dwell += td
+            E -= e_step
+            cur = F.pos[j].copy()
+            n_done += 1
+
+        d_back = float(np.linalg.norm(cur - p.home))
+        t_back = d_back / p.v
+        F.advance(t, t + t_back)
+        self._accumulate(t, t + t_back)
+        t += t_back
+        commute += t_back
+        E -= p.e_fly(d_back)
+        F.expire_check(t)
+
+        return SortieRecord(
+            t_launch=t_launch, t_land=t, n_visited=n_done,
+            commute_time=commute, travel_time=travel, dwell_time=dwell,
+            energy_used=p.E_usable - E, tour_len=tour_len,
+        )
+
+    # -- main loop -------------------------------------------------------
+    def run(self) -> dict:
+        p = self.p
+        # K drones, staggered launches so landings do not synchronise
+        queue = [(i * p.t_c / max(p.K, 1), i) for i in range(p.K)]
+        heapq.heapify(queue)
+
+        while queue:
+            t_launch, k = heapq.heappop(queue)
+            if t_launch >= p.T_horizon:
+                continue
+            rec = self._fly_sortie(t_launch)
+            self.records.append(rec)
+            # GUARD: an empty sortie (no feasible node, or the first leg blocked
+            # by the reserve) lands at its launch time. Relaunching at the same
+            # instant spins forever. Advance the clock by a nominal turnaround
+            # so the world can change before the drone tries again.
+            t_next = rec.t_land
+            if t_next <= t_launch + 1e-9:
+                self._empty_sorties += 1
+                t_next = t_launch + p.t_c
+                self.field.advance(t_launch, t_next)
+                self._accumulate(t_launch, t_next)
+            heapq.heappush(queue, (t_next, k))   # relaunch
+
+        return self.metrics()
+
+    # -- C4 instrumentation ---------------------------------------------
+    def metrics(self) -> dict:
+        p, F = self.p, self.field
+        recs = [r for r in self.records if r.t_launch >= p.T_burnin]
+        if not recs:
+            return {"error": "no post-burn-in sorties"}
+
+        n_vis = np.array([r.n_visited for r in recs], dtype=float)
+        commute = np.array([r.commute_time for r in recs])
+        travel = np.array([r.travel_time for r in recs])
+        dwell = np.array([r.dwell_time for r in recs])
+        T_s = np.array([r.t_land - r.t_launch for r in recs])
+
+        # P_bar: time-weighted mean power during PRODUCTIVE work (CONTEXT_64 §2)
+        prod_t = travel + dwell
+        P_bar = float((p.Pf * travel.sum() + p.Ph * dwell.sum()) / max(prod_t.sum(), 1e-9))
+
+        total_visits = n_vis.sum()
+        span = max(recs[-1].t_land - recs[0].t_launch, 1e-9)
+        T_rev = p.M * span / max(total_visits, 1e-9)
+
+        tau_e_mid = 0.5 * (p.tau_e_lo + p.tau_e_hi)
+        gen = p.M * p.lam_bits
+        cap = p.K * p.R * (1.0 - commute.mean() / max(T_s.mean(), 1e-9))
+
+        lo, hi = p.kstar_band()
+        return {
+            # --- objective ---
+            "J_timeavg": self._age_integral / max(self._measure_time, 1e-9),
+            "measured_s": self._measure_time,
+            # --- crit 6: T_s/t_c, predicted 1 + sqrt(P_bar/Pf) in [2, 2.16] ---
+            "T_s_over_t_c": float(T_s.mean() / p.t_c),
+            "T_s_over_t_c_pred": 1.0 + math.sqrt(P_bar / p.Pf),
+            # --- crit 3: P_bar, must lie in [Pf, Ph] ---
+            "P_bar": P_bar,
+            "P_bar_frac": (P_bar - p.Pf) / (p.Ph - p.Pf),
+            # --- crit 1: e* ---
+            "e_star_measured": float(np.mean([r.energy_used for r in recs])),
+            "e_star_pred": p.t_c * (p.Pf + math.sqrt(p.Pf * P_bar)),
+            "kstar_pred": p.kstar_predicted(P_bar),
+            "kstar_band": (lo, hi),
+            # --- crit 8: throughput (CONTEXT_63 §4) ---
+            "throughput_margin": gen / max(cap, 1e-9),
+            "throughput_ok": bool(gen < cap),
+            # --- crit 9: event regime ---
+            "T_rev": T_rev,
+            "T_rev_over_tau_e": T_rev / tau_e_mid,
+            "events_fired": F.events_fired,
+            "events_caught": F.events_caught,
+            "catch_rate": F.events_caught / max(F.events_fired, 1),
+            # --- crit 7: tour exponent (regress offline over cells) ---
+            "mean_n_visited": float(n_vis.mean()),
+            "mean_tour_len": float(np.mean([r.tour_len for r in recs])),
+            # --- sanity ---
+            "n_sorties": len(recs),
+            "commute_frac": float(commute.sum() / max(T_s.sum(), 1e-9)),
+            "bits_dropped": F.bits_dropped,
+            "empty_sorties": self._empty_sorties,
+        }
+
+
+# ==============================================================================
+# 5. SMOKE TEST
+# ==============================================================================
+
+if __name__ == "__main__":
+    p = DynParams()
+    print(f"t_c = {p.t_c:.1f} s   E_usable/drone = {p.E_usable:,.0f} J")
+    print(f"K* band over P_bar in [Pf,Ph]: {p.kstar_band()[0]:.2f} .. {p.kstar_band()[1]:.2f}")
+    print(f"predicted drift = {100*(p.kstar_band()[1]/p.kstar_band()[0]-1):.1f}%  (CONTEXT_64 §3: 7.7%)")
+    print()
+    for K in (2, 3, 4, 5, 6, 8):
+        p_k = DynParams(K=K)
+        m = DynSim(p_k, seed=1).run()
+        print(f"K={K}  J={m['J_timeavg']:11.1f}  T_s/t_c={m['T_s_over_t_c']:.2f} "
+              f"(pred {m['T_s_over_t_c_pred']:.2f})  P_bar={m['P_bar']:.0f}  "
+              f"n={m['mean_n_visited']:.1f}  T_rev={m['T_rev']/60:.0f}m  "
+              f"catch={m['catch_rate']:.2f}  thru={m['throughput_margin']:.2f}")
