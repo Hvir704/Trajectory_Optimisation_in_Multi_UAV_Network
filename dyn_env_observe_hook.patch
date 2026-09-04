@@ -1,0 +1,17 @@
+--- /mnt/user-data/uploads/dyn_env.py	2026-08-29 13:26:42.413880000 +0000
++++ dyn_env.py	2026-08-29 13:27:46.332480850 +0000
+@@ -497,7 +497,14 @@
+                     d.travel += dist_leg / p.v
+                     d.tour_len += dist_leg
+ 
++                age_at_visit = t_event - self.field.t_last_visit[j]
+                 td = self.field.visit(t_event, j)
++                # C3 hook: a real drone MEASURES dwell while servicing the node.
++                # Planners exposing .observe() may keep per-sensor memory.
++                # This reveals nothing the drone could not physically measure.
++                _obs = getattr(self.planner, "observe", None)
++                if _obs is not None:
++                    _obs(j, t_event, td, float(age_at_visit))
+                 self._advance_global(t_event + td)   # dwell consumes time too
+                 d.dwell += td
+                 d.E -= e_step
