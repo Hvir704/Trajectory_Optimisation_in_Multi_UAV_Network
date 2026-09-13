@@ -11,12 +11,12 @@ from multiprocessing import Pool
 from dyn_env import DynParams, DynSim, SensorField
 from sa_sortie import build_sa_planner
 
-FIELDS = ["layout","M","Emax","K","seed","coord","replan","q","belief","tau","Th","J","J_age","J_event","n_replans","n_never","share_never","n_reach_inf",
+FIELDS = ["layout","M","Emax","K","seed","coord","replan","divert","q","belief","tau","planner","L","Th","J","n_diverts","J_age","J_event","n_replans","n_never","share_never","n_reach_inf",
           "K_reach_i","K_commute_i","r_max","r_c","rmax_over_rc","regime_bnd","P_bar","dup_frac",
           "trunc_frac","empty_frac","T_s_over_t_c","mean_n","catch_rate","T_rev","n_sorties","secs"]
 
-def k_range(layout, M, Emax, seed):
-    p = DynParams(M=M, Emax=Emax, layout=layout)
+def k_range(layout, M, Emax, seed, L=None):
+    p = DynParams(M=M, Emax=Emax, layout=layout, **({"L": L} if L else {}))
     F = SensorField(p, np.random.default_rng(seed))
     r = np.linalg.norm(F.pos - p.home, axis=1).max()
     Kr = p.v*(1-p.rho)*Emax/(2*p.Pf*r + p.v*p.Ph*p.B_bits/p.R)
@@ -27,19 +27,45 @@ def k_range(layout, M, Emax, seed):
     return list(range(max(1, int(0.5*Kr)), max(hi, max(1, int(0.5*Kr))) + 1))
 
 def one(args):
-    layout, M, Emax, K, seed, coord, replan, q, belief, tau, Th, iters = args
-    p = DynParams(M=M, K=K, Emax=Emax, layout=layout, coord_mode=coord,
+    layout, M, Emax, K, seed, coord, replan, divert, q, belief, tau, planner, L, Th, iters = args
+    # planner spec: "sa" | "sa_norepair" | "greedy" | "sa_nolambda" | "sa_launchdwell"
+    p = DynParams(M=M, K=K, Emax=Emax, layout=layout, coord_mode=coord, L=L,
                   event_corr_q=q, belief_mode=belief,
+                  learn_lambda=(planner != "sa_nolambda"),
                   tau_e_lo=(tau*60*2/3 if tau > 0 else DynParams.tau_e_lo),   # tau = MEAN lifetime in minutes;
                   tau_e_hi=(tau*60*4/3 if tau > 0 else DynParams.tau_e_hi),   # U(2/3, 4/3)*tau keeps the default spread
                   replan_mode="per_leg" if replan != "launch" else "launch",
                   replan_planner="greedy" if replan == "per_leg_greedy" else "same",
+                  divert_mode=bool(divert),
                   replan_iters=60, T_horizon=Th, T_burnin=3*3600.0)
     t = time.time()
-    m = DynSim(p, build_sa_planner(iters=iters, seed_base=seed), seed=seed,
-               coordinate=(coord != "none")).run()
-    return dict(layout=layout, M=M, Emax=Emax, K=K, seed=seed, coord=coord, replan=replan, q=q, belief=belief, tau=tau, Th=Th,
-        J=m["J_timeavg"], J_age=m["J_age"], J_event=m["J_event"], n_replans=m["n_replans"], n_never=m["n_never_visited"], share_never=m["share_J_never_visited"],
+    if planner == "greedy":
+        from dyn_env import greedy_ratio_planner as pl
+    elif planner == "sa_sqrt":
+        p.index_mode = "sqrt"; pl = build_sa_planner(iters=iters, seed_base=seed)
+    elif planner == "sa_norepair":
+        pl = build_sa_planner(iters=iters, seed_base=seed, repair_p=0.0)
+    else:
+        pl = build_sa_planner(iters=iters, seed_base=seed)
+    sim = DynSim(p, pl, seed=seed, coordinate=(coord != "none"))
+    if planner == "sa_launchdwell":   # ablation: the old launch-time dwell estimate (no arrival correction)
+        sim._Ts_mean = 0.0; sim._launch_dwell_only = True
+    m = sim.run()
+    if os.environ.get("EXPORT_NODES"):   # per-node visit counts + weights + radii for the f_i ∝ sqrt(w/c) check
+        import numpy as _np
+        # ragged per-node interval lists -> flat array + counts; split back with
+        # _np.split(vis_int, _np.cumsum(vis_int_counts)[:-1]). Drop each node's FIRST entry before
+        # computing CV: it is left-censored (see DynSim.__init__).
+        _cnt = _np.array([len(x) for x in sim._vis_int], dtype=int)
+        _flat = (_np.concatenate([_np.asarray(x, dtype=float) for x in sim._vis_int])
+                 if _cnt.sum() else _np.zeros(0, dtype=float))
+        _np.savez_compressed(f"nodes_{layout}_M{M}_E{int(Emax)}_K{K}_s{seed}_{coord}_{replan}.npz",
+            visits=sim._visits, w=sim.field.wi_base, r=_np.linalg.norm(sim.field.pos - p.home, axis=1),
+            node_int=sim._node_int, measured_s=m["measured_s"],
+            vis_int=_flat, vis_int_counts=_cnt)
+    return dict(layout=layout, M=M, Emax=Emax, K=K, seed=seed, coord=coord, replan=replan, divert=int(divert), q=q, belief=belief, tau=tau, planner=planner, L=L, Th=Th,
+        J=m["J_timeavg"], J_age=m["J_age"], J_event=m["J_event"], n_replans=m["n_replans"],
+        n_diverts=m.get("n_diverts", 0), n_never=m["n_never_visited"], share_never=m["share_J_never_visited"],
         n_reach_inf=m["n_reach_infeasible"], K_reach_i=m["K_cov_instance"],
         K_commute_i=m["K_commute_instance"], r_max=m["r_max_instance"], r_c=m["r_c_measured"],
         rmax_over_rc=m["rmax_over_rc"], regime_bnd=m["regime_boundary"], P_bar=m["P_bar"],
@@ -58,12 +84,25 @@ if __name__ == "__main__":
     ap.add_argument("--Emax", nargs="+", type=float, default=[1.5e6])
     ap.add_argument("--seeds", default="1-12"); ap.add_argument("--coord", default="exclude")
     ap.add_argument("--replan", default="launch", choices=["launch","per_leg_greedy","per_leg_sa"])
+    ap.add_argument("--divert", type=int, default=0, help="1 = mid-leg diversion on (needs --replan per_leg_sa)")
     ap.add_argument("--q", type=float, default=0.0); ap.add_argument("--belief", default="prior", choices=["none","prior","kernel"])
     ap.add_argument("--K", nargs="+", type=int, default=None, help="fixed K list (skips auto range)")
     ap.add_argument("--tau", type=float, default=0.0, help="mean event lifetime in MINUTES (0 = default 45-90 min)")
+    ap.add_argument("--L", type=float, default=DynParams.L, help="field side in metres")
+    ap.add_argument("--planner", default="sa", choices=["sa","sa_norepair","greedy","sa_nolambda","sa_launchdwell","sa_sqrt"])
     ap.add_argument("--Th", type=float, default=12*3600); ap.add_argument("--iters", type=int, default=1200)
     ap.add_argument("--procs", type=int, default=os.cpu_count())
     a = ap.parse_args()
+
+    def _num(v, default=0.0):
+        """CSV field -> float. fix_schema.py backfills missing columns with float defaults, so an
+        int column can come back as '0.0'; a column present but unset comes back as ''."""
+        try: return float(v)
+        except (TypeError, ValueError): return float(default)
+
+    def _txt(v, default):
+        return v if v else default
+
     done = set()
     if os.path.exists(a.out) and os.path.getsize(a.out) > 0:
         with open(a.out) as f: hdr = f.readline().strip().split(",")
@@ -72,11 +111,14 @@ if __name__ == "__main__":
         with open(a.out) as f:
             for row in csv.DictReader(f):
                 if "layout" not in row: continue   # tolerate a headerless/partial file
-                done.add((row["layout"], int(row["M"]), float(row["Emax"]), int(row["K"]), int(row["seed"]), row["coord"], row.get("replan","launch"), float(row.get("q",0)), row.get("belief","prior"), float(row.get("tau",0)), float(row["Th"])))
+                done.add((row["layout"], int(_num(row["M"])), _num(row["Emax"]), int(_num(row["K"])), int(_num(row["seed"])),
+                          row["coord"], _txt(row.get("replan"), "launch"), int(_num(row.get("divert", 0))),
+                          _num(row.get("q", 0)), _txt(row.get("belief"), "prior"), _num(row.get("tau", 0)),
+                          _txt(row.get("planner"), "sa"), _num(row.get("L", DynParams.L), DynParams.L), _num(row["Th"])))
     jobs = []
     for layout, M, Emax, seed in itertools.product(a.layouts, a.M, a.Emax, parse_seeds(a.seeds)):
-        for K in (a.K if a.K else k_range(layout, M, Emax, seed)):
-            key = (layout, M, Emax, K, seed, a.coord, a.replan, a.q, a.belief, a.tau, a.Th)
+        for K in (a.K if a.K else k_range(layout, M, Emax, seed, a.L)):
+            key = (layout, M, Emax, K, seed, a.coord, a.replan, a.divert, a.q, a.belief, a.tau, a.planner, a.L, a.Th)
             if key not in done: jobs.append(key + (a.iters,))
     # biggest first so the pool tail is short
     jobs.sort(key=lambda j: -j[1])

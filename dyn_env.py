@@ -85,12 +85,22 @@ class DynParams:
     planner_knows_rates: bool = False   # if True, p_live from known hotspot map/rates
     learn_lambda: bool = True           # per-node lambda estimate from visits
     layout: str = "paper"         # "paper" | "ring" | "core"
+    divert_mode: bool = False     # if True, a drone re-decides MID-LEG: when another drone's update
+                                  # or a new event changes the state, the in-flight drone re-plans from
+                                  # its current interpolated position and may abandon the current leg.
+                                  # Costs the distance already flown on that leg; guarded by a margin
+                                  # so it only diverts if the new target's value beats the old by
+                                  # divert_margin, preventing oscillation.
+    divert_margin: float = 1.25   # new target must be this much better to justify abandoning a leg
     replan_mode: str = "launch"   # "launch": route fixed at launch | "per_leg": re-optimise remaining
                                   # route after every stop from current position/energy; the updated
                                   # commitment is visible to all other drones immediately
                                   # (continuous inter-drone communication).
     replan_iters: int = 300       # SA iterations per mid-sortie replan (launch uses the planner's own)
     replan_planner: str = "same"  # "same": the sortie planner with replan_iters | "greedy": fast ratio rule
+    index_mode: str = "linear"    # sortie value per sensor: "linear" = w*a (value-per-joule index w a/e)
+                                  # "sqrt" = a*sqrt(w*c), c = 2 Pf r/v: the ordering implied by the
+                                  # cost-weighted square-root allocation f_i ∝ sqrt(w_i/c_i)
 
     # --- v3: latent correlated hotspot events (PROBLEM_STATEMENT_v3 §2-3) ---
     event_corr_q: float = 0.0     # 0: independent per-sensor events (v2 model). >0: each hotspot fires
@@ -437,6 +447,9 @@ def greedy_ratio_planner(req: SortieRequest) -> List[int]:
 
         e_marginal = np.maximum(p.e_fly(d_to) + p.e_hover(req.dwell_est), 1.0)
         w_eff = req.weight_est if req.p_live is None else req.weight_est * (1 + (p.event_gain - 1) * req.p_live)
+        if p.index_mode == "sqrt":
+            c_r = 2.0 * p.Pf * np.linalg.norm(req.pos - req.home, axis=1) / p.v
+            w_eff = np.sqrt(w_eff * np.maximum(c_r, 1.0))
         score = np.where(feasible, w_eff * req.age / e_marginal, -np.inf)
         j = int(np.argmax(score))
 
@@ -463,6 +476,8 @@ class SortieRecord:
     dwell_time: float
     energy_used: float
     tour_len: float         # in-field path length (for the exponent test)
+    drone: int = -1         # which UAV
+    visited: tuple = ()     # sensors served, in order (for route plots)
 
 
 class DynSim:
@@ -503,8 +518,13 @@ class DynSim:
         self._node_int = np.zeros(p.M) # per-node integral of w*age (+event term) post-burn-in
         self._event_integral = 0.0
         self._n_replans = 0
+        self._n_diverts = 0
         self._Ts_mean = None            # running mean sortie duration (for dwell-at-arrival)
         self._visits = np.zeros(p.M, dtype=int)
+        self._vis_int: list = [[] for _ in range(p.M)]  # per-node inter-visit intervals, post-burn-in.
+        # NOTE: the first entry for a node is left-censored -- t_last_visit starts at 0, so it measures
+        # from t=0 or across the burn-in boundary, not from a real previous visit. Drop it before
+        # computing CV (see §VII-B); keeping it inflates the coefficient of variation.
         self.rng = np.random.default_rng(seed)
         self.field = SensorField(p, self.rng)
         self.planner = planner
@@ -548,7 +568,7 @@ class DynSim:
     # -- per-drone state --------------------------------------------------
     class _Drone:
         __slots__ = ("route", "ri", "pos", "E", "t_launch", "commute", "travel",
-                     "dwell", "tour_len", "n_visited", "phase")
+                     "dwell", "tour_len", "n_visited", "phase", "leg_t0", "leg_len")
 
     def _plan(self, k: int, t: float, start, E_rem: float, elapsed_frac: float, iters=None, own_done=()):
         """Build a SortieRequest from the CURRENT fleet state and return a route.
@@ -561,7 +581,10 @@ class DynSim:
         # (t_c until one sortie has landed). Using t_c alone under-budgeted long sorties:
         # at K=2 (T_s ~ 4 t_c) 84% of sorties truncated, biasing J against low K.
         Ts = self._Ts_mean if self._Ts_mean is not None else p.t_c
-        dwell_est = np.minimum((age + elapsed_frac * max(Ts, p.t_c)) * lam, p.B_bits) / p.R
+        if getattr(self, "_launch_dwell_only", False):      # ablation: no arrival-time correction
+            dwell_est = np.minimum(age * lam, p.B_bits) / p.R
+        else:
+            dwell_est = np.minimum((age + elapsed_frac * max(Ts, p.t_c)) * lam, p.B_bits) / p.R
         excluded = None; eta = None
         if self.coordinate:
             eta = np.full(p.M, np.inf)
@@ -615,6 +638,7 @@ class DynSim:
         d.pos = p.home.copy(); d.E = p.E_usable; d.t_launch = t
         d.commute = d.travel = d.dwell = d.tour_len = 0.0
         d.n_visited = 0; d.phase = "flying"; d.route, d.ri = [], 0
+        d.leg_t0 = t; d.leg_len = 0.0
         self._live[k] = d
         d.route = self._plan(k, t, None, p.E_usable, 0.5)
         return d
@@ -629,6 +653,43 @@ class DynSim:
         rest = self._plan(k, t, d.pos.copy(), d.E, 0.15, iters=p.replan_iters, own_done=done)
         d.route = done + list(rest)
         self._n_replans += 1
+        if self.p.divert_mode:
+            for kk, o in list(self._live.items()):
+                if kk != k: self._try_divert(kk, o, t)
+
+    def _try_divert(self, k: int, d: "_Drone", t: float) -> bool:
+        """Mid-leg diversion. Called when the fleet state changes while this drone is in transit.
+        Re-evaluates the current leg from the drone's INTERPOLATED position: if some other
+        reachable target now beats the committed one by `divert_margin`, abandon the leg and
+        head there instead. The energy already spent on the leg is sunk and stays spent.
+        Returns True if the target changed."""
+        p, F = self.p, self.field
+        if d.phase != "flying" or d.ri >= len(d.route):
+            return False
+        j_old = d.route[d.ri]
+        frac = 0.0 if d.leg_len <= 0 else min(1.0, (t - d.leg_t0) * p.v / d.leg_len)
+        here = d.pos + (F.pos[j_old] - d.pos) * frac        # where the drone actually is now
+        age = F.age(t)
+        claimed = np.zeros(p.M, dtype=bool)
+        for kk, o in self._live.items():
+            if kk != k and o.ri < len(o.route):
+                claimed[o.route[o.ri:]] = True
+        b = F.belief(t); w = F.wi_base * (1 + (p.event_gain - 1) * b) if b is not None else F.wi_base
+        d_here = np.linalg.norm(F.pos - here, axis=1)
+        d_home = np.linalg.norm(F.pos - p.home, axis=1)
+        need = p.e_fly(d_here + d_home) + p.e_hover(np.minimum(age * F.lam_est, p.B_bits) / p.R)
+        feas = (~claimed) & (need <= d.E) & (np.arange(p.M) != j_old)
+        if not feas.any():
+            return False
+        val = np.where(feas, w * age / np.maximum(p.e_fly(d_here), 1.0), -np.inf)
+        j_new = int(np.argmax(val))
+        val_old = w[j_old] * age[j_old] / max(p.e_fly(d_here[j_old]), 1.0)
+        if val[j_new] <= p.divert_margin * val_old:
+            return False
+        d.pos = here; d.leg_t0 = t                            # commit the sunk leg
+        d.route = d.route[:d.ri] + [j_new]                    # new target; rest is replanned on arrival
+        self._n_diverts += 1
+        return True
 
     def _next_event_time(self, d: "_Drone") -> tuple:
         """Time of this drone's next action, and what that action is."""
@@ -636,6 +697,7 @@ class DynSim:
         if d.ri < len(d.route):
             j = d.route[d.ri]
             dist = float(np.linalg.norm(F.pos[j] - d.pos))
+            d.leg_t0 = self._clock; d.leg_len = dist
             return self._clock + dist / p.v, ("arrive_node", j, dist)
         else:
             dist = float(np.linalg.norm(p.home - d.pos))
@@ -700,6 +762,7 @@ class DynSim:
                     self._n_vis_post += 1
                     self._age_at_visit.append(a_arr)
                     self._visits[j] += 1
+                    self._vis_int[j].append(float(a_arr))   # same quantity, kept per-node for CV
                     if a_arr < t_event - d.t_launch:
                         self._n_dup_post += 1
                 td = self.field.visit(t_event, j)
@@ -726,7 +789,7 @@ class DynSim:
                     t_launch=d.t_launch, t_land=t_event, n_visited=d.n_visited,
                     commute_time=d.commute, travel_time=d.travel,
                     dwell_time=d.dwell, energy_used=p.E_usable - d.E,
-                    tour_len=d.tour_len,
+                    tour_len=d.tour_len, drone=k, visited=tuple(d.route[:d.ri]),
                 )
                 self.records.append(rec)
                 dur = t_event - d.t_launch
@@ -803,6 +866,7 @@ class DynSim:
             "replan_mode": p.replan_mode,
             "event_corr_q": p.event_corr_q, "belief_mode": p.belief_mode,
             "n_replans": self._n_replans,
+            "n_diverts": self._n_diverts,
             "measured_s": self._measure_time,
             # --- crit 6: T_s/t_c, predicted 1 + sqrt(P_bar/Pf) in [2, 2.16] ---
             "T_s_over_t_c": float(T_s.mean() / p.t_c),

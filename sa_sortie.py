@@ -220,6 +220,9 @@ def build_sa_planner(iters: int = 1200, repair_p: float = 0.35, seed_base: int =
         # value-per-node folded into `weight` so sa_sortie's generic value
         # function (weight * 1) equals weight_est[j] * age[j] as intended.
         w = req.weight_est if req.p_live is None else req.weight_est * (1 + (p.event_gain - 1) * req.p_live)
+        if p.index_mode == "sqrt":
+            c_r = 2.0 * p.Pf * np.linalg.norm(req.pos - req.home, axis=1) / p.v
+            w = np.sqrt(w * np.maximum(c_r, 1.0))
         folded_weight = w * req.age
         _counter["n"] += 1
         seed = (seed_base * 1_000_003 + _counter["n"] * 7919 + int(req.E_usable) % 1000) % (2**31 - 1)
