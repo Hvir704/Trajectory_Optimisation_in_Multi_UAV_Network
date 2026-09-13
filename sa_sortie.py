@@ -53,9 +53,9 @@ def _tf(a, b, v):
     return float(np.linalg.norm(a - b)) / v
 
 
-def _chain_energy(chain, pos, home, dwell, p: DynParams):
+def _chain_energy(chain, pos, home, dwell, p: DynParams, start=None):
     E = 0.0
-    prev = home
+    prev = home if start is None else start
     for j in chain:
         E += p.e_fly(_tf(prev, pos[j], p.v) * p.v) + p.e_hover(dwell[j])
         # e_fly takes distance, tf returns time -> convert back: d = v*t
@@ -68,24 +68,24 @@ def _chain_value(chain, weight, age):
     return sum(weight[j] * age[j] for j in chain)
 
 
-def _ins_cost(chain, j, pos, dwell, home, p: DynParams, at: int):
-    a = home if at == 0 else pos[chain[at - 1]]
+def _ins_cost(chain, j, pos, dwell, home, p: DynParams, at: int, start=None):
+    a = (home if start is None else start) if at == 0 else pos[chain[at - 1]]
     b = home if at == len(chain) else pos[chain[at]]
     d_a = np.linalg.norm(a - pos[j]); d_b = np.linalg.norm(pos[j] - b); d_ab = np.linalg.norm(a - b)
     return p.e_fly(d_a + d_b - d_ab) + p.e_hover(dwell[j])
 
 
-def _best_ins(chain, j, pos, dwell, home, p: DynParams):
+def _best_ins(chain, j, pos, dwell, home, p: DynParams, start=None):
     best, bp = None, 0
     for at in range(len(chain) + 1):
-        d = _ins_cost(chain, j, pos, dwell, home, p, at)
+        d = _ins_cost(chain, j, pos, dwell, home, p, at, start)
         if best is None or d < best:
             best, bp = d, at
     return best, bp
 
 
-def _rem_gain(chain, i, pos, dwell, home, p: DynParams):
-    a = home if i == 0 else pos[chain[i - 1]]
+def _rem_gain(chain, i, pos, dwell, home, p: DynParams, start=None):
+    a = (home if start is None else start) if i == 0 else pos[chain[i - 1]]
     b = home if i == len(chain) - 1 else pos[chain[i + 1]]
     j = chain[i]
     d_a = np.linalg.norm(a - pos[j]); d_b = np.linalg.norm(pos[j] - b); d_ab = np.linalg.norm(a - b)
@@ -94,7 +94,7 @@ def _rem_gain(chain, i, pos, dwell, home, p: DynParams):
 
 def sa_sortie(pos: np.ndarray, weight: np.ndarray, dwell: np.ndarray, home: np.ndarray,
               E_budget: float, p: DynParams, iters: int, seed: int,
-              repair_p: float = 0.35) -> List[int]:
+              repair_p: float = 0.35, excluded=None, start=None) -> List[int]:
     """Single-chain SA with the ported k-for-1 repair operator.
 
     Greedy-constructs a feasible start (reuses the stub's scoring, since it is
@@ -105,9 +105,12 @@ def sa_sortie(pos: np.ndarray, weight: np.ndarray, dwell: np.ndarray, home: np.n
 
     # --- greedy construction (reuse the stub's ratio rule as the seed tour) ---
     chain: List[int] = []
-    cur = home.copy()
+    cur = (home if start is None else start).copy()
     E = E_budget
     used = np.zeros(M, dtype=bool)
+    if excluded is not None:
+        used |= np.asarray(excluded, dtype=bool)
+    blocked = used.copy()      # never enter the move set
     while True:
         d_to = np.linalg.norm(pos - cur, axis=1)
         d_home = np.linalg.norm(pos - home, axis=1)
@@ -116,8 +119,7 @@ def sa_sortie(pos: np.ndarray, weight: np.ndarray, dwell: np.ndarray, home: np.n
         if not feas.any():
             break
         e_marg = np.maximum(p.e_fly(d_to) + p.e_hover(dwell), 1.0)
-        score = np.where(feas, weight * np.maximum(1e-9, np.zeros(M)) if False else
-                          weight / e_marg, -np.inf)
+        score = np.where(feas, weight / e_marg, -np.inf)
         # NOTE: greedy seed ranks purely by value/energy, independent of the age
         # term -- age enters only via `weight` argument, which callers already
         # multiply appropriately (see build_sa_planner below).
@@ -128,7 +130,6 @@ def sa_sortie(pos: np.ndarray, weight: np.ndarray, dwell: np.ndarray, home: np.n
         chain.append(j)
 
     served = set(chain)
-    cur_val = _chain_value(chain, weight, np.ones(M))  # placeholder, replaced below
     # value function passed in already has age folded into `weight` (see
     # build_sa_planner) so `age` here is unity -- keeps this function generic.
     cur_val = _chain_value(chain, weight, np.ones(M))
@@ -140,7 +141,7 @@ def sa_sortie(pos: np.ndarray, weight: np.ndarray, dwell: np.ndarray, home: np.n
     for it in range(iters):
         T = T0 * (T1 / T0) ** (it / max(iters - 1, 1))
         nc = chain[:]
-        uns = [j for j in range(M) if j not in served]
+        uns = [j for j in range(M) if j not in served and not blocked[j]]
         is_repair = (rng.random() < repair_p) and uns and nc
 
         if is_repair:
@@ -152,12 +153,12 @@ def sa_sortie(pos: np.ndarray, weight: np.ndarray, dwell: np.ndarray, home: np.n
             else:
                 pr = w_u / tot
             j = int(rng.choice(uns, p=pr))
-            need, at = _best_ins(nc, j, pos, dwell, home, p)
-            slack = E_budget - _chain_energy(nc, pos, home, dwell, p)
+            need, at = _best_ins(nc, j, pos, dwell, home, p, start)
+            slack = E_budget - _chain_energy(nc, pos, home, dwell, p, start)
             if need > slack:
                 cand = []
                 for i in range(len(nc)):
-                    gfree = _rem_gain(nc, i, pos, dwell, home, p)
+                    gfree = _rem_gain(nc, i, pos, dwell, home, p, start)
                     if gfree > 1e-9:
                         cand.append((weight[nc[i]] / gfree, i, gfree))
                 cand.sort()
@@ -170,8 +171,8 @@ def sa_sortie(pos: np.ndarray, weight: np.ndarray, dwell: np.ndarray, home: np.n
                     continue
                 for i in sorted(drop, reverse=True):
                     del nc[i]
-                need, at = _best_ins(nc, j, pos, dwell, home, p)
-                if _chain_energy(nc, pos, home, dwell, p) + need > E_budget + 1e-9:
+                need, at = _best_ins(nc, j, pos, dwell, home, p, start)
+                if _chain_energy(nc, pos, home, dwell, p, start) + need > E_budget + 1e-9:
                     continue
             nc = nc[:at] + [j] + nc[at:]
         else:
@@ -189,7 +190,7 @@ def sa_sortie(pos: np.ndarray, weight: np.ndarray, dwell: np.ndarray, home: np.n
                 i = int(rng.integers(0, len(nc)))
                 nc[i] = int(rng.choice(uns))
 
-        if _chain_energy(nc, pos, home, dwell, p) > E_budget + 1e-6:
+        if _chain_energy(nc, pos, home, dwell, p, start) > E_budget + 1e-6:
             continue
         val = _chain_value(nc, weight, np.ones(M))
         d = cur_val - val  # SA framework minimises; we want to MAXIMISE value
@@ -203,11 +204,14 @@ def sa_sortie(pos: np.ndarray, weight: np.ndarray, dwell: np.ndarray, home: np.n
     return best_chain
 
 
-def build_sa_planner(iters: int = 1200, repair_p: float = 0.35):
+def build_sa_planner(iters: int = 1200, repair_p: float = 0.35, seed_base: int = 0):
     """Factory -> a SortiePlanner closure for DynSim.
 
-    SEEDING: each call gets seed = hash(t_launch) so distinct sorties never
-    collide, without relying on any small reused index (CONTEXT_60 §5.4).
+    SEEDING: seed = f(seed_base, call counter). The old docstring claimed
+    hash(t_launch); the code never did that. Pass the instance seed as
+    seed_base so the planner stream is reproducible per instance and the
+    factory must be built fresh per DynSim (a shared closure carries its
+    counter across instances).
     """
     _counter = {"n": 0}
 
@@ -215,12 +219,23 @@ def build_sa_planner(iters: int = 1200, repair_p: float = 0.35):
         p = req.p
         # value-per-node folded into `weight` so sa_sortie's generic value
         # function (weight * 1) equals weight_est[j] * age[j] as intended.
-        folded_weight = req.weight_est * req.age
+        w = req.weight_est if req.p_live is None else req.weight_est * (1 + (p.event_gain - 1) * req.p_live)
+        folded_weight = w * req.age
         _counter["n"] += 1
-        seed = (_counter["n"] * 7919 + int(req.E_usable) % 1000) % (2**31 - 1)
+        seed = (seed_base * 1_000_003 + _counter["n"] * 7919 + int(req.E_usable) % 1000) % (2**31 - 1)
         return sa_sortie(req.pos, folded_weight, req.dwell_est, req.home,
-                          req.E_usable, p, iters=iters, seed=seed, repair_p=repair_p)
+                          req.E_usable, p, iters=_it["n"], seed=seed, repair_p=repair_p,
+                          excluded=req.excluded, start=req.start)
 
+    _it = {"n": iters}
+    def with_iters(n):
+        """Return a callable that plans with n iterations but shares the seed stream."""
+        def _pl(req):
+            old = _it["n"]; _it["n"] = n
+            try: return planner(req)
+            finally: _it["n"] = old
+        return _pl
+    planner.with_iters = with_iters
     return planner
 
 

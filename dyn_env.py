@@ -76,7 +76,29 @@ class DynParams:
     tau_e_hi: float = 90 * 60.0   # s, event lifetime upper  (90 min)
     event_rate_hot: float = 1 / (3600.0)    # per-sensor firing rate inside hotspot
     event_rate_cold: float = 1 / (6 * 3600.0)
-    event_gain: float = 5.0       # multiplier on wi while an event is live
+    event_gain: float = 5.0       # "boost": multiplier on wi while live; "separate": coefficient g on event age
+    event_model: str = "separate" # "separate": J = sum w*A~ + sum g*w*(t - t_fire) over live uncaught events (event AoI)
+                                  # "boost":    legacy -- w -> g*w while live, charged against buffer age
+
+    # --- planner information (W1 additions) ---
+    coord_mode: str = "exclude"   # "none" | "exclude" | "project" (ETA-aware projected age)
+    planner_knows_rates: bool = False   # if True, p_live from known hotspot map/rates
+    learn_lambda: bool = True           # per-node lambda estimate from visits
+    layout: str = "paper"         # "paper" | "ring" | "core"
+    replan_mode: str = "launch"   # "launch": route fixed at launch | "per_leg": re-optimise remaining
+                                  # route after every stop from current position/energy; the updated
+                                  # commitment is visible to all other drones immediately
+                                  # (continuous inter-drone communication).
+    replan_iters: int = 300       # SA iterations per mid-sortie replan (launch uses the planner's own)
+    replan_planner: str = "same"  # "same": the sortie planner with replan_iters | "greedy": fast ratio rule
+
+    # --- v3: latent correlated hotspot events (PROBLEM_STATEMENT_v3 §2-3) ---
+    event_corr_q: float = 0.0     # 0: independent per-sensor events (v2 model). >0: each hotspot fires
+                                  # as a unit at rate event_rate_hot/q; every member goes live w.p. q,
+                                  # so the per-sensor event rate is unchanged and only correlation varies.
+    belief_mode: str = "prior"    # planner-side P(event live): "none" | "prior" (known rates, M2)
+                                  # | "kernel" (spatio-temporal kernel over observations, M1)
+    belief_sigma_frac: float = 0.06   # kernel width as a fraction of L (= hotspot_radius)
 
     # --- priority baseline ---
     wi_lo: float = 1.0
@@ -157,19 +179,35 @@ class SensorField:
         # --- hotspot centres, then sensors clustered around them ---
         self.hotspots = rng.uniform(0.15, 0.85, (p.n_hotspots, 2)) * p.L
         self.in_hotspot = np.zeros(M, dtype=bool)
+        self.hot_id = np.full(M, -1)
         pos = np.empty((M, 2))
         # 70% of sensors sit in hotspots, 30% scattered -- keeps the field
         # covered while giving the policy structure to learn.
         n_hot = int(0.70 * M)
         for i in range(M):
             if i < n_hot:
-                c = self.hotspots[rng.integers(0, p.n_hotspots)]
+                h = int(rng.integers(0, p.n_hotspots))
+                c = self.hotspots[h]
                 off = rng.normal(0.0, p.hotspot_radius * p.L, 2)
                 pos[i] = np.clip(c + off, 0.0, p.L)
-                self.in_hotspot[i] = True
+                self.in_hotspot[i] = True; self.hot_id[i] = h
             else:
                 pos[i] = rng.uniform(0.0, p.L, 2)
-        self.pos = pos.astype(np.float64)
+        if p.layout == "ring":
+            r = rng.uniform(0.80, 1.0, M) * (0.45 * p.L * np.sqrt(2))
+            th = rng.uniform(0, 2 * np.pi, M)
+            pos = np.c_[p.L/2 + r*np.cos(th), p.L/2 + r*np.sin(th)]
+            self.in_hotspot[:] = False; self.hot_id[:] = -1
+        elif p.layout == "core":
+            r = rng.uniform(0.02, 0.20, M) * p.L
+            r[0] = 0.45 * p.L * np.sqrt(2)          # one peripheral outlier sets r_max
+            th = rng.uniform(0, 2 * np.pi, M)
+            pos = np.c_[p.L/2 + r*np.cos(th), p.L/2 + r*np.sin(th)]
+            self.in_hotspot[:] = False; self.hot_id[:] = -1
+        self.pos = np.clip(pos, 0.0, p.L).astype(np.float64)
+        # per-node lambda estimate (planner-side); nominal until first visit
+        self.lam_est = np.full(M, p.lam_bits)
+        self.n_obs = np.zeros(M, dtype=int)
 
         # --- baseline priority ---
         self.wi_base = rng.uniform(p.wi_lo, p.wi_hi, M)
@@ -181,9 +219,19 @@ class SensorField:
         self.t_last_visit = np.zeros(M)      # wall-clock of last visit
         self.backlog = np.zeros(M)           # bits held (capped at B)
         self.event_until = np.full(M, -np.inf)   # event live while t < this
+        self.event_fire = np.full(M, np.inf)     # fire time of the current live event
         self.next_event_at = np.empty(M)
         for i in range(M):
             self.next_event_at[i] = self._draw_next_event(0.0, i)
+        # v3: hotspot-level firing (members fire together w.p. q). Hotspot members' own
+        # per-sensor clocks are disabled when q > 0.
+        if p.event_corr_q > 0:
+            self.next_event_at[self.hot_id >= 0] = np.inf
+            self.next_hot_fire = np.array([self.rng.exponential(p.event_corr_q / p.event_rate_hot)
+                                           for _ in range(p.n_hotspots)])
+        # observations: what drones have SEEN (event state on arrival). Planner-side only.
+        self.obs_t = np.full(M, -np.inf)     # time of last observation of node i
+        self.obs_live = np.zeros(M, dtype=bool)
 
         # --- diagnostics ---
         self.events_fired = 0
@@ -218,8 +266,19 @@ class SensorField:
                 fire_t = t_from
             tau = self.rng.uniform(self.p.tau_e_lo, self.p.tau_e_hi)
             self.event_until[i] = fire_t + tau
+            self.event_fire[i] = fire_t
             self.events_fired += 1
             self.next_event_at[i] = self._draw_next_event(fire_t, i)
+        if self.p.event_corr_q > 0:
+            for h in np.where(self.next_hot_fire <= t_to)[0]:
+                fire_t = max(self.next_hot_fire[h], t_from)
+                members = np.where(self.hot_id == h)[0]
+                hit = members[self.rng.random(len(members)) < self.p.event_corr_q]
+                for i in hit:
+                    self.event_until[i] = fire_t + self.rng.uniform(self.p.tau_e_lo, self.p.tau_e_hi)
+                    self.event_fire[i] = fire_t
+                    self.events_fired += 1
+                self.next_hot_fire[h] = fire_t + self.rng.exponential(self.p.event_corr_q / self.p.event_rate_hot)
 
     def expire_check(self, t: float) -> None:
         """Count events that died unvisited. Called once per sortie boundary."""
@@ -228,6 +287,7 @@ class SensorField:
         if n:
             self.events_expired += n
             self.event_until[dead] = -np.inf
+            self.event_fire[dead] = np.inf
 
     # -- observables -----------------------------------------------------
     def age(self, t: float) -> np.ndarray:
@@ -237,23 +297,68 @@ class SensorField:
     def weights(self, t: float) -> np.ndarray:
         """Effective priority: baseline, boosted while an event is live."""
         w = self.wi_base.copy()
-        live = self.event_until > t
-        w[live] *= self.p.event_gain
+        if self.p.event_model == "boost":
+            live = self.event_until > t
+            w[live] *= self.p.event_gain
         return w
+
+    def event_age_integral(self, t0: float, t1: float) -> np.ndarray:
+        """Per-node integral over [t0,t1] of g*w*(t - t_fire) for the currently live
+        event, exact: integrates over [max(t0,fire), min(t1,until)]."""
+        a = np.maximum(t0, self.event_fire); b = np.minimum(t1, self.event_until)
+        live = b > a
+        out = np.zeros(self.p.M)
+        f = self.event_fire[live]
+        out[live] = self.p.event_gain * self.wi_base[live] * 0.5 * ((b[live]-f)**2 - (a[live]-f)**2)
+        return out
 
     def dwell_time(self, i: int) -> float:
         """Hover time to drain sensor i. UNKNOWN to the planner before arrival
         (CONTEXT_60 §1.11) -- planners must use an estimate, not this."""
         return self.backlog[i] / self.p.R
 
+    def p_live_prior(self) -> np.ndarray:
+        """Stationary P(event live) from known rates: nu*tau/(1+nu*tau)."""
+        tau = 0.5 * (self.p.tau_e_lo + self.p.tau_e_hi)
+        nu = np.where(self.in_hotspot, self.p.event_rate_hot, self.p.event_rate_cold)
+        x = nu * tau
+        return x / (1.0 + x)
+
+    def belief(self, t: float) -> np.ndarray:
+        """Planner-side P(event live at i | observations). Kernel model:
+        a positive observation at j at time t_o raises the belief of every i within the
+        hotspot scale, decayed over the mean event lifetime; the observed node itself is
+        0 right after a visit (event caught/cleared) and relaxes to the prior."""
+        p = self.p
+        prior = self.p_live_prior()
+        if p.belief_mode == "none": return None
+        if p.belief_mode == "prior": return prior
+        tau = 0.5 * (p.tau_e_lo + p.tau_e_hi); sig = p.belief_sigma_frac * p.L
+        b = prior.copy()
+        recent = np.where((t - self.obs_t) < tau)[0]
+        pos_obs = recent[self.obs_live[recent]]
+        if len(pos_obs):
+            d2 = ((self.pos[:, None, :] - self.pos[None, pos_obs, :]) ** 2).sum(-1)
+            k = np.exp(-d2 / (2 * sig ** 2)) * np.exp(-(t - self.obs_t[pos_obs])[None, :] / tau)
+            b = np.maximum(b, max(p.event_corr_q, 1e-3) * k.max(1))
+        # a node observed recently is known: caught events are cleared, so belief -> 0, relaxing to prior
+        b[recent] = np.minimum(b[recent], prior[recent] * (t - self.obs_t[recent]) / tau)
+        return np.clip(b, 0.0, 1.0)
+
     def visit(self, t: float, i: int) -> float:
         """Service sensor i at time t. Returns actual dwell time."""
         td = self.dwell_time(i)
+        self.obs_t[i] = t; self.obs_live[i] = bool(self.event_until[i] > t)
+        age = t - self.t_last_visit[i]
+        if age > 0 and self.backlog[i] < self.p.B_bits - 1e-6:
+            # backlog/age reveals lambda exactly when the buffer has not capped
+            self.lam_est[i] = self.backlog[i] / age; self.n_obs[i] += 1
         self.backlog[i] = 0.0
         self.t_last_visit[i] = t
         if self.event_until[i] > t:      # event cleared early (CONTEXT_60 §3)
             self.events_caught += 1
             self.event_until[i] = -np.inf
+            self.event_fire[i] = np.inf
         return td
 
     # -- interface compatibility with Env (for drop-in sortie solvers) ----
@@ -286,6 +391,15 @@ class SortieRequest:
     dwell_est: np.ndarray      # (M,) ESTIMATED dwell, from age (not truth)
     E_usable: float            # spendable energy this sortie
     p: DynParams
+    start: Optional[np.ndarray] = None      # planning start position (None -> home); route always ends at home
+    E_usable_full: float = 0.0              # full sortie budget (E_usable is REMAINING when replanning)
+    lam_est: Optional[np.ndarray] = None    # (M,) per-node generation-rate estimate (from visits)
+    p_live: Optional[np.ndarray] = None     # (M,) prior P(event live) from known rates, or None
+    eta_other: Optional[np.ndarray] = None  # (M,) ETA of another drone at node (inf if none)
+    excluded: Optional[np.ndarray] = None   # (M,) bool: nodes pending in ANOTHER
+    # airborne drone's route. Legitimate information (the operator knows its own
+    # fleet's plans). Without it, 57-69% of visits land on a node another drone
+    # reset after this one launched (measured, M=100, K=3-6, seed 1).
 
 
 SortiePlanner = Callable[[SortieRequest], List[int]]
@@ -307,9 +421,11 @@ def greedy_ratio_planner(req: SortieRequest) -> List[int]:
     """
     p = req.p
     chosen: List[int] = []
-    cur = req.home.copy()
+    cur = (req.home if req.start is None else req.start).copy()
     E = req.E_usable
     used = np.zeros(len(req.age), dtype=bool)
+    if req.excluded is not None:
+        used |= req.excluded
 
     while True:
         d_to = np.linalg.norm(req.pos - cur, axis=1)
@@ -320,7 +436,8 @@ def greedy_ratio_planner(req: SortieRequest) -> List[int]:
             break
 
         e_marginal = np.maximum(p.e_fly(d_to) + p.e_hover(req.dwell_est), 1.0)
-        score = np.where(feasible, req.weight_est * req.age / e_marginal, -np.inf)
+        w_eff = req.weight_est if req.p_live is None else req.weight_est * (1 + (p.event_gain - 1) * req.p_live)
+        score = np.where(feasible, w_eff * req.age / e_marginal, -np.inf)
         j = int(np.argmax(score))
 
         E -= p.e_fly(d_to[j]) + p.e_hover(req.dwell_est[j])
@@ -376,8 +493,18 @@ class DynSim:
     """
 
     def __init__(self, p: DynParams, planner: SortiePlanner = greedy_ratio_planner,
-                 seed: int = 0):
+                 seed: int = 0, coordinate: bool = True):
         self.p = p
+        self.coordinate = coordinate and p.coord_mode != "none"
+        self._live: dict = {}          # k -> _Drone currently airborne
+        self._n_vis_post = 0           # post-burn-in visits
+        self._n_dup_post = 0           # ...of which node was reset by another drone after launch
+        self._age_at_visit: list = []  # post-burn-in age at arrival (diagnostic)
+        self._node_int = np.zeros(p.M) # per-node integral of w*age (+event term) post-burn-in
+        self._event_integral = 0.0
+        self._n_replans = 0
+        self._Ts_mean = None            # running mean sortie duration (for dwell-at-arrival)
+        self._visits = np.zeros(p.M, dtype=int)
         self.rng = np.random.default_rng(seed)
         self.field = SensorField(p, self.rng)
         self.planner = planner
@@ -393,12 +520,20 @@ class DynSim:
     def _accumulate(self, t0: float, t1: float) -> None:
         """Integrate weighted age over [t0, t1], counting only post-burn-in time."""
         t0 = max(t0, self.p.T_burnin)
+        t1 = min(t1, self.p.T_horizon)   # FIX: was unclamped; the tail after
+        # T_horizon (drones stop relaunching one by one) was being measured.
         if t1 <= t0:
             return
         w = self.field.weights(t0)
         a0 = self.field.age(t0)
         a1 = self.field.age(t1)
-        self._age_integral += float((w * 0.5 * (a0 + a1)).sum()) * (t1 - t0)
+        contrib = w * 0.5 * (a0 + a1) * (t1 - t0)
+        if self.p.event_model == "separate":
+            ev = self.field.event_age_integral(t0, t1)
+            self._event_integral += float(ev.sum())
+            contrib = contrib + ev
+        self._node_int += contrib
+        self._age_integral += float(contrib.sum())
         self._measure_time += (t1 - t0)
 
     def _advance_global(self, t_to: float) -> None:
@@ -415,22 +550,85 @@ class DynSim:
         __slots__ = ("route", "ri", "pos", "E", "t_launch", "commute", "travel",
                      "dwell", "tour_len", "n_visited", "phase")
 
-    def _launch(self, k: int, t: float) -> "_Drone":
+    def _plan(self, k: int, t: float, start, E_rem: float, elapsed_frac: float, iters=None, own_done=()):
+        """Build a SortieRequest from the CURRENT fleet state and return a route.
+        start/E_rem: where the drone is and what it can still spend (return to home included)."""
         p, F = self.p, self.field
-        dwell_est = np.minimum(F.age(t) * p.lam_bits, p.B_bits) / p.R
-        req = SortieRequest(pos=F.pos, home=p.home, age=F.age(t),
+        lam = F.lam_est if p.learn_lambda else np.full(p.M, p.lam_bits)
+        age = F.age(t)
+        # dwell at EXPECTED ARRIVAL, not at decision time: the buffer fills during the flight.
+        # Expected elapsed time = elapsed_frac x the fleet's running mean sortie duration
+        # (t_c until one sortie has landed). Using t_c alone under-budgeted long sorties:
+        # at K=2 (T_s ~ 4 t_c) 84% of sorties truncated, biasing J against low K.
+        Ts = self._Ts_mean if self._Ts_mean is not None else p.t_c
+        dwell_est = np.minimum((age + elapsed_frac * max(Ts, p.t_c)) * lam, p.B_bits) / p.R
+        excluded = None; eta = None
+        if self.coordinate:
+            eta = np.full(p.M, np.inf)
+            for kk, other in self._live.items():
+                if kk == k: continue
+                tt, cur = self._clock, other.pos
+                for j in other.route[other.ri:]:
+                    tt += float(np.linalg.norm(F.pos[j] - cur)) / p.v; cur = F.pos[j]
+                    tt += np.minimum(age[j] * lam[j], p.B_bits) / p.R
+                    eta[j] = min(eta[j], tt)
+            if p.coord_mode == "exclude":
+                excluded = np.isfinite(eta)
+            else:
+                proj = np.where(np.isfinite(eta), np.maximum(0.0, (t + elapsed_frac * p.t_c) - eta), age)
+                excluded = np.isfinite(eta) & (proj <= 0.0)
+                age = np.where(np.isfinite(eta), proj, age)
+        if own_done:
+            # never re-serve a node within the same sortie: its age is ~0 and its marginal
+            # cost is ~0, so a ratio rule can otherwise loop on it indefinitely
+            if excluded is None: excluded = np.zeros(p.M, dtype=bool)
+            excluded = excluded.copy(); excluded[list(own_done)] = True
+        p_live = F.belief(t) if (p.planner_knows_rates or p.belief_mode != "prior") else None
+        req = SortieRequest(pos=F.pos, home=p.home, age=age,
                              weight_est=F.wi_base.copy(), dwell_est=dwell_est,
-                             E_usable=p.E_usable, p=p)
-        route = self.planner(req)
+                             E_usable=E_rem, p=p, start=start, E_usable_full=p.E_usable,
+                             lam_est=lam, p_live=p_live, eta_other=eta, excluded=excluded)
+        if iters is not None:
+            if p.replan_planner == "greedy":
+                return greedy_ratio_planner(req)
+            if hasattr(self.planner, "with_iters"):
+                return self.planner.with_iters(iters)(req)
+        return self.planner(req)
+
+    def state_features(self, k: int, t: float, start, E_rem: float):
+        """Per-node feature matrix for a learned policy (M3). Same information as _plan.
+        cols: age, w, belief, lam_est, dist_from_drone, dist_to_home, excluded, eta_other-t"""
+        p, F = self.p, self.field
+        start = p.home if start is None else start
+        age = F.age(t); b = F.belief(t); b = np.zeros(p.M) if b is None else b
+        excluded = np.zeros(p.M, dtype=bool); eta = np.full(p.M, np.inf)
+        for kk, o in self._live.items():
+            if kk == k: continue
+            excluded[o.route[o.ri:]] = True
+        X = np.c_[age, F.wi_base, b, F.lam_est, np.linalg.norm(F.pos - start, axis=1),
+                  np.linalg.norm(F.pos - p.home, axis=1), excluded.astype(float)]
+        return X, np.array([E_rem / p.E_usable, *(start / p.L)])
+
+    def _launch(self, k: int, t: float) -> "_Drone":
+        p = self.p
         d = self._Drone()
-        d.route, d.ri = route, 0
-        d.pos = p.home.copy()
-        d.E = p.E_usable
-        d.t_launch = t
+        d.pos = p.home.copy(); d.E = p.E_usable; d.t_launch = t
         d.commute = d.travel = d.dwell = d.tour_len = 0.0
-        d.n_visited = 0
-        d.phase = "flying"
+        d.n_visited = 0; d.phase = "flying"; d.route, d.ri = [], 0
+        self._live[k] = d
+        d.route = self._plan(k, t, None, p.E_usable, 0.5)
         return d
+
+    def _replan(self, k: int, d: "_Drone", t: float):
+        """Per-leg replanning: re-optimise the remaining route from the current node with the
+        remaining energy, against the other drones' CURRENT commitments. The new route replaces
+        the old commitment in self._live immediately (continuous communication)."""
+        p = self.p
+        done = d.route[:d.ri]
+        d.route = done  # own pending commitment cleared while planning
+        rest = self._plan(k, t, d.pos.copy(), d.E, 0.15, iters=p.replan_iters, own_done=done)
+        d.route = done + list(rest)
+        self._n_replans += 1
 
     def _next_event_time(self, d: "_Drone") -> tuple:
         """Time of this drone's next action, and what that action is."""
@@ -497,6 +695,13 @@ class DynSim:
                     d.travel += dist_leg / p.v
                     d.tour_len += dist_leg
 
+                if t_event >= p.T_burnin:
+                    a_arr = t_event - self.field.t_last_visit[j]
+                    self._n_vis_post += 1
+                    self._age_at_visit.append(a_arr)
+                    self._visits[j] += 1
+                    if a_arr < t_event - d.t_launch:
+                        self._n_dup_post += 1
                 td = self.field.visit(t_event, j)
                 self._advance_global(t_event + td)   # dwell consumes time too
                 d.dwell += td
@@ -504,6 +709,8 @@ class DynSim:
                 d.pos = self.field.pos[j].copy()
                 d.n_visited += 1
                 d.ri += 1
+                if p.replan_mode == "per_leg":
+                    self._replan(k, d, t_event + td)
 
                 t_next, nxt = self._next_event_time(d)
                 heapq.heappush(heap, (t_next, self._seq, nxt, k))
@@ -522,6 +729,8 @@ class DynSim:
                     tour_len=d.tour_len,
                 )
                 self.records.append(rec)
+                dur = t_event - d.t_launch
+                self._Ts_mean = dur if self._Ts_mean is None else 0.9 * self._Ts_mean + 0.1 * dur
 
                 t_next_launch = t_event
                 if d.n_visited == 0:
@@ -550,6 +759,7 @@ class DynSim:
         # P_bar: time-weighted mean power during PRODUCTIVE work (CONTEXT_64 §2)
         prod_t = travel + dwell
         P_bar = float((p.Pf * travel.sum() + p.Ph * dwell.sum()) / max(prod_t.sum(), 1e-9))
+        P_bar = max(P_bar, 1e-9)   # empty-fleet guard: no productive time -> no division by zero
 
         total_visits = n_vis.sum()
         span = max(recs[-1].t_land - recs[0].t_launch, 1e-9)
@@ -560,9 +770,39 @@ class DynSim:
         cap = p.K * p.R * (1.0 - commute.mean() / max(T_s.mean(), 1e-9))
 
         lo, hi = p.kstar_band()
+        r = np.linalg.norm(F.pos - p.home, axis=1)
+        never = self._visits == 0
+        r_max_inst = float(r.max())
+        E_reach = p.E_usable - p.Ph * p.B_bits / p.R          # D3: dwell at cap
+        reach = p.v * E_reach / (2.0 * p.Pf)
+        K_cov_inst = p.v * (1 - p.rho) * p.Emax / (2 * p.Pf * r_max_inst + p.v * p.Ph * p.B_bits / p.R)
+        aav = np.array(self._age_at_visit) if self._age_at_visit else np.array([np.nan])
         return {
+            # --- coordination / abandonment / reach (added in review) ---
+            "dup_frac": self._n_dup_post / max(self._n_vis_post, 1),
+            "frac_visits_age_lt_300s": float(np.mean(aav < 300.0)),
+            "median_age_at_visit": float(np.median(aav)),
+            "n_never_visited": int(never.sum()),
+            "share_J_never_visited": float(self._node_int[never].sum() / max(self._node_int.sum(), 1e-9)),
+            "n_reach_infeasible": int((r > reach).sum()),
+            "n_reach_infeasible_never": int((never & (r > reach)).sum()),
+            "r_max_instance": r_max_inst,
+            "r_reach": reach,
+            "K_cov_instance": K_cov_inst,
+            "r_c_measured": float(commute.mean() * p.v / 2.0),
+            "K_commute_instance": float((1 - p.rho) * p.Emax / max(commute.mean() * (p.Pf + math.sqrt(p.Pf * P_bar)), 1e-9)),
+            "rmax_over_rc": float(r_max_inst / max(commute.mean() * p.v / 2.0, 1e-9)),
+            "regime_boundary": 1.0 + math.sqrt(P_bar / p.Pf),
+            "empty_frac": self._empty_sorties / max(len(self.records), 1),
+            "trunc_frac": self._truncated_sorties / max(len(self.records), 1),
             # --- objective ---
             "J_timeavg": self._age_integral / max(self._measure_time, 1e-9),
+            "J_event": self._event_integral / max(self._measure_time, 1e-9),
+            "J_age": (self._age_integral - self._event_integral) / max(self._measure_time, 1e-9),
+            "event_model": p.event_model,
+            "replan_mode": p.replan_mode,
+            "event_corr_q": p.event_corr_q, "belief_mode": p.belief_mode,
+            "n_replans": self._n_replans,
             "measured_s": self._measure_time,
             # --- crit 6: T_s/t_c, predicted 1 + sqrt(P_bar/Pf) in [2, 2.16] ---
             "T_s_over_t_c": float(T_s.mean() / p.t_c),
