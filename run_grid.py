@@ -39,7 +39,17 @@ def one(args):
                   divert_mode=bool(divert),
                   replan_iters=60, T_horizon=Th, T_burnin=3*3600.0)
     t = time.time()
-    if planner == "greedy":
+    if planner.startswith("cpsat_d"):         # external baseline: CP-SAT, cold, deterministic budget
+        if replan != "launch" or divert:
+            raise ValueError("cpsat planners are launch-time only")
+        from milp_sortie import build_milp_planner
+        pl = build_milp_planner(dtime=float(planner[len("cpsat_d"):]))
+    elif planner in ("rr_tour", "rr_sweep"):      # external baseline: age-blind patrol (rr_planner.py)
+        if replan != "launch" or divert:
+            raise ValueError("rr_* planners are launch-time only")
+        from rr_planner import build_rr_planner
+        pl = build_rr_planner("tour" if planner == "rr_tour" else "sweep")
+    elif planner == "greedy":
         from dyn_env import greedy_ratio_planner as pl
     elif planner == "sa_sqrt":
         p.index_mode = "sqrt"; pl = build_sa_planner(iters=iters, seed_base=seed)
@@ -51,18 +61,15 @@ def one(args):
     if planner == "sa_launchdwell":   # ablation: the old launch-time dwell estimate (no arrival correction)
         sim._Ts_mean = 0.0; sim._launch_dwell_only = True
     m = sim.run()
+    if hasattr(pl, "stats"):
+        s_ = pl.stats
+        print(f"  [cpsat] {layout} M={M} K={K} s={seed}: decisions={s_['n']} optimal={s_['optimal']} "
+              f"fallback={s_['fallback']} mean_gap_nonopt={s_['gap_sum']/max(s_['n']-s_['optimal'],1):.3f}", flush=True)
     if os.environ.get("EXPORT_NODES"):   # per-node visit counts + weights + radii for the f_i ∝ sqrt(w/c) check
         import numpy as _np
-        # ragged per-node interval lists -> flat array + counts; split back with
-        # _np.split(vis_int, _np.cumsum(vis_int_counts)[:-1]). Drop each node's FIRST entry before
-        # computing CV: it is left-censored (see DynSim.__init__).
-        _cnt = _np.array([len(x) for x in sim._vis_int], dtype=int)
-        _flat = (_np.concatenate([_np.asarray(x, dtype=float) for x in sim._vis_int])
-                 if _cnt.sum() else _np.zeros(0, dtype=float))
         _np.savez_compressed(f"nodes_{layout}_M{M}_E{int(Emax)}_K{K}_s{seed}_{coord}_{replan}.npz",
             visits=sim._visits, w=sim.field.wi_base, r=_np.linalg.norm(sim.field.pos - p.home, axis=1),
-            node_int=sim._node_int, measured_s=m["measured_s"],
-            vis_int=_flat, vis_int_counts=_cnt)
+            node_int=sim._node_int, measured_s=m["measured_s"])
     return dict(layout=layout, M=M, Emax=Emax, K=K, seed=seed, coord=coord, replan=replan, divert=int(divert), q=q, belief=belief, tau=tau, planner=planner, L=L, Th=Th,
         J=m["J_timeavg"], J_age=m["J_age"], J_event=m["J_event"], n_replans=m["n_replans"],
         n_diverts=m.get("n_diverts", 0), n_never=m["n_never_visited"], share_never=m["share_J_never_visited"],
@@ -89,20 +96,10 @@ if __name__ == "__main__":
     ap.add_argument("--K", nargs="+", type=int, default=None, help="fixed K list (skips auto range)")
     ap.add_argument("--tau", type=float, default=0.0, help="mean event lifetime in MINUTES (0 = default 45-90 min)")
     ap.add_argument("--L", type=float, default=DynParams.L, help="field side in metres")
-    ap.add_argument("--planner", default="sa", choices=["sa","sa_norepair","greedy","sa_nolambda","sa_launchdwell","sa_sqrt"])
+    ap.add_argument("--planner", default="sa", choices=["sa","sa_norepair","greedy","sa_nolambda","sa_launchdwell","sa_sqrt","rr_tour","rr_sweep","cpsat_d2","cpsat_d5","cpsat_d15"])
     ap.add_argument("--Th", type=float, default=12*3600); ap.add_argument("--iters", type=int, default=1200)
     ap.add_argument("--procs", type=int, default=os.cpu_count())
     a = ap.parse_args()
-
-    def _num(v, default=0.0):
-        """CSV field -> float. fix_schema.py backfills missing columns with float defaults, so an
-        int column can come back as '0.0'; a column present but unset comes back as ''."""
-        try: return float(v)
-        except (TypeError, ValueError): return float(default)
-
-    def _txt(v, default):
-        return v if v else default
-
     done = set()
     if os.path.exists(a.out) and os.path.getsize(a.out) > 0:
         with open(a.out) as f: hdr = f.readline().strip().split(",")
@@ -111,10 +108,7 @@ if __name__ == "__main__":
         with open(a.out) as f:
             for row in csv.DictReader(f):
                 if "layout" not in row: continue   # tolerate a headerless/partial file
-                done.add((row["layout"], int(_num(row["M"])), _num(row["Emax"]), int(_num(row["K"])), int(_num(row["seed"])),
-                          row["coord"], _txt(row.get("replan"), "launch"), int(_num(row.get("divert", 0))),
-                          _num(row.get("q", 0)), _txt(row.get("belief"), "prior"), _num(row.get("tau", 0)),
-                          _txt(row.get("planner"), "sa"), _num(row.get("L", DynParams.L), DynParams.L), _num(row["Th"])))
+                done.add((row["layout"], int(row["M"]), float(row["Emax"]), int(row["K"]), int(row["seed"]), row["coord"], row.get("replan","launch"), int(row.get("divert",0)), float(row.get("q",0)), row.get("belief","prior"), float(row.get("tau",0)), row.get("planner","sa"), float(row.get("L",DynParams.L)), float(row["Th"])))
     jobs = []
     for layout, M, Emax, seed in itertools.product(a.layouts, a.M, a.Emax, parse_seeds(a.seeds)):
         for K in (a.K if a.K else k_range(layout, M, Emax, seed, a.L)):

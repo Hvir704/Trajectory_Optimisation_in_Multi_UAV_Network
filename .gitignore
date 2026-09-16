@@ -19,3 +19,6 @@ models_multi_uav/
 .DS_Store
 .vscode/
 "@ | Out-File -FilePath .gitignore -Encoding utf8
+venv/
+__pycache__/
+*.pyc
