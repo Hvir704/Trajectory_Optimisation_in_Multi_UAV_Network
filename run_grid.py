@@ -96,7 +96,20 @@ if __name__ == "__main__":
     ap.add_argument("--K", nargs="+", type=int, default=None, help="fixed K list (skips auto range)")
     ap.add_argument("--tau", type=float, default=0.0, help="mean event lifetime in MINUTES (0 = default 45-90 min)")
     ap.add_argument("--L", type=float, default=DynParams.L, help="field side in metres")
-    ap.add_argument("--planner", default="sa", choices=["sa","sa_norepair","greedy","sa_nolambda","sa_launchdwell","sa_sqrt","rr_tour","rr_sweep","cpsat_d2","cpsat_d5","cpsat_d15"])
+    def _planner_arg(v):
+        # fixed variants, plus any deterministic CP-SAT budget: cpsat_d<seconds>, e.g. cpsat_d45
+        known = {"sa","sa_norepair","greedy","sa_nolambda","sa_launchdwell","sa_sqrt","rr_tour","rr_sweep"}
+        if v in known:
+            return v
+        if v.startswith("cpsat_d"):
+            try:
+                float(v[len("cpsat_d"):])
+            except ValueError:
+                raise argparse.ArgumentTypeError(f"bad CP-SAT budget in {v!r}")
+            return v
+        raise argparse.ArgumentTypeError(f"unknown planner {v!r}")
+
+    ap.add_argument("--planner", default="sa", type=_planner_arg)
     ap.add_argument("--Th", type=float, default=12*3600); ap.add_argument("--iters", type=int, default=1200)
     ap.add_argument("--procs", type=int, default=os.cpu_count())
     a = ap.parse_args()
