@@ -1,4 +1,5 @@
-import sys, csv, math, collections, numpy as np
+import sys, csv, math, collections, os, numpy as np
+CORRECTED = os.environ.get('P6_ALGEBRA','corrected') == 'corrected'
 sys.path.insert(0,".")
 from dyn_env import DynParams, SensorField
 rows=[r for r in csv.DictReader(open(sys.argv[1] if len(sys.argv)>1 else 'grid.csv')) if r["coord"]=="exclude" and r["replan"]=="launch" and float(r.get("Th",0))==43200]
@@ -22,7 +23,8 @@ for key in sorted(cells):
         for K in range(1,max(Ks)+1):
             if Phi(K+1)<=0: break
             S=r<=reach(K); Sn=r<=reach(K+1)
-            gain=(np.sqrt(w[S]*c[S]).sum())**2/(2*Pb)*(1/Phi(K)-1/Phi(K+1))
+            QK=np.sqrt(w[S]*c[S]).sum(); QK1=np.sqrt(w[Sn]*c[Sn]).sum()
+            gain=(QK**2/(2*Pb*Phi(K))-QK1**2/(2*Pb*Phi(K+1))) if CORRECTED else QK**2/(2*Pb)*(1/Phi(K)-1/Phi(K+1))
             loss=(Tb+T/2)*w[S&~Sn].sum()
             if gain>loss: Kp=K+1
             else: break
