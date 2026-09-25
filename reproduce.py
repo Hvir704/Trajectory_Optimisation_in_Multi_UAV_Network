@@ -3,7 +3,7 @@
 usage:  python reproduce.py [--only STEP ...] [--out results/]
 
 Inputs (all in this folder): sa_rerun.csv, grid.csv, rr_tour_win.csv, rr_sweep_win.csv, m40_sa.csv,
-m40_rr.csv, m40_cp.csv, m40_cp15.csv, apriori_regret.csv. No simulation is run; everything below is
+m40_rr.csv, m40_cp.csv, m40_cp15.csv, apriori_regret.csv, hetero.csv. No simulation is run; everything below is
 analysis of recorded runs, deterministic apart from the bootstrap (fixed seed).
 
 Each step writes its output to --out and the paper element it feeds is named. A step that fails
@@ -48,6 +48,8 @@ STEPS = [
      ["paired_diff.py", "sa_rerun.csv", "rr_tour_win.csv"]),
     ("perturb_inputs", "Sec. VII-I sensitivity to the known physical inputs",
      ["perturb_inputs.py", "{o}/grid_final.csv"]),
+    ("hetero", "Sec. VII-C reserved-sortie allocation vs equal shares",
+     ["analyze_hetero.py", "sa_rerun.csv", "hetero.csv"]),
     ("m40_cp_final", "M=40 CP-SAT file (paper default budget, ring converged budget)", None),
     ("baseline_m40", "Table IX (M=40 three-planner rows)",
      ["baseline_table.py", "m40_sa.csv", "m40_rr.csv", "{o}/m40_cp_final.csv", "--by-family"]),
