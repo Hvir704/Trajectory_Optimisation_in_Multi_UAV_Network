@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\criterion_variants.py", line 15, in <module>
+    ap = {(x["lay"], int(x["M"]), float(x["E"]), int(x["seed"])): x for x in csv.DictReader(open(sys.argv[2]))}
+                                                                                            ^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'apriori_regret.csv'

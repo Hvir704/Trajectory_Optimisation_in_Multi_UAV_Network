@@ -44,6 +44,7 @@ def main():
     ap.add_argument("out"); ap.add_argument("--layouts", nargs="+", default=["paper"])
     ap.add_argument("--M", nargs="+", type=int, default=[100]); ap.add_argument("--Emax", nargs="+", type=float, default=[1.5e6])
     ap.add_argument("--seeds", default="1-12"); ap.add_argument("--depot", nargs=2, type=float, required=True)
+    ap.add_argument("--planner", default="sa")
     ap.add_argument("--procs", type=int, default=1); ap.add_argument("--budget", type=float, default=0,
                     help="stop launching new runs after this many seconds (0 = no limit)")
     a = ap.parse_args()
@@ -62,7 +63,7 @@ def main():
 
     def run_many(keys):
         todo = [k for k in keys if k not in done]
-        args = [(lay, M, E, K, s, "exclude", "launch", 0.0, 0.0, "prior", 0.0, "sa", 12600.0, 43200.0, 1200)
+        args = [(lay, M, E, K, s, "exclude", "launch", 0.0, 0.0, "prior", 0.0, a.planner, 12600.0, 43200.0, 1200)
                 for (lay, M, E, s, K) in todo]
         if not args: return
         if a.procs > 1:

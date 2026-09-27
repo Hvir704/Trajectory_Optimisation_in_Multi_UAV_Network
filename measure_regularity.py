@@ -38,6 +38,17 @@ def build(planner, seed):
     if planner.startswith("rr_"):
         from rr_planner import build_rr_planner
         return build_rr_planner("tour" if planner == "rr_tour" else "sweep")
+    if planner == "sa_whittle":
+        return build_sa_planner(iters=1200, seed_base=seed)
+    if planner == "cluster_patrol":
+        from rr_planner import build_cluster_planner
+        return build_cluster_planner()
+    if planner == "terr_due":
+        from territory_sa import build_territory_due_planner
+        return build_territory_due_planner()
+    if planner.startswith("sa_terr_"):
+        from territory_sa import build_territory_sa_planner
+        return build_territory_sa_planner(planner.split("_")[-1], iters=1200, seed_base=seed)
     if planner == "greedy":
         from dyn_env import greedy_ratio_planner
         return greedy_ratio_planner
@@ -46,7 +57,10 @@ def build(planner, seed):
 
 def run_one(planner, layout, M, Emax, K, seed, Th=43200.0):
     p = DynParams(M=M, K=K, Emax=Emax, layout=layout, T_horizon=Th, T_burnin=3 * 3600.0)
-    sim = DynSim(p, build(planner, seed), seed=seed)
+    if planner == "sa_whittle": p.index_mode = "whittle"
+    pl = build(planner, seed)
+    sim = DynSim(p, pl, seed=seed)
+    if hasattr(pl, "bind_sim"): pl.bind_sim(sim)
     log = [[] for _ in range(M)]
     orig = sim.field.visit
     def visit(t, i):                      # record, then do exactly what the simulator did

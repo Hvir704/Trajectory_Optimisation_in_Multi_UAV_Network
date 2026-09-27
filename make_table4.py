@@ -65,7 +65,8 @@ for key in keys:
     if lay == "ring" and E == 3e6: mark = "$^{\\dagger}$"
     if lay == "core": mark = "$^{\\ddagger}$"
     rr = f"{c['ratio']:.2f}" if lay == "ring" else f"{c['ratio']:.1f}"
-    print(f"{lay} & {M} & {E/1e6:.1f} & {c['n']} & {c['am']:.2f} & {c['l']:.2f} & {c['ex']:.2f} & {c['w1']:.2f} & "
+    am_str = (f"$\\ge${c['am']:.2f}" if c['cens'] > 0 else f"{c['am']:.2f}")   # a right-censored instance makes the mean a lower bound
+    print(f"{lay} & {M} & {E/1e6:.1f} & {c['n']} & {am_str} & {c['l']:.2f} & {c['ex']:.2f} & {c['w1']:.2f} & "
           f"{c['sp'][0]}/{c['sp'][1]} & {fmt_p(c['sp'][2])} & {c['sm'][0]}/{c['sm'][1]} & {fmt_p(c['sm'][2])} & "
           f"{rr} & {c['bnd']:.1f} & {regime}{mark}\\\\")
 

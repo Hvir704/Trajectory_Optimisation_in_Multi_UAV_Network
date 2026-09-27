@@ -13,7 +13,12 @@ d = defaultdict(dict)
 for r in csv.DictReader(open(sys.argv[1])):
     if float(r["L"]) == 12600: d[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]))][int(r["K"])] = r
 ap = {(x["lay"], int(x["M"]), float(x["E"]), int(x["seed"])): x for x in csv.DictReader(open(sys.argv[2]))}
-res = defaultdict(list); detail = []
+EX = {}
+if len(sys.argv) > 3 and sys.argv[3].endswith(".csv"):      # optional: ex-ante commute inputs
+    for x in csv.DictReader(open(sys.argv[3])):
+        if float(x["L"]) == 12600:
+            EX[(x["layout"], int(x["M"]), float(x["Emax"]), int(x["seed"]))] = ((float(x["rc_fp"]), float(x["Pb_fp"])) if "--fixedpoint" in sys.argv else (float(x["rc_exante"]), float(x["Pb_exante"])))
+res = defaultdict(list); detail = []; VERD = {}
 for k, x in ap.items():
     byK = d[k]; Ks = sorted(byK); J = {K: float(byK[K]["J"]) for K in Ks}; r0 = byK[Ks[0]]
     kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"]); law = min(kr, kc)
@@ -24,7 +29,9 @@ for k, x in ap.items():
     lay, M, E, seed = k; p = DynParams(M=M, Emax=E, layout=lay); U = (1 - p.rho) * E
     F = SensorField(DynParams(M=M, Emax=E, layout=lay), np.random.default_rng(seed))
     r = np.linalg.norm(F.pos - p.home, axis=1); w = F.wi_base; c = 2 * p.Pf * r / p.v
-    rc = float(r0["r_c"]); Pb = float(r0["P_bar"]); tc = 2 * rc / p.v
+    rc = float(r0["r_c"]); Pb = float(r0["P_bar"])
+    if k in EX: rc, Pb = EX[k]
+    tc = 2 * rc / p.v
     Phi = lambda K: K * (U - K * p.Pf * tc) / (U + K * tc * (Pb - p.Pf))
     reach = lambda K: p.v * (U / K - p.Ph * p.B_bits / p.R) / (2 * p.Pf)
     H = p.T_burnin + (p.T_horizon - p.T_burnin) / 2
@@ -38,6 +45,7 @@ for k, x in ap.items():
     v_KG = bool(H * WA(K0 + 1) > Js(K0) - min(Js(K) for K in Kgrid))
     F0 = Js(K0) + H * WA(K0)
     v_gl = bool(all(Js(K) + H * WA(K) > F0 for K in Kgrid))
+    VERD[str(k)] = v_gl
     res["banked"].append((k[0], x["passes"] == "True", reg))
     res["corrected_KR"].append((k[0], v_KR, reg)); res["KG"].append((k[0], v_KG, reg)); res["global"].append((k[0], v_gl, reg))
     am = min(J, key=J.get); detail.append((k, K0, KR, am))
@@ -62,7 +70,7 @@ ok = sum(1 for k, K0, KR, am in detail if K0 <= am <= KR)
 print(f"\nResult-1 interval [K0, K_R] contains the measured argmin in {ok}/{len(detail)} reach-bound instances")
 
 # ---- Table VIII rows for the global form (TeX) ----
-if len(sys.argv) > 3 and sys.argv[3] == "--tex":
+if "--tex" in sys.argv:
     R = res["global"]
     def tex(lab, test, S):
         x = np.array([t[2] for t in S])
@@ -75,3 +83,7 @@ if len(sys.argv) > 3 and sys.argv[3] == "--tex":
     print("\\midrule")
     tex("all reach-bound, test passes", "", [t for t in R if t[0] != "ring" and t[1] is True])
     tex("all reach-bound, flagged", "", [t for t in R if t[0] != "ring" and t[1] is False])
+
+for arg in sys.argv:
+    if arg.startswith("--dump="):
+        import json; json.dump(VERD, open(arg[7:], "w"))

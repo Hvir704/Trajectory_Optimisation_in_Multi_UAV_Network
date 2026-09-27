@@ -114,3 +114,84 @@ def build_rr_planner(kind: str = "tour"):
 
     planner.state = st
     return planner
+
+
+# ---------------------------------------------------------------------------------------------
+# Cluster-partitioned patrol: the energy-constrained adaptation of the clustering method of
+# Rahimi & Shafieinejad (Wireless Netw. 30:533-555, 2024). Their method partitions the sensors by
+# k-means into one cluster per UAV and has each UAV circulate a tour of its own cluster, with no
+# energy limit and no depot. Here each UAV k owns cluster k, patrols that cluster's closed tour
+# (depot + cluster sensors, NN + 2-opt), and cuts it into energy-feasible sorties exactly as the
+# tour patrol does (contiguous runs from a per-cluster pointer, skipping sensors unreachable on
+# their own). Ages and priorities play no part in selection, as in the original (unweighted AoI).
+# The planner needs the drone index, which SortieRequest does not carry: run_grid calls
+# planner.bind_sim(sim), and the planner wraps sim._plan to record k. The simulator is unchanged.
+# ---------------------------------------------------------------------------------------------
+def _kmeans(X: np.ndarray, k: int, seed: int = 0, iters: int = 100) -> np.ndarray:
+    """Plain k-means with k-means++ initialisation; deterministic for a given seed."""
+    rng = np.random.default_rng(seed)
+    n = len(X); k = min(k, n)
+    C = [X[rng.integers(n)]]
+    for _ in range(1, k):
+        d2 = np.min(((X[:, None, :] - np.array(C)[None]) ** 2).sum(-1), axis=1)
+        C.append(X[rng.choice(n, p=d2 / d2.sum())] if d2.sum() > 0 else X[rng.integers(n)])
+    C = np.array(C, float)
+    lab = np.zeros(n, int)
+    for _ in range(iters):
+        new = np.argmin(((X[:, None, :] - C[None]) ** 2).sum(-1), axis=1)
+        for j in range(k):                               # re-seed an empty cluster at the worst-fit point
+            if not np.any(new == j):
+                far = np.argmax(np.min(((X[:, None, :] - C[None]) ** 2).sum(-1), axis=1)); new[far] = j
+        if np.array_equal(new, lab) and _ > 0: break
+        lab = new
+        C = np.array([X[lab == j].mean(axis=0) for j in range(k)])
+    return lab
+
+
+def build_cluster_planner():
+    st = {"orders": None, "ptr": None, "k": 0}
+
+    def bind_sim(sim):
+        orig = sim._plan
+        def _plan(k, *a, **kw):
+            st["k"] = k
+            return orig(k, *a, **kw)
+        sim._plan = _plan
+        st["K"] = sim.p.K
+
+    def planner(req: SortieRequest) -> List[int]:
+        if req.start is not None:
+            raise ValueError("cluster patrol is launch-time only (use --replan launch)")
+        p = req.p
+        if st["orders"] is None:
+            lab = _kmeans(req.pos, st["K"], seed=0)
+            st["orders"] = []
+            for j in range(st["K"]):
+                idx = np.where(lab == j)[0]
+                st["orders"].append(idx[tour_order(req.pos[idx], req.home)] if len(idx) else idx)
+            st["ptr"] = [0] * st["K"]
+        k = st["k"] % st["K"]; order = st["orders"][k]; M = len(order)
+        if M == 0: return []
+        hov = p.e_hover(req.dwell_est)
+        d_home = np.linalg.norm(req.pos - req.home, axis=1)
+        alone = p.e_fly(2.0 * d_home) + hov
+        excl = np.zeros(len(req.pos), bool) if req.excluded is None else np.asarray(req.excluded, bool)
+        route, cur, E = [], req.home, req.E_usable
+        ptr = st["ptr"][k]; stop_at = None
+        for step in range(M):
+            j = int(order[(ptr + step) % M])
+            if excl[j] or alone[j] > req.E_usable:
+                continue
+            e_leg = p.e_fly(float(np.linalg.norm(req.pos[j] - cur))) + hov[j]
+            if e_leg + p.e_fly(d_home[j]) <= E + 1e-6:
+                route.append(j); E -= e_leg; cur = req.pos[j]
+            else:
+                stop_at = (ptr + step) % M; break
+        if stop_at is None:
+            stop_at = (int(np.where(order == route[-1])[0][0]) + 1) % M if route else ptr
+        st["ptr"][k] = stop_at
+        return route
+
+    planner.bind_sim = bind_sim
+    planner.state = st
+    return planner

@@ -1,0 +1,6 @@
+24 cells, 272 instances
+  per-instance      exact 0.581  within-one 0.820
+  mean J            exact 0.504  within-one 0.735
+  median J          exact 0.500  within-one 0.812
+  mean rel. regret  exact 0.489  within-one 0.735
+  cells where the summaries disagree: 9

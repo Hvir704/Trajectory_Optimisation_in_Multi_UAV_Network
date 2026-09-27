@@ -3,7 +3,7 @@
 usage:  python reproduce.py [--only STEP ...] [--out results/]
 
 Inputs (all in this folder): sa_rerun.csv, grid.csv, rr_tour_win.csv, rr_sweep_win.csv, m40_sa.csv,
-m40_rr.csv, m40_cp.csv, m40_cp15.csv, apriori_regret.csv, hetero.csv. No simulation is run; everything below is
+m40_rr.csv, m40_cp.csv, m40_cp15.csv, apriori_regret.csv, hetero.csv, depot_q.csv, depot_e.csv, cluster_win.csv, m40_cluster.csv. No simulation is run; everything below is
 analysis of recorded runs, deterministic apart from the bootstrap (fixed seed).
 
 Each step writes its output to --out and the paper element it feeds is named. A step that fails
@@ -50,6 +50,14 @@ STEPS = [
      ["perturb_inputs.py", "{o}/grid_final.csv"]),
     ("hetero", "Sec. VII-C reserved-sortie allocation vs equal shares",
      ["analyze_hetero.py", "sa_rerun.csv", "hetero.csv"]),
+    ("depot", "Table (depot position), Sec. VII depot subsection",
+     ["depot_table.py", "depot_q.csv", "depot_e.csv"]),
+    ("cluster", "Sec. VII-J published competitor (Rahimi & Shafieinejad cluster patrol) vs SA",
+     ["cluster_compare.py", "sa_rerun.csv", "cluster_win.csv"]),
+    ("baseline_cluster", "Table IX cluster-patrol rows (primary grid)",
+     ["baseline_table.py", "sa_rerun.csv", "cluster_win.csv"]),
+    ("baseline_cluster_m40", "Table IX cluster-patrol row (M=40)",
+     ["baseline_table.py", "m40_sa.csv", "m40_cluster.csv"]),
     ("m40_cp_final", "M=40 CP-SAT file (paper default budget, ring converged budget)", None),
     ("baseline_m40", "Table IX (M=40 three-planner rows)",
      ["baseline_table.py", "m40_sa.csv", "m40_rr.csv", "{o}/m40_cp_final.csv", "--by-family"]),
@@ -66,6 +74,15 @@ def main():
     ap.add_argument("--out", default="results"); ap.add_argument("--only", nargs="*")
     a = ap.parse_args()
     out = os.path.abspath(a.out); os.makedirs(out, exist_ok=True)
+    need = set()
+    for name, feeds, cmd in STEPS:
+        if a.only and name not in a.only: continue
+        for c in (cmd or []):
+            if not c.startswith("{o}") and not c.startswith("--") and c.endswith((".py", ".csv")): need.add(c)
+    if not a.only or "m40_cp_final" in a.only: need |= {"m40_cp.csv", "m40_cp15.csv"}
+    missing = sorted(f for f in need if not os.path.exists(os.path.join(HERE, f)))
+    if missing:
+        print("missing inputs in", HERE, "->", ", ".join(missing)); sys.exit(1)
     for name, feeds, cmd in STEPS:
         if a.only and name not in a.only: continue
         t0 = time.time()
@@ -77,7 +94,8 @@ def main():
         with open(log, "w") as f:
             r = subprocess.run([PY] + args, cwd=HERE, stdout=f, stderr=subprocess.STDOUT)
         if r.returncode != 0:
-            print(f"[FAILED] {name}: see {log}"); sys.exit(1)
+            print(f"[FAILED] {name}: see {log}; last lines:")
+            print("".join(open(log).readlines()[-12:])); sys.exit(1)
         print(f"[ok] {name:18s} {time.time()-t0:5.1f}s  -> {feeds}   ({os.path.relpath(log)})")
     print(f"\nall outputs in {out}")
 

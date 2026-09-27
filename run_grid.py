@@ -44,6 +44,17 @@ def one(args):
             raise ValueError("cpsat planners are launch-time only")
         from milp_sortie import build_milp_planner
         pl = build_milp_planner(dtime=float(planner[len("cpsat_d"):]))
+    elif planner == "terr_due":                  # periodic territorial patrol, sqrt-weighted (territory_sa.py)
+        from territory_sa import build_territory_due_planner
+        pl = build_territory_due_planner()
+    elif planner in ("sa_terr_km", "sa_terr_bal"):   # SA inside fixed territories (territory_sa.py)
+        from territory_sa import build_territory_sa_planner
+        pl = build_territory_sa_planner(variant=planner.split("_")[-1], iters=iters, seed_base=seed)
+    elif planner == "cluster_patrol":          # Rahimi & Shafieinejad (2024) clustering method, energy-constrained
+        if replan != "launch" or divert:
+            raise ValueError("cluster_patrol is launch-time only")
+        from rr_planner import build_cluster_planner
+        pl = build_cluster_planner()
     elif planner in ("rr_tour", "rr_sweep"):      # external baseline: age-blind patrol (rr_planner.py)
         if replan != "launch" or divert:
             raise ValueError("rr_* planners are launch-time only")
@@ -51,6 +62,8 @@ def one(args):
         pl = build_rr_planner("tour" if planner == "rr_tour" else "sweep")
     elif planner == "greedy":
         from dyn_env import greedy_ratio_planner as pl
+    elif planner == "sa_whittle":               # quadratic-in-age (Whittle-type) index, Kadota et al. 2018
+        p.index_mode = "whittle"; pl = build_sa_planner(iters=iters, seed_base=seed)
     elif planner == "sa_sqrt":
         p.index_mode = "sqrt"; pl = build_sa_planner(iters=iters, seed_base=seed)
     elif planner == "sa_norepair":
@@ -58,6 +71,7 @@ def one(args):
     else:
         pl = build_sa_planner(iters=iters, seed_base=seed)
     sim = DynSim(p, pl, seed=seed, coordinate=(coord != "none"))
+    if hasattr(pl, "bind_sim"): pl.bind_sim(sim)       # planners that need the drone index
     if planner == "sa_launchdwell":   # ablation: the old launch-time dwell estimate (no arrival correction)
         sim._Ts_mean = 0.0; sim._launch_dwell_only = True
     m = sim.run()
@@ -98,7 +112,7 @@ if __name__ == "__main__":
     ap.add_argument("--L", type=float, default=DynParams.L, help="field side in metres")
     def _planner_arg(v):
         # fixed variants, plus any deterministic CP-SAT budget: cpsat_d<seconds>, e.g. cpsat_d45
-        known = {"sa","sa_norepair","greedy","sa_nolambda","sa_launchdwell","sa_sqrt","rr_tour","rr_sweep"}
+        known = {"sa","sa_norepair","greedy","sa_nolambda","sa_launchdwell","sa_sqrt","rr_tour","rr_sweep","cluster_patrol","sa_terr_km","sa_terr_bal","terr_due","sa_whittle"}
         if v in known:
             return v
         if v.startswith("cpsat_d"):
