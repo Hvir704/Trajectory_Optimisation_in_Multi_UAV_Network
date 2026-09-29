@@ -44,6 +44,12 @@ def one(args):
             raise ValueError("cpsat planners are launch-time only")
         from milp_sortie import build_milp_planner
         pl = build_milp_planner(dtime=float(planner[len("cpsat_d"):]))
+    elif planner in ("cyc", "cyc_noopt", "cyc_sector0"):   # option C4: optimised cyclic schedule (cyclic_sched.py)
+        if replan != "launch" or divert:
+            raise ValueError("cyc planners are launch-time only")
+        from cyclic_sched import build_cyclic_planner
+        pl = build_cyclic_planner(noopt=(planner != "cyc"),
+                                  inits=(("sector",) if planner == "cyc_sector0" else None))
     elif planner == "terr_due":                  # periodic territorial patrol, sqrt-weighted (territory_sa.py)
         from territory_sa import build_territory_due_planner
         pl = build_territory_due_planner()
@@ -75,6 +81,11 @@ def one(args):
     if planner == "sa_launchdwell":   # ablation: the old launch-time dwell estimate (no arrival correction)
         sim._Ts_mean = 0.0; sim._launch_dwell_only = True
     m = sim.run()
+    if planner.startswith("cyc") and getattr(pl, "state", {}).get("info"):
+        inf = pl.state["info"]
+        print(f"  [cyc] {planner} {layout} M={M} E={Emax:.1e} K={K} s={seed}: init={inf['init']} "
+              f"J_sur={inf['J_sur']:.4e} J_sur_start={ {k: round(v, 1) for k, v in inf['J_sur_start'].items()} } "
+              f"J_sim={m['J_timeavg']:.4e} J_age={m['J_age']:.4e} classes={inf['classes']} build={inf['build_s']:.1f}s", flush=True)
     if hasattr(pl, "stats"):
         s_ = pl.stats
         print(f"  [cpsat] {layout} M={M} K={K} s={seed}: decisions={s_['n']} optimal={s_['optimal']} "
@@ -112,7 +123,7 @@ if __name__ == "__main__":
     ap.add_argument("--L", type=float, default=DynParams.L, help="field side in metres")
     def _planner_arg(v):
         # fixed variants, plus any deterministic CP-SAT budget: cpsat_d<seconds>, e.g. cpsat_d45
-        known = {"sa","sa_norepair","greedy","sa_nolambda","sa_launchdwell","sa_sqrt","rr_tour","rr_sweep","cluster_patrol","sa_terr_km","sa_terr_bal","terr_due","sa_whittle"}
+        known = {"sa","sa_norepair","greedy","sa_nolambda","sa_launchdwell","sa_sqrt","rr_tour","rr_sweep","cluster_patrol","sa_terr_km","sa_terr_bal","terr_due","sa_whittle","cyc","cyc_noopt","cyc_sector0"}
         if v in known:
             return v
         if v.startswith("cpsat_d"):
