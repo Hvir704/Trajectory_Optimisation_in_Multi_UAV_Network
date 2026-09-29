@@ -78,5 +78,20 @@ if __name__ == "__main__":
             lo, hi = boot_median(x.rel)
             print(f"{fam:8s} {len(x):4d} {np.median(x.rel):+17.2%} [{lo:+.2%}, {hi:+.2%}] {int((x.rel < 0).sum()):4d}/{len(x)}")
         if miss: print("  missing K=l rows:", miss[:10], "..." if len(miss) > 10 else "")
+        # K* agreement with the rule (reported quantity; the rule is ex-ante, planner-independent)
+        g = m.merge(L, on=KEY, how="inner")
+        print(f"\nK* AGREEMENT with the rule l ({len(g)} deployments): exact / within one")
+        rng = np.random.default_rng(0)
+        for fam, x in list(g.groupby("layout")) + [("all", g)]:
+            out = []
+            for s_ in ("a", "b"):
+                w1 = (abs(x[f"K_{s_}"] - x.ell) <= 1).to_numpy(float)
+                ex = (x[f"K_{s_}"] == x.ell).to_numpy(float)
+                out.append((ex.mean(), w1.mean()))
+            dw = (abs(x.K_b - x.ell) <= 1).to_numpy(float) - (abs(x.K_a - x.ell) <= 1).to_numpy(float)
+            bs = [dw[rng.integers(0, len(dw), len(dw))].mean() for _ in range(5000)] if len(dw) > 1 else [np.nan]
+            lo, hi = np.percentile(bs, [2.5, 97.5])
+            print(f"{fam:8s} {len(x):4d}  {a.pa}: {out[0][0]:.2f} / {out[0][1]:.2f}   {a.pb}: {out[1][0]:.2f} / {out[1][1]:.2f}"
+                  f"   within-one diff b-a {dw.mean():+.3f} [{lo:+.3f}, {hi:+.3f}]")
     if a.out:
         m[KEY + ["K_a", "K_b", "censored_a", "censored_b"]].to_csv(a.out, index=False)

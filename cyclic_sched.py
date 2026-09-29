@@ -1,4 +1,4 @@
-"""cyclic_sched.py -- option C4: optimised cyclic schedule, seeded by the published clustering method.
+"""cyclic_sched.py (v2: surrogate breach handling fixed to match DynSim) -- option C4: optimised cyclic schedule, seeded by the published clustering method.
 
 WHAT IT IS
 Each UAV k owns a disjoint sensor set and a cyclic visit SEQUENCE over it. At every launch the UAV
@@ -126,24 +126,31 @@ class Ctx:
                 route, ptr = cut_sortie(seq, ptr, D, dh, hov, alone, excl, Eu, Pf_v)
             else:
                 route = []
-            t0 = t; E = Eu; cur = M
+            t0 = t; E = Eu; cur = M; nvis = 0
             for j in route:
                 d = D[cur][j]
                 ta = t + d / v
                 dw = min((ta - tlast[j]) * lam, B) / R
                 e_step = Pf_v * d + Ph * dw
                 if e_step + Pf_v * dh[j] > E:
-                    break                                   # reserve breach: go home
+                    # reserve breach at arrival, exactly as DynSim: the leg IS flown (time passes),
+                    # the node is not served, the drone heads home from its previous position.
+                    # (v1 broke out without advancing time: with a one-sensor sequence in the
+                    # hover-estimate gray band this never advanced the clock -> infinite loop.)
+                    t = ta
+                    break
                 a = max(tlast[j], burn); b = min(ta, H)
                 if b > a:
                     integ[j] += 0.5 * ((b - tlast[j]) ** 2 - (a - tlast[j]) ** 2)
                 tlast[j] = ta
-                t = ta + dw; E -= e_step; cur = j
-            t += D[cur][M] / v
-            if not route:
-                t = t0 + self.t_c                           # DynSim's empty-sortie turnaround
-            dur = t - t0 if route else 0.0
+                t = ta + dw; E -= e_step; cur = j; nvis += 1
+            t += D[cur][M] / v                              # land
+            dur = t - t0
             Ts = dur if Ts is None else 0.9 * Ts + 0.1 * dur
+            if nvis == 0:
+                t += self.t_c                               # DynSim's empty-sortie turnaround
+            if not t > t0:
+                raise RuntimeError(f"surrogate clock did not advance (UAV {k}, t={t})")
         J = 0.0
         for i in members:                                   # tail up to H
             a = max(tlast[i], burn)
