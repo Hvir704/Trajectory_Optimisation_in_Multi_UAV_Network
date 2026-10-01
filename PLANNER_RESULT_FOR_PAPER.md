@@ -56,6 +56,17 @@ optimum or baseline comparison was computed before the rerun. Full record: PLANN
   rather than regimes and failed on off-centre depots; the earlier hybrids (SA in territories, sqrt-due patrol,
   balanced territories, quadratic index) were worse than one of the two parents.
 
+## Off-centre depot (secondary, same measurement rule, no censoring)
+| depot | family | median | 95% CI | wins |
+|---|---|---|---|---|
+| (0.25L, 0.25L) | core | -13.5% | [-18.7, -10.8] | 72/72 |
+| | paper | -20.0% | [-25.4, -16.8] | 72/72 |
+| | ring | -8.2% | [-11.6, -5.8] | 65/72 |
+| (0.10L, 0.50L) | paper | -22.8% | [-31.7, -14.6] | 24/24 |
+| | ring | -1.9% | [-3.7, -0.7] | 20/24 |
+
+C4's advantage transfers to off-centre depots, including the off-centre ring where the regime-aware selector
+(option A) failed; the edge-depot ring margin is small (-1.9%) and should be stated as such.
+
 ## Still pending
 - C4 vs SA on seeds 1-12: needs SA on the same grid (paper chat's SA fill on the i9, or a Ryzen rerun).
-- Off-centre depot secondary: run_depot.py with --planner cyc, against depot_q_cluster / depot_e_cluster.

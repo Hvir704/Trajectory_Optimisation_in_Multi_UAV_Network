@@ -249,3 +249,15 @@ mechanism, and refuses inputs from another depot. Reproduction through spawn-sty
 3 recorded depot rows (2 cluster_patrol, 1 cyc) recomputed; 2 bit-identical, 1 equal to the last digit
 (528250.7882871759 vs 528250.788287176, Ryzen vs Linux float). Dry runs: 420 fill jobs at the quarter depot,
 75 at the edge depot in round 0. fill_k.py SHA-256 (LF) A40EFAC3...B6EFF5.
+
+## RESULT -- off-centre depot secondary (seeds 1-12, after fill_k --depot --tail 3 1.5, 1 Oct 2026)
+cyc vs cluster_patrol at own optimum, no censoring for either planner:
+  depot (0.25L,0.25L), 216: core -13.5% [-18.7, -10.8] 72/72; paper -20.0% [-25.4, -16.8] 72/72;
+                            ring -8.2% [-11.6, -5.8] 65/72; all -12.8% [-14.8, -11.6] 209/216.
+  depot (0.10L,0.50L), 48:  paper -22.8% [-31.7, -14.6] 24/24; ring -1.9% [-3.7, -0.7] 20/24;
+                            all -11.3% [-17.0, -5.6] 44/48.
+The registered per-family criterion would also hold at both depots, but this was a reported secondary,
+not a criterion. The edge-depot ring is the thinnest result anywhere (-1.9%, worst +18.5%, s2).
+Contrast with option A, which failed exactly on the off-centre ring (+11.7% / +19.1% vs cluster):
+C4 changes the policy instead of selecting between policies, and it transfers.
+Some cluster_patrol optima sit at K=1 (ring, both depots): K=1 is the physical floor, not censoring.
