@@ -238,3 +238,14 @@ SECONDARY (reported, not pass/fail):
   under the registered rule for the cluster / cyc / cyc_sector0 grid union.
 NOT YET DONE: cyc vs SA on seeds 1-12 (SA rows are i9 data, top-extended only; needs the paper chat's SA
 fill on the i9 or a Ryzen rerun); off-centre depot secondary (run_depot.py --planner cyc).
+
+## Off-centre depot secondary: measurement (1 Oct 2026, BEFORE any depot comparison was computed)
+cyc depot runs as recorded: 4 deployments censored at the lower edge (ring M=200 3 MJ, depot (0.25,0.25),
+seeds 2, 3, 4, 11: optimum K=3 = smallest K swept) and the registered tail rule unmet in 195/216 (quarter) and
+40/48 (edge) deployments, mostly because run_depot.py extends only upward. Same rule as the centred evaluation:
+own optima after fill_k.py --tail 3 1.5 on the union of cluster_patrol and cyc grids, per depot.
+fill_k.py gained --depot FX FY: it sets DEPOT_FRAC and calls run_depot.job, i.e. run_depot.py's own
+mechanism, and refuses inputs from another depot. Reproduction through spawn-style workers (as on Windows):
+3 recorded depot rows (2 cluster_patrol, 1 cyc) recomputed; 2 bit-identical, 1 equal to the last digit
+(528250.7882871759 vs 528250.788287176, Ryzen vs Linux float). Dry runs: 420 fill jobs at the quarter depot,
+75 at the edge depot in round 0. fill_k.py SHA-256 (LF) A40EFAC3...B6EFF5.

@@ -17,6 +17,10 @@ Per deployment (layout, M, Emax, seed) it repeats until nothing changes:
 New rows go to out.csv (run_grid schema, run_grid.one with its defaults: coord exclude, launch-time,
 no divert, q 0, prior belief, default tau, L and 12 h horizon, 1200 SA iters). Inputs are never modified.
 Refuses seeds <= 12 unless --allow-eval is given (the evaluation is run once, deliberately).
+
+--depot FX FY: fill off-centre-depot runs exactly as run_depot.py does (it moves DynParams.home through the
+same environment variable and uses run_depot.job, so rows carry depot_x/depot_y). Every input row must
+carry the same depot; inputs from another depot are refused.
 """
 import argparse, csv, os, sys
 from multiprocessing import Pool
@@ -37,12 +41,16 @@ KMAX = 80
 
 
 def tail_ok(y, Ks, jmin, C):
-    """True if every K in Ks has a row for this planner with J > C * jmin (inf counts as above)."""
+    """True if every K in Ks has J > C * jmin for this planner (inf counts as above); False if one does
+    not; None if a row is still missing -- the union step adds it this round and the tail is judged
+    next round. (v1 treated a missing row as a failure: with two or more planners each round's new top
+    K was missing for the other planner, so the grid ratcheted up by one K per round to KMAX.)"""
     for K in Ks:
         r = y[y.K == K]
         if not len(r):
-            return False
-        J = float(r.J.iloc[0])
+            return None
+    for K in Ks:
+        J = float(y[y.K == K].J.iloc[0])
         if np.isfinite(J) and J <= C * jmin:
             return False
     return True
@@ -67,9 +75,9 @@ def missing_jobs(d, planners, tail=None):
                     if tail:
                         Q, C = tail; jmin = float(fin.J.min())
                         Ks = sorted(allK)
-                        if not tail_ok(y, Ks[-Q:], jmin, C) and max(allK) < KMAX:
+                        if tail_ok(y, Ks[-Q:], jmin, C) is False and max(allK) < KMAX:
                             need.add(max(allK) + 1)
-                        if min(allK) > 1 and not tail_ok(y, Ks[:Q], jmin, C):
+                        if min(allK) > 1 and tail_ok(y, Ks[:Q], jmin, C) is False:
                             need.add(min(allK) - 1)
             for K in sorted(need - have):
                 jobs.append(job(*key, K, pl))
@@ -82,10 +90,23 @@ if __name__ == "__main__":
     ap.add_argument("--planners", nargs="+", required=True)
     ap.add_argument("--procs", type=int, default=os.cpu_count())
     ap.add_argument("--dry", action="store_true"); ap.add_argument("--allow-eval", action="store_true")
+    ap.add_argument("--depot", nargs=2, type=float, default=None, metavar=("FX", "FY"))
     ap.add_argument("--tail", nargs=2, type=float, default=None, metavar=("Q", "C"),
                     help="registered: --tail 3 1.5")
     a = ap.parse_args()
+    worker, fields = one, FIELDS
+    if a.depot:
+        os.environ["DEPOT_FRAC"] = f"{a.depot[0]},{a.depot[1]}"     # set BEFORE any Pool exists
+        import run_depot
+        run_depot.apply_depot(os.environ["DEPOT_FRAC"])
+        worker, fields = run_depot.job, run_depot.OUT_FIELDS
     frames = [pd.read_csv(f) for f in a.inputs]
+    for f_, fr in zip(a.inputs, frames):
+        has = "depot_x" in fr.columns
+        if a.depot and (not has or not np.allclose(fr[["depot_x", "depot_y"]].to_numpy(float), a.depot)):
+            sys.exit(f"refusing: {f_} is not from depot {a.depot}")
+        if not a.depot and has:
+            sys.exit(f"refusing: {f_} carries a depot column; pass --depot")
     if os.path.exists(a.out) and os.path.getsize(a.out) > 0:
         frames.append(pd.read_csv(a.out))
     d = pd.concat(frames, ignore_index=True)
@@ -102,10 +123,10 @@ if __name__ == "__main__":
             break
         rows = []
         with open(a.out, "a", newline="") as f, Pool(min(a.procs, len(jobs))) as pool:
-            w = csv.DictWriter(f, fieldnames=FIELDS)
+            w = csv.DictWriter(f, fieldnames=fields)
             if new:
                 w.writeheader(); new = False
-            for r in pool.imap_unordered(one, jobs):
+            for r in pool.imap_unordered(worker, jobs):
                 w.writerow(r); f.flush(); rows.append(r)
         d = pd.concat([d, pd.DataFrame(rows)], ignore_index=True)
     print("done; combine with the inputs, e.g. own_opt_compare.py on a concatenation of all files")
