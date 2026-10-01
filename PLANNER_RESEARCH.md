@@ -200,3 +200,41 @@ sandbox), run_grid.py 66F1149E...BE45, fill_k.py 85262673...020C, own_opt_compar
 eval_cyc.csv at abort: 1896 cyc rows, 0 cyc_sector0 rows; no fill, no eval_all, no kstar file, so no
 comparison could have been computed. Archived unopened in eval_v1_aborted/.
 v2 cyclic_sched.py SHA-256 (LF): A85C0B7C49D212FAF5E43DDF7613F8BC22D51321E844705F18515E0957EC3E74.
+
+## RESULT -- C4 v2 pilot (seeds 13-15, commit 882a473, 30 Sep 2026)
+Reproducibility: cyc core M=100 1.5 MJ s13 K=5 = 125126.6 on the Ryzen = sandbox v2 value (v1: 128666.7).
+Own optimum after fill_k --tail 3 1.5, cyc vs cluster_patrol: core -10.4% [-16.0, -6.9] 18/18;
+paper -23.2% [-28.8, -18.5] 18/18; ring -4.8% [-8.4, -1.7] 16/18; all -11.5% 52/54; no censoring.
+KILL RULE PASSED for v2. Ablation cyc_sector0 unchanged (no search): core +10.5%, paper -6.7%, ring +4.7%.
+Tool bug found in this pass (fill_k tail rule, measurement only): a planner's missing row at the newest
+top K counted as a tail failure, so with several planners the grid ratcheted up one K per round to the
+cap (K=80 in 5 paper deployments; 1599 fill runs). This only ADDS K values beyond what the registered
+rule requires; it cannot move an optimum except by finding a lower basin, and none was found (J/J* at
+K=80 is 9-12). Pilot numbers stand. Fixed: a missing row defers the tail decision to the next round.
+Check on pilot paper M=50 1.5 MJ s13 (cluster + cyc_sector0): old walks to K=80 (160 rows), fixed stops
+at K=8 (16 rows), identical K* and J* for both planners. fill_k.py SHA-256 (LF) E5E3D24B...A11A7F.
+
+## RESULT -- C4 v2 SINGLE EVALUATION (seeds 1-12, 216 deployments, Ryzen, 30 Sep - 1 Oct 2026)
+Code: cyclic_sched.py v2 (882a473, SHA-256 A85C0B7C...EC3E74); fill_k.py with ratchet fix (E5E3D24B...A11A7F),
+--tail 3 1.5, 13 fill rounds, 2258 fill rows; no grid reached the K=80 cap (max K = 35); no duplicate rows.
+PRIMARY (registered criterion: median own-optimum J below cluster_patrol in EACH family) -- MET:
+  core  -10.6% [-12.1, -9.5]  72/72 | paper -21.0% [-26.3, -18.2] 72/72 | ring -6.6% [-8.1, -4.4] 60/72
+  all   -11.4% [-12.7, -10.2] 204/216; no censoring for either planner.
+  Per cell: every core and paper cell 12/12 wins. Ring is the thin family: M=100 1.5 MJ median +0.1% (5/12
+  wins, i.e. a tie), M=50 1.5 MJ -3.8% (9/12), M=200 1.5 MJ -5.4% (11/12, worst +9.4%); the three 3 MJ ring
+  cells -6.6% to -12.6%. Largest single loss +9.4% (ring M=200 1.5 MJ s8).
+SECONDARY (reported, not pass/fail):
+  common K = rule's l: core -10.6% 72/72, paper -26.9% 72/72, ring -3.4% 58/72, all -12.4% 202/216.
+  K* vs rule (exact / within one): cyc 0.54 / 0.88 vs cluster 0.49 / 0.84 overall; paper 0.71 / 0.99 vs
+  0.47 / 0.85 (within-one diff +0.139 [+0.056, +0.222]); ring 0.46 / 0.86 vs 0.56 / 0.89; core 0.44 / 0.78
+  vs 0.43 / 0.78.
+  Ablation cyc_sector0 vs cluster: core +10.2% (16/72), paper -6.6% (51/72), ring +2.4% (27/72), all +2.2%:
+  the partition alone does not beat the published method; the surrogate-guided search does.
+  Surrogate fidelity over all 2803 cyc runs (J_sur / simulated J_age): core median 0.999 [p10 0.991];
+  paper 0.997 [0.954]; ring 0.996 [0.922]. Start chosen: sector 1909, k-means 894. Sensors off class 0:
+  median 4%, max 28%. Build time median 5.6 s, max 40.6 s.
+  Grid check on the published-method numbers: the union + tail fill changed cluster_patrol's own optimum in
+  0 of 216 evaluation deployments (it had in 3/54 pilot ones), so cluster_win.csv's own optima stand
+  under the registered rule for the cluster / cyc / cyc_sector0 grid union.
+NOT YET DONE: cyc vs SA on seeds 1-12 (SA rows are i9 data, top-extended only; needs the paper chat's SA
+fill on the i9 or a Ryzen rerun); off-centre depot secondary (run_depot.py --planner cyc).
