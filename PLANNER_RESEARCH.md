@@ -261,3 +261,18 @@ not a criterion. The edge-depot ring is the thinnest result anywhere (-1.9%, wor
 Contrast with option A, which failed exactly on the off-centre ring (+11.7% / +19.1% vs cluster):
 C4 changes the policy instead of selecting between policies, and it transfers.
 Some cluster_patrol optima sit at K=1 (ring, both depots): K=1 is the physical floor, not censoring.
+
+## RESULT -- C4 vs SA on seeds 1-12 (descriptive secondary, 2 Oct 2026)
+SA rows: sa_rerun (1).csv as uploaded (216 evaluation deployments, 3099 rows, one machine, no duplicates).
+SA grid status: no optimum on a grid edge; the upward tail rule holds in all 216; the downward rule fails in
+152 (the 3 smallest K are not all above 1.5x the minimum), but in no deployment is SA's J at its smallest swept
+K within 10% of its optimum, so a lower optimum below the grid is implausible. cyc rows: eval_all_v2.csv (filled).
+cyc is deterministic across machines (1-ulp agreement checked), so SA (its machine) vs cyc (Ryzen) is valid.
+Own optimum, cyc vs SA: core -39.6% [-45.8, -31.0] 72/72; ring -9.6% [-11.7, -7.7] 64/72;
+paper -5.3% [-10.3, +2.1] 40/72; all -12.5% [-14.7, -11.2] 176/216.
+Per cell, SA still wins the tight-energy clustered cells: paper M=100 1.5 MJ +11.8% (cyc 0/12) and paper
+M=200 1.5 MJ +26.4% (0/12); paper M=200 3 MJ a tie (-0.6%, 6/12). cyc wins every other cell.
+K* agreement cyc vs SA within one: 0.84.
+Reading: C4 does not supersede SA. It dominates on compact and radial fields and on generous budgets; SA's
+field-wide commute efficiency still wins clustered fields at tight energy -- the same mechanism split as SA vs
+the published method, now with a planner that beats the published method everywhere.

@@ -68,5 +68,17 @@ optimum or baseline comparison was computed before the rerun. Full record: PLANN
 C4's advantage transfers to off-centre depots, including the off-centre ring where the regime-aware selector
 (option A) failed; the edge-depot ring margin is small (-1.9%) and should be stated as such.
 
-## Still pending
-- C4 vs SA on seeds 1-12: needs SA on the same grid (paper chat's SA fill on the i9, or a Ryzen rerun).
+## C4 vs SA (descriptive, seeds 1-12)
+| family | median J*_C4 / J*_SA - 1 | 95% CI | C4 wins |
+|---|---|---|---|
+| core | -39.6% | [-45.8, -31.0] | 72/72 |
+| ring | -9.6% | [-11.7, -7.7] | 64/72 |
+| paper | -5.3% | [-10.3, +2.1] | 40/72 |
+| all | -12.5% | [-14.7, -11.2] | 176/216 |
+
+SA still wins the tight-energy clustered cells (paper 1.5 MJ: M=100 +11.8%, M=200 +26.4%, C4 0/12 in each).
+Do not write that C4 supersedes SA. Suggested: "C4 improves on the published method everywhere and on our
+reference planner on compact and radial fields; field-wide age-driven scheduling remains preferable on
+clustered fields under tight energy." SA rows: sa_rerun (1).csv as uploaded; its grid satisfies the upward
+tail rule everywhere and has no edge optima (downward side: no deployment within 10% of its optimum at the
+smallest K swept).

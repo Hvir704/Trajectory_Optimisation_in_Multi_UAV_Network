@@ -23,6 +23,7 @@ usage:
   python fill_tail.py fill_cluster.csv --inputs cluster_win.csv   --planner cluster_patrol --procs 22
   add --union sa_rerun.csv fill_sa.csv to the patrol runs to put them on SA's K grid as well
   python fill_tail.py fill_depot_q.csv --inputs depot_q.csv --planner sa --depot 0.25 0.25 --procs 22
+  python fill_tail.py fill_sa_rule15.csv --inputs sa_rerun.csv --planner sa --rule15 --procs 22
   add --dry to list the runs first
 """
 import argparse, csv, math, os, sys
@@ -53,7 +54,7 @@ def load(paths, planner=None):
     return d
 
 
-def needed(d, union, kmax):
+def needed(d, union, kmax, rule15=False):
     jobs = []
     for key, b in d.items():
         Ks = sorted(b); fin = {K: J for K, J in b.items() if math.isfinite(J)}
@@ -62,6 +63,9 @@ def needed(d, union, kmax):
         want = set()
         if math.isfinite(b[last]) and last - 1 in b and b[last] < b[last - 1]: want |= {last + 1, last + 2, last + 3}
         if am == last: want |= {last + 1, last + 2, last + 3}
+        # registered C4 rule: the three largest K values must each exceed 1.5 x the minimum J
+        if rule15 and not all(b[K] > 1.5 * fin[am] for K in Ks[-3:] if math.isfinite(b[K])):
+            want |= {last + 1, last + 2, last + 3}
         if union and key in union: want |= {K for K in union[key] if K not in b}
         for K in sorted(want):
             if K <= kmax and K not in b: jobs.append((key, K))
@@ -76,6 +80,8 @@ def main():
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--only", nargs="*", default=[], help='restrict to cells, e.g. "paper,100,6e6"')
     ap.add_argument("--depot", nargs=2, type=float, default=None, help="depot fractions, e.g. 0.25 0.25")
+    ap.add_argument("--rule15", action="store_true",
+                    help="also extend until the three largest K each exceed 1.5x the minimum (C4's registered rule)")
     a = ap.parse_args()
     if a.depot:
         os.environ["DEPOT_FRAC"] = f"{a.depot[0]},{a.depot[1]}"
@@ -87,7 +93,7 @@ def main():
     for rnd in range(30):
         d = load(a.inputs + [a.out], planner=None if a.planner == "sa" else a.planner)
         if only: d = {k: v for k, v in d.items() if k[:3] in only}
-        jobs = needed(d, union, a.kmax)
+        jobs = needed(d, union, a.kmax, a.rule15)
         print(f"round {rnd}: {len(jobs)} runs over {len({k for k, _ in jobs})} deployments", flush=True)
         for (key, K) in jobs[:20]: print(f"   {key[0]} M={key[1]} E={key[2]:.1e} L={key[3]:.0f} s={key[4]} K={K}")
         if not jobs or a.dry: break
