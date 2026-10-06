@@ -1,0 +1,19 @@
+deployments with both planners: 216   censored optima: cyc 0, gzz_rev 0
+
+own-optimum J*_cyc / J*_gzz_rev - 1  (95% percentile bootstrap; wins = cyc lower)
+  core   median  -20.8%  [ -23.9,  -18.5]  wins 72/72
+  paper  median  -42.9%  [ -45.7,  -40.5]  wins 72/72
+  ring   median  -34.2%  [ -38.1,  -31.9]  wins 72/72
+  all    median  -34.0%  [ -36.0,  -31.6]  wins 216/216
+
+rule agreement (exact / within one), own K* vs ell:
+  cyc              0.54 / 0.88   core 0.44/0.78  paper 0.71/0.99  ring 0.46/0.86
+  gzz_rev          0.37 / 0.75   core 0.40/0.86  paper 0.31/0.67  ring 0.39/0.71
+
+same K = ell: J_cyc / J_gzz_rev - 1
+  core   median  -21.6%  [ -24.2,  -18.7]  wins 72/72
+  paper  median  -48.7%  [ -52.5,  -46.0]  wins 72/72
+  ring   median  -36.5%  [ -38.6,  -33.9]  wins 72/72
+  all    median  -35.0%  [ -36.8,  -32.8]  wins 216/216
+
+per-deployment table -> results/stats_c4_vs_gzz.csv

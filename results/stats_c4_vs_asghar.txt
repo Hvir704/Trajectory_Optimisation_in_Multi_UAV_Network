@@ -1,0 +1,19 @@
+deployments with both planners: 216   censored optima: cyc 0, asghar_rev 45
+
+own-optimum J*_cyc / J*_asghar_rev - 1  (95% percentile bootstrap; wins = cyc lower)
+  core   median  -57.5%  [ -59.4,  -54.1]  wins 72/72
+  paper  median  -62.2%  [ -64.7,  -60.9]  wins 72/72
+  ring   median  -66.8%  [ -68.6,  -63.9]  wins 72/72
+  all    median  -61.6%  [ -62.7,  -60.5]  wins 216/216
+
+rule agreement (exact / within one), own K* vs ell:
+  cyc              0.54 / 0.88   core 0.44/0.78  paper 0.71/0.99  ring 0.46/0.86
+  asghar_rev       0.26 / 0.62   core 0.43/0.47  paper 0.22/0.51  ring 0.14/0.86
+
+same K = ell: J_cyc / J_asghar_rev - 1
+  core   median  -62.6%  [ -64.1,  -59.8]  wins 72/72
+  paper  median  -69.3%  [ -71.3,  -65.9]  wins 72/72
+  ring   median  -69.8%  [ -74.6,  -66.7]  wins 72/72
+  all    median  -66.2%  [ -68.0,  -64.4]  wins 216/216
+
+per-deployment table -> results/stats_c4_vs_asghar.csv

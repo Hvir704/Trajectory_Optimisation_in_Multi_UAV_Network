@@ -1,0 +1,17 @@
+deployments with both planners: 216   censored optima: gzz_rev 0, cluster_patrol 50
+
+own-optimum J*_gzz_rev / J*_cluster_patrol - 1  (95% percentile bootstrap; wins = gzz_rev lower)
+  core   median  +15.6%  [ +12.0,  +19.3]  wins 2/72
+  paper  median  +33.5%  [ +30.3,  +35.9]  wins 0/72
+  ring   median  +44.1%  [ +37.3,  +48.3]  wins 0/72
+  all    median  +30.4%  [ +28.0,  +32.8]  wins 2/216
+
+rule agreement (exact / within one), own K* vs ell:
+  gzz_rev          0.37 / 0.75   core 0.40/0.86  paper 0.31/0.67  ring 0.39/0.71
+  cluster_patrol   0.49 / 0.84   core 0.43/0.78  paper 0.47/0.85  ring 0.56/0.89
+
+same K = ell: J_gzz_rev / J_cluster_patrol - 1
+  core   median  +12.3%  [  +7.4,  +15.1]  wins 8/72
+  paper  median  +35.2%  [ +30.2,  +45.9]  wins 0/72
+  ring   median  +48.0%  [ +37.7,  +51.6]  wins 0/72
+  all    median  +29.6%  [ +26.4,  +32.3]  wins 8/216

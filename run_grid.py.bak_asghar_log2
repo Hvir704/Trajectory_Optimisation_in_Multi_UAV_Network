@@ -95,20 +95,20 @@ def one(args):
         inf = pl.state["info"]
         print(f"  [cyc] {planner} {layout} M={M} E={Emax:.1e} K={K} s={seed}: init={inf['init']} "
               f"J_sur={inf['J_sur']:.4e} J_sur_start={ {k: round(v, 1) for k, v in inf['J_sur_start'].items()} } "
-              f"J_sim={m['J_timeavg']:.4e} J_age={m['J_age']:.4e} classes={inf.get('classes', 'NA')} build={inf.get('build_s', float('nan')):.1f}s", flush=True)
+              f"J_sim={m['J_timeavg']:.4e} J_age={m['J_age']:.4e} classes={inf.get('classes', 'NA')} build={inf['build_s']:.1f}s", flush=True)
     if planner.startswith("asghar") and getattr(pl, "state", {}).get("info"):
         st_ = pl.state; inf = st_["info"]
-        print(f"  [asghar] {planner} {layout} M={M} E={Emax:.1e} K={K} s={seed}: build={inf.get('build_s', float('nan')):.1f}s "
+        print(f"  [asghar] {planner} {layout} M={M} E={Emax:.1e} K={K} s={seed}: build={inf['build_s']:.1f}s "
               f"branch={inf.get('branch', 'NA')} classes={inf.get('classes', 'NA')} robots->stream={st_.get('robot_stream', 'NA')} "
-              f"cycles={inf.get('n_cycles', 'NA')} dropped={inf.get('dropped', 'NA')} cpsat={inf.get('cpsat', 'NA')} sorties={st_.get('calls', 'NA')} "
-              f"trunc_sorties={st_.get('trunc_sorties', 'NA')} trunc_nodes={st_.get('trunc_nodes', 'NA')} skipped={st_.get('skipped', 'NA')} "
+              f"cycles={inf['n_cycles']} dropped={inf['dropped']} cpsat={inf['cpsat']} sorties={st_['calls']} "
+              f"trunc_sorties={st_['trunc_sorties']} trunc_nodes={st_['trunc_nodes']} skipped={st_['skipped']} "
               f"J={m['J_timeavg']:.4e}", flush=True)
     if planner.startswith("gzz") and getattr(pl, "state", {}).get("info"):
         st_ = pl.state; inf = st_["info"]
-        print(f"  [gzz] {planner} {layout} M={M} E={Emax:.1e} K={K} s={seed}: build={inf.get('build_s', float('nan')):.1f}s "
+        print(f"  [gzz] {planner} {layout} M={M} E={Emax:.1e} K={K} s={seed}: build={inf['build_s']:.1f}s "
               f"trips={[u['n_trips'] for u in inf['per_uav']]} dropped={sum(u['dropped'] for u in inf['per_uav'])} "
-              f"sorties={st_.get('calls', 'NA')} trunc_sorties={st_.get('trunc_sorties', 'NA')} trunc_nodes={st_.get('trunc_nodes', 'NA')} "
-              f"skipped={st_.get('skipped', 'NA')} J={m['J_timeavg']:.4e}", flush=True)
+              f"sorties={st_['calls']} trunc_sorties={st_['trunc_sorties']} trunc_nodes={st_['trunc_nodes']} "
+              f"skipped={st_['skipped']} J={m['J_timeavg']:.4e}", flush=True)
     if hasattr(pl, "stats"):
         s_ = pl.stats
         print(f"  [cpsat] {layout} M={M} K={K} s={seed}: decisions={s_['n']} optimal={s_['optimal']} "
