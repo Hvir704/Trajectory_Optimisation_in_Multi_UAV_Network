@@ -36,9 +36,17 @@ from run_grid import one, FIELDS
 
 
 def std(r):
-    return (float(r["Th"]) == 43200 and r["coord"] == "exclude" and r.get("replan", "launch") == "launch"
-            and str(r.get("divert", "0")) in ("0", "0.0") and float(r.get("q", 0)) == 0
-            and r.get("belief", "prior") == "prior")
+    """True for the standard experiment row; False for repeated headers/malformed rows."""
+    if not r or r.get("M") in (None, "", "M") or r.get("Th") in (None, "", "Th"):
+        return False
+    try:
+        return (float(r["Th"]) == 43200 and r.get("coord") == "exclude"
+                and r.get("replan", "launch") == "launch"
+                and str(r.get("divert", "0")) in ("0", "0.0")
+                and float(r.get("q", 0)) == 0
+                and r.get("belief", "prior") == "prior")
+    except (KeyError, TypeError, ValueError):
+        return False
 
 
 def load(paths, planner=None):
@@ -48,9 +56,17 @@ def load(paths, planner=None):
         for r in csv.DictReader(open(p)):
             if not std(r): continue
             if planner and r.get("planner", "sa") != planner: continue
-            key = (r["layout"], int(r["M"]), float(r["Emax"]), float(r.get("L", 12600)), int(r["seed"]))
-            try: d[key][int(r["K"])] = float(r["J"])
-            except ValueError: d[key][int(r["K"])] = math.inf
+            try:
+                key = (r["layout"], int(float(r["M"])), float(r["Emax"]),
+                       float(r.get("L", 12600)), int(float(r["seed"])))
+                K = int(float(r["K"]))
+                try:
+                    J = float(r["J"])
+                except (TypeError, ValueError):
+                    J = math.inf
+                d[key][K] = J
+            except (KeyError, TypeError, ValueError):
+                continue
     return d
 
 

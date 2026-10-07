@@ -10,6 +10,17 @@ os.environ["PYTHONPATH"] = os.pathsep.join([HERE, os.path.join(ROOT, "sim"), os.
                                              os.environ.get("PYTHONPATH", "")])   # spawn workers inherit this
 from run_grid import one, FIELDS
 
+# Guard: refuse to run unless the REAL Liu planner is what run_grid will call. A run_grid.py without a liu_mpga
+# branch silently falls back to SA for unknown planner names (this happened once: 3,613 SA runs labelled Liu).
+import inspect, run_grid as _rg
+if '"liu_mpga"' not in inspect.getsource(_rg.one):
+    sys.exit("ABORT: this run_grid.py has no liu_mpga branch -- it would silently run SA. Use the reference files.")
+try:
+    import liu_mpga as _lm
+except ImportError:
+    sys.exit("ABORT: liu_mpga.py is not importable from here. Use the reference folder layout.")
+print("planner check: run_grid.one has a liu_mpga branch; liu_mpga imported from", _lm.__file__, flush=True)
+
 def job(t):
     lay, M, E, s, K = t
     return one((lay, M, E, K, s, "exclude", "launch", 0.0, 0.0, "prior", 0.0, "liu_mpga", 12600.0, 43200.0, 1200))

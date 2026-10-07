@@ -12,7 +12,12 @@ a = ap.parse_args()
 D = defaultdict(lambda: defaultdict(dict)); RULE = {}
 def take(path, force=None):
     for r in csv.DictReader(open(path)):
-        M, E, s = int(float(r["M"])), float(r["Emax"]), int(float(r["seed"]))
+        if not r or r.get("M") in (None, "", "M"):
+            continue
+        try:
+            M, E, s = int(float(r["M"])), float(r["Emax"]), int(float(r["seed"]))
+        except (KeyError, TypeError, ValueError):
+            continue
         if M > 200 or E not in (1.5e6, 3e6) or s > 12 or float(r.get("Th", 43200)) != 43200: continue
         if float(r.get("L", 12600)) != 12600 or r.get("coord", "exclude") != "exclude": continue
         dep = (r["layout"], M, E, s); pl = force or r.get("planner", "sa")
