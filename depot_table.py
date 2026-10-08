@@ -15,4 +15,4 @@ for path in sys.argv[1:]:
         if f not in fam: continue
         v = np.array(fam[f])
         print(f"  {f:5s} n={len(v):3d} exact {np.mean(v[:,0]==v[:,1]):.2f}  within-one {np.mean(abs(v[:,0]-v[:,1])<=1):.2f}  "
-              f"bias {np.mean(v[:,1]-v[:,0]):+.2f}  regret median {np.median(v[:,2]):.1f}% p90 {np.quantile(v[:,2],.9):.1f}%")
+              f"bias (measured - rule) {np.mean(v[:,0]-v[:,1]):+.2f}  regret median {np.median(v[:,2]):.1f}% p90 {np.quantile(v[:,2],.9):.1f}%")

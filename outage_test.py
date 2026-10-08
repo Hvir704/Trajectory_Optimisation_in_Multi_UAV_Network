@@ -7,7 +7,7 @@ drains partially). This script grounds the whole fleet for G hours mid-run -- th
 empty route, which the simulator turns into a pad wait of one commute time -- and records J over the
 standard 3-12 h window and whether the gray-set sensors are ever served after the outage.
 
-usage: python outage_test.py out.csv
+usage: python outage_test.py out.csv [budget_seconds, default 250 -- pass 1e9 to finish in one go]
 Appends; skips rows already present. J window is 3-24 h. Comparisons are paired on one machine: SA
 diverges across platforms, so G=0 rows need not match the Windows grid.
 """
@@ -15,6 +15,7 @@ import sys, csv, os, time
 import numpy as np
 from dyn_env import DynParams, DynSim
 from sa_sortie import build_sa_planner
+from run_grid import SIM_VERSION
 
 CASES = [("paper", 50, 3e6, 3, 10, 11), ("paper", 50, 3e6, 6, 10, 11), ("paper", 100, 3e6, 12, 8, 9),
          ("core", 50, 1.5e6, 6, 4, 5), ("core", 50, 1.5e6, 3, 5, 6), ("core", 50, 3e6, 12, 10, 11)]
@@ -22,7 +23,7 @@ OUT_START = 5 * 3600.0
 GAPS = (0.0, 3 * 3600.0)
 HORIZON = 24 * 3600.0          # long enough for a permanent loss to register after the outage
 FIELDS = ["layout", "M", "Emax", "seed", "K", "which", "G_h", "J", "n_gray", "gray_served_after",
-          "gray_lost", "n_never", "secs"]
+          "gray_lost", "n_never", "secs", "sim_version"]
 
 
 def run(lay, M, E, seed, K, G):
@@ -57,8 +58,10 @@ if __name__ == "__main__":
     out = sys.argv[1]
     done = set()
     if os.path.exists(out) and os.path.getsize(out):
-        done = {(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]), int(r["K"]), float(r["G_h"]))
-                for r in csv.DictReader(open(out))}
+        rows_ = list(csv.DictReader(open(out)))
+        if any(r.get("sim_version") != SIM_VERSION for r in rows_):
+            sys.exit(f"{out} holds rows from another simulator version; write to a new file")
+        done = {(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]), int(r["K"]), float(r["G_h"])) for r in rows_}
     new = not done
     budget = float(sys.argv[2]) if len(sys.argv) > 2 else 250.0
     t_start = time.time()
@@ -72,7 +75,7 @@ if __name__ == "__main__":
                     if key in done: continue
                     if time.time() - t_start > budget: sys.exit(0)
                     res = run(lay, M, E, seed, K, G)
-                    row = dict(layout=lay, M=M, Emax=E, seed=seed, K=K, which=which, G_h=G / 3600, **res)
+                    row = dict(layout=lay, M=M, Emax=E, seed=seed, K=K, which=which, G_h=G / 3600, sim_version=SIM_VERSION, **res)
                     w.writerow(row); f.flush()
                     print(f"{lay} M={M} {E/1e6:g}MJ s{seed} {which:8s} K={K:2d} G={G/3600:.0f}h: J={res['J']:.4e} "
                           f"gray {res['n_gray']} served-after {res['gray_served_after']} lost {res['gray_lost']} "

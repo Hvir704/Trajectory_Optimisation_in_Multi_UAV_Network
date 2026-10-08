@@ -77,7 +77,7 @@ if __name__ == "__main__":
         lay, M, E, L, seed = k
         p = DynParams(M=M, Emax=E, layout=lay, L=L)
         F = SensorField(DynParams(M=M, Emax=E, layout=lay, L=L), np.random.default_rng(seed))
-        r = np.linalg.norm(F.pos - p.home, axis=1); lam = F.lam_bits
+        r = np.linalg.norm(F.pos - p.home, axis=1); lam = np.full(M, p.lam_bits)   # nominal: true rates are unknown ex ante
         Ks = sorted(byK); J = {K: float(byK[K]["J"]) for K in Ks}; r0 = byK[Ks[0]]
         rc_m = float(r0["r_c"]); Pb_m = float(r0["P_bar"]); n_m = float(r0["mean_n"])
         kr = math.floor(float(r0["K_reach_i"])); am = min(J, key=J.get)

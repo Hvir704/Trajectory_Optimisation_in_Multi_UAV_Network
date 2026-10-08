@@ -7,11 +7,15 @@ OLD3 = [f for f in FIELDS if f not in ("planner", "L")]
 OLD4 = [f for f in FIELDS if f not in ("L","divert","n_diverts")]
 OLD5 = [f for f in FIELDS if f not in ("divert","n_diverts")]
 p = sys.argv[1]
-out = []
+out = []; bad = 0; hdr = None
 with open(p, newline="") as f:
     for row in csv.reader(f):
-        if not row or row[0] == "layout": continue
-        if len(row) == len(FIELDS): d = dict(zip(FIELDS, row))
+        if not row: continue
+        if row[0] == "layout":
+            hdr = row; continue
+        if len(row) == len(FIELDS) and (hdr is None or hdr == FIELDS): d = dict(zip(FIELDS, row))
+        elif hdr is not None and "sim_version" in hdr and len(row) == len(hdr):
+            d = {k: "" for k in FIELDS}; d.update({k: v for k, v in zip(hdr, row) if k in d})   # newer columns left blank
         elif len(row) == len(OLD5):
             d = dict(zip(OLD5, row)); d["divert"] = "0"; d["n_diverts"] = "0"
         elif len(row) == len(OLD4):
@@ -22,8 +26,10 @@ with open(p, newline="") as f:
             d = dict(zip(OLD2, row)); d["tau"] = "0.0"; d["planner"] = "sa"; d["L"] = "12600.0"
         elif len(row) == len(OLD):
             d = dict(zip(OLD, row)); d["q"] = "0.0"; d["belief"] = "prior"; d["tau"] = "0.0"; d["planner"] = "sa"; d["L"] = "12600.0"; d["L"] = "12600.0"
-        else: print("skipping malformed row of length", len(row)); continue
+        else: print("malformed row of length", len(row)); bad += 1; continue
         out.append(d)
+if bad:
+    sys.exit(f"{p}: {bad} row(s) could not be mapped to the current schema; file left unchanged")
 with open(p, "w", newline="") as f:
     w = csv.DictWriter(f, fieldnames=FIELDS); w.writeheader(); w.writerows(out)
 print(f"rewrote {len(out)} rows with current schema")

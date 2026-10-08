@@ -223,6 +223,10 @@ def build_sa_planner(iters: int = 1200, repair_p: float = 0.35, seed_base: int =
         if p.index_mode == "sqrt":
             c_r = 2.0 * p.Pf * np.linalg.norm(req.pos - req.home, axis=1) / p.v
             w = np.sqrt(w * np.maximum(c_r, 1.0))
+        elif p.index_mode == "whittle":      # quadratic-in-age index: value w * a^2
+            w = w * req.age
+        elif p.index_mode != "linear":
+            raise ValueError(f"unknown index_mode {p.index_mode!r}")
         folded_weight = w * req.age
         _counter["n"] += 1
         seed = (seed_base * 1_000_003 + _counter["n"] * 7919 + int(req.E_usable) % 1000) % (2**31 - 1)

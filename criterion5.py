@@ -18,7 +18,7 @@ def evaluate(inst, byK, corrected, KR_mode="int"):
     r = np.linalg.norm(F.pos - p.home, axis=1); w = F.wi_base; q = r / r.mean()
     r0 = byK[min(byK)]
     rc = float(r0["r_c"]); Pb = float(r0["P_bar"]); tc = 2 * rc / p.v
-    Ts = float(r0["T_s_over_t_c"]) * tc; n = float(r0["mean_n"]); tau = (Ts - tc) / max(n, 1e-9)
+    Ts = float(r0["T_s_over_t_c"]) * p.t_c; n = float(r0["mean_n"]); tau = (Ts - tc) / max(n, 1e-9)
     Rstar = lambda K: (K * (U - K * p.Pf * tc) / (U + K * tc * (Pb - p.Pf))) / tau
     reach = lambda K: p.v * (U / K - p.Ph * p.B_bits / p.R) / (2 * p.Pf)
     K0 = math.floor(float(r0["K_reach_i"]))

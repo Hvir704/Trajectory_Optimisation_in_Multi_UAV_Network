@@ -37,7 +37,7 @@ def apply_mass(gamma, mdry, whkg, mbref):
 if os.environ.get("MASS_MODEL"):                       # spawn workers re-import and inherit the env
     apply_mass(*(float(v) for v in os.environ["MASS_MODEL"].split(",")))
 
-from run_grid import one, k_range, FIELDS, parse_seeds
+from run_grid import one, k_range, FIELDS, parse_seeds, SIM_VERSION
 
 
 def main():
@@ -51,7 +51,9 @@ def main():
     os.environ["MASS_MODEL"] = f"{a.gamma},{a.mdry},{a.whkg},{a.mbref}"; apply_mass(a.gamma, a.mdry, a.whkg, a.mbref)
     done = {}
     if os.path.exists(a.out) and os.path.getsize(a.out):
-        for r in csv.DictReader(open(a.out)): done[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]), int(r["K"]))] = float(r["J"])
+        for r in csv.DictReader(open(a.out)):
+            if r.get("sim_version") != SIM_VERSION: sys.exit(f"{a.out} holds rows from another simulator version; write to a new file")
+            done[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]), int(r["K"]))] = float(r["J"])
     new = not done
     f = open(a.out, "a", newline=""); w = csv.DictWriter(f, fieldnames=FIELDS)
     if new: w.writeheader(); f.flush()

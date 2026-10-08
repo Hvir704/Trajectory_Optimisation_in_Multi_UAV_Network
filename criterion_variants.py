@@ -12,7 +12,10 @@ from dyn_env import DynParams, SensorField
 d = defaultdict(dict)
 for r in csv.DictReader(open(sys.argv[1])):
     if float(r["L"]) == 12600: d[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]))][int(r["K"])] = r
-ap = {(x["lay"], int(x["M"]), float(x["E"]), int(x["seed"])): x for x in csv.DictReader(open(sys.argv[2]))}
+ap = {}
+for k_, byK_ in d.items():          # all primary instances (apriori_regret.csv lacked paper M=400 s9-12)
+    r0_ = byK_[min(byK_)]; kr_ = math.floor(float(r0_["K_reach_i"])); kc_ = float(r0_["K_commute_i"])
+    ap[k_] = {"reach_bound": str(min(kr_, kc_) == kr_), "passes": "NA"}
 EX = {}
 if len(sys.argv) > 3 and sys.argv[3].endswith(".csv"):      # optional: ex-ante commute inputs
     for x in csv.DictReader(open(sys.argv[3])):

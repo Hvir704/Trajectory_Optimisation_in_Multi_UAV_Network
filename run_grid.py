@@ -11,9 +11,15 @@ from multiprocessing import Pool
 from dyn_env import DynParams, DynSim, SensorField
 from sa_sortie import build_sa_planner
 
+# Version stamp written into every row. v2.1 = reserve-breach, dwell-clock, event-merge, event-prior and ETA fixes
+# (the earlier exported sim_v2.patch wrote "v2" without the event/ETA fixes; such rows must not be used).
+SIM_VERSION = "v2.1"
+_SIM_HOOK = None   # diagnostics only: callable(sim) run just before sim.run() (diag_sec5.py); never set in experiments
+
 FIELDS = ["layout","M","Emax","K","seed","coord","replan","divert","q","belief","tau","planner","L","Th","J","n_diverts","J_age","J_event","n_replans","n_never","share_never","n_reach_inf",
           "K_reach_i","K_commute_i","r_max","r_c","rmax_over_rc","regime_bnd","P_bar","dup_frac",
-          "trunc_frac","empty_frac","T_s_over_t_c","mean_n","catch_rate","T_rev","n_sorties","secs"]
+          "trunc_frac","empty_frac","T_s_over_t_c","mean_n","catch_rate","T_rev","n_sorties","secs",
+          "breach_frac","reserve_dips","reserve_violations","events_merged","drop_frac","cp_decisions","cp_optimal","sim_version"]
 
 def k_range(layout, M, Emax, seed, L=None):
     p = DynParams(M=M, Emax=Emax, layout=layout, **({"L": L} if L else {}))
@@ -30,7 +36,8 @@ def one(args):
     layout, M, Emax, K, seed, coord, replan, divert, q, belief, tau, planner, L, Th, iters = args
     # planner spec: "sa" | "sa_norepair" | "greedy" | "sa_nolambda" | "sa_launchdwell"
     p = DynParams(M=M, K=K, Emax=Emax, layout=layout, coord_mode=coord, L=L,
-                  event_corr_q=q, belief_mode=belief,
+                  event_corr_q=q, belief_mode=("prior" if belief == "prior_rates" else belief),
+                  planner_knows_rates=(belief == "prior_rates"),   # true prior-only arm (b_j from known rates)
                   learn_lambda=(planner != "sa_nolambda"),
                   tau_e_lo=(tau*60*2/3 if tau > 0 else DynParams.tau_e_lo),   # tau = MEAN lifetime in minutes;
                   tau_e_hi=(tau*60*4/3 if tau > 0 else DynParams.tau_e_hi),   # U(2/3, 4/3)*tau keeps the default spread
@@ -80,16 +87,30 @@ def one(args):
         from dyn_env import greedy_ratio_planner as pl
     elif planner == "sa_whittle":               # quadratic-in-age (Whittle-type) index, Kadota et al. 2018
         p.index_mode = "whittle"; pl = build_sa_planner(iters=iters, seed_base=seed)
+    elif planner == "liu_mpga":                 # Liu et al. IoT-J 2022 MPGA, adapted (liu_mpga.py)
+        if replan != "launch" or divert:
+            raise ValueError("liu_mpga is launch-time only")
+        from liu_mpga import build_liu_planner
+        pl = build_liu_planner()
     elif planner == "sa_sqrt":
         p.index_mode = "sqrt"; pl = build_sa_planner(iters=iters, seed_base=seed)
     elif planner == "sa_norepair":
         pl = build_sa_planner(iters=iters, seed_base=seed, repair_p=0.0)
-    else:
+    elif planner in ("sa", "sa_nolambda", "sa_launchdwell"):
         pl = build_sa_planner(iters=iters, seed_base=seed)
+    else:
+        raise ValueError(f"unknown planner {planner!r}: refusing to fall back to SA")
+    # paired-comparison switches (default = corrected simulator v2); LEGACY=1 sets the whole old simulator
+    _all = os.environ.get("LEGACY") == "1"
+    p.legacy_breach = _all or os.environ.get("LEGACY_BREACH") == "1"
+    p.legacy_clock = _all or os.environ.get("LEGACY_CLOCK") == "1"
+    p.legacy_events = _all or os.environ.get("LEGACY_EVENTS") == "1"
+    p.legacy_eta = _all or os.environ.get("LEGACY_ETA") == "1"
     sim = DynSim(p, pl, seed=seed, coordinate=(coord != "none"))
     if hasattr(pl, "bind_sim"): pl.bind_sim(sim)       # planners that need the drone index
     if planner == "sa_launchdwell":   # ablation: the old launch-time dwell estimate (no arrival correction)
         sim._Ts_mean = 0.0; sim._launch_dwell_only = True
+    if _SIM_HOOK is not None: _SIM_HOOK(sim)
     m = sim.run()
     if planner.startswith("cyc") and getattr(pl, "state", {}).get("info"):
         inf = pl.state["info"]
@@ -125,6 +146,10 @@ def one(args):
         K_commute_i=m["K_commute_instance"], r_max=m["r_max_instance"], r_c=m["r_c_measured"],
         rmax_over_rc=m["rmax_over_rc"], regime_bnd=m["regime_boundary"], P_bar=m["P_bar"],
         dup_frac=m["dup_frac"], trunc_frac=m["trunc_frac"], empty_frac=m["empty_frac"],
+        breach_frac=m["breach_frac"], reserve_dips=m["reserve_dips"], reserve_violations=m["reserve_violations"],
+        events_merged=m["events_merged"], drop_frac=m["drop_frac"],
+        cp_decisions=(pl.stats["n"] if hasattr(pl, "stats") else ""), cp_optimal=(pl.stats["optimal"] if hasattr(pl, "stats") else ""),
+        sim_version=("v1-legacy" if (p.legacy_breach or p.legacy_clock or p.legacy_events or p.legacy_eta) else SIM_VERSION),
         T_s_over_t_c=m["T_s_over_t_c"], mean_n=m["mean_n_visited"], catch_rate=m["catch_rate"],
         T_rev=m["T_rev"], n_sorties=m["n_sorties"], secs=time.time()-t)
 
@@ -140,13 +165,13 @@ if __name__ == "__main__":
     ap.add_argument("--seeds", default="1-12"); ap.add_argument("--coord", default="exclude")
     ap.add_argument("--replan", default="launch", choices=["launch","per_leg_greedy","per_leg_sa"])
     ap.add_argument("--divert", type=int, default=0, help="1 = mid-leg diversion on (needs --replan per_leg_sa)")
-    ap.add_argument("--q", type=float, default=0.0); ap.add_argument("--belief", default="prior", choices=["none","prior","kernel"])
+    ap.add_argument("--q", type=float, default=0.0); ap.add_argument("--belief", default="prior", choices=["none","prior","prior_rates","kernel"])
     ap.add_argument("--K", nargs="+", type=int, default=None, help="fixed K list (skips auto range)")
     ap.add_argument("--tau", type=float, default=0.0, help="mean event lifetime in MINUTES (0 = default 45-90 min)")
     ap.add_argument("--L", type=float, default=DynParams.L, help="field side in metres")
     def _planner_arg(v):
         # fixed variants, plus any deterministic CP-SAT budget: cpsat_d<seconds>, e.g. cpsat_d45
-        known = {"sa","sa_norepair","greedy","sa_nolambda","sa_launchdwell","sa_sqrt","rr_tour","rr_sweep","cluster_patrol","sa_terr_km","sa_terr_bal","terr_due","sa_whittle","cyc","cyc_noopt","cyc_sector0","gzz_full","gzz_rev","asghar_full","asghar_rev"}
+        known = {"sa","sa_norepair","greedy","sa_nolambda","sa_launchdwell","sa_sqrt","rr_tour","rr_sweep","cluster_patrol","sa_terr_km","sa_terr_bal","terr_due","sa_whittle","liu_mpga","cyc","cyc_noopt","cyc_sector0","gzz_full","gzz_rev","asghar_full","asghar_rev"}
         if v in known:
             return v
         if v.startswith("cpsat_d"):
@@ -165,10 +190,15 @@ if __name__ == "__main__":
     if os.path.exists(a.out) and os.path.getsize(a.out) > 0:
         with open(a.out) as f: hdr = f.readline().strip().split(",")
         if hdr != FIELDS:
+            if "sim_version" not in hdr:
+                sys.exit(f"{a.out} was written by the v1 simulator (no sim_version column). Resuming into it would "
+                         f"skip every job already in it. Write v2 results to a new file under results_v2/.")
             import subprocess; subprocess.run([sys.executable, "fix_schema.py", a.out], check=True)
         with open(a.out) as f:
             for row in csv.DictReader(f):
                 if "layout" not in row: continue   # tolerate a headerless/partial file
+                if row.get("sim_version") != SIM_VERSION:
+                    sys.exit(f"{a.out} holds a row with sim_version={row.get('sim_version')!r}, expected {SIM_VERSION!r}; write to a new file")
                 done.add((row["layout"], int(row["M"]), float(row["Emax"]), int(row["K"]), int(row["seed"]), row["coord"], row.get("replan","launch"), int(row.get("divert",0)), float(row.get("q",0)), row.get("belief","prior"), float(row.get("tau",0)), row.get("planner","sa"), float(row.get("L",DynParams.L)), float(row["Th"])))
     jobs = []
     for layout, M, Emax, seed in itertools.product(a.layouts, a.M, a.Emax, parse_seeds(a.seeds)):

@@ -46,7 +46,7 @@ def apply_hetero():
 if os.environ.get("HETERO_ALLOC") == "1":        # spawn workers re-import and inherit the env
     apply_hetero()
 
-from run_grid import one, k_range, FIELDS, parse_seeds
+from run_grid import one, k_range, FIELDS, parse_seeds, SIM_VERSION
 OUT_FIELDS = FIELDS + ["alloc"]
 
 
@@ -65,6 +65,7 @@ def main():
     t0 = time.time(); done = {}
     if os.path.exists(a.out) and os.path.getsize(a.out):
         for r in csv.DictReader(open(a.out)):
+            if r.get("sim_version") != SIM_VERSION: sys.exit(f"{a.out} holds rows from another simulator version; write to a new file")
             done[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]), int(r["K"]))] = float(r["J"])
     new = not done
     f = open(a.out, "a", newline=""); w = csv.DictWriter(f, fieldnames=OUT_FIELDS)

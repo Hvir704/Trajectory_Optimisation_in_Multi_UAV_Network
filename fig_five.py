@@ -15,8 +15,9 @@ import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 ap = argparse.ArgumentParser(); ap.add_argument("out"); ap.add_argument("--sa", required=True)
 ap.add_argument("--eval", required=True); ap.add_argument("--extra", nargs="*", default=[])
+ap.add_argument("--selected", default="selected.json")
 a = ap.parse_args()
-sel = json.load(open("selected.json"))
+sel = json.load(open(a.selected))
 NAMES = [("sa", "SA (ours)", "#1f4e79", "o"), ("cyc", "C4 (ours)", "#7030a0", "D"),
          ("cluster_patrol", "cluster patrol (Rahimi & S.)", "#c55a11", "s"),
          ("gzz_rev", "Gao et al.", "#548235", "^"), ("asghar_rev", "Asghar et al.", "#808080", "v")]

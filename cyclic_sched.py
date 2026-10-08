@@ -138,6 +138,8 @@ class Ctx:
                     # (v1 broke out without advancing time: with a one-sensor sequence in the
                     # hover-estimate gray band this never advanced the clock -> infinite loop.)
                     t = ta
+                    if not getattr(self.p, "legacy_breach", False):
+                        cur = j              # return home FROM j (matches the corrected DynSim)
                     break
                 a = max(tlast[j], burn); b = min(ta, H)
                 if b > a:

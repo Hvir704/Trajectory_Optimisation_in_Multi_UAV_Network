@@ -98,6 +98,15 @@ class DynParams:
                                   # (continuous inter-drone communication).
     replan_iters: int = 300       # SA iterations per mid-sortie replan (launch uses the planner's own)
     replan_planner: str = "same"  # "same": the sortie planner with replan_iters | "greedy": fast ratio rule
+    legacy_clock: bool = False    # True reproduces the pre-Oct-2026 dwell handling: the global clock jumped
+                                  # to the end of a dwell immediately, ahead of other drones' pending events.
+    legacy_events: bool = False   # True reproduces the pre-Oct-2026 event handling: a firing at a sensor whose
+                                  # event is live OVERWROTE it (age restarted), one firing per sensor per step,
+                                  # and the event integral ran after the firings (losing replaced tails).
+    legacy_eta: bool = False      # True: ETAs of other UAVs start from the START of their current leg.
+    legacy_breach: bool = False   # True reproduces the pre-Oct-2026 bug: on a reserve breach the leg to the
+                                  # node was not charged and the UAV returned from its PREVIOUS position.
+                                  # Kept only so the effect of the fix can be measured paired.
     index_mode: str = "linear"    # sortie value per sensor: "linear" = w*a (value-per-joule index w a/e)
                                   # "sqrt" = a*sqrt(w*c), c = 2 Pf r/v: the ordering implied by the
                                   # cost-weighted square-root allocation f_i ∝ sqrt(w_i/c_i)
@@ -247,7 +256,11 @@ class SensorField:
         self.events_fired = 0
         self.events_caught = 0
         self.events_expired = 0
+        self.events_merged = 0           # firings absorbed into an already-live event (v2)
+        self._ev_last = None             # exact event-age integral of the last step (v2)
         self.bits_dropped = 0.0
+        self.bits_dropped_win = 0.0      # dropped inside [T_burnin, T_horizon] (pro rata within a step)
+        self.bits_gen_win = 0.0          # generated inside [T_burnin, T_horizon]
 
     # -- events ----------------------------------------------------------
     def _rate(self, i: int) -> float:
@@ -260,6 +273,7 @@ class SensorField:
         """Advance world state. Buffers fill; events fire and expire."""
         dt = t_to - t_from
         if dt <= 0:
+            self._ev_last = None
             return
 
         # buffers fill, drop-head clamps at capacity.
@@ -267,9 +281,16 @@ class SensorField:
         grown = self.backlog + self.lam_bits * dt
         over = np.maximum(0.0, grown - self.p.B_bits)
         self.bits_dropped += float(over.sum())
+        _w = max(0.0, min(t_to, self.p.T_horizon) - max(t_from, self.p.T_burnin))
+        if _w > 0:
+            self.bits_dropped_win += float(over.sum()) * _w / dt
+            self.bits_gen_win += float(self.lam_bits.sum()) * _w
         self.backlog = np.minimum(grown, self.p.B_bits)
 
-        # events fire / expire
+        if not self.p.legacy_events:
+            self._advance_events(t_from, t_to)
+            return
+        # events fire / expire  (legacy handling below)
         for i in np.where(self.next_event_at <= t_to)[0]:
             fire_t = self.next_event_at[i]
             if fire_t < t_from:
@@ -289,6 +310,56 @@ class SensorField:
                     self.event_fire[i] = fire_t
                     self.events_fired += 1
                 self.next_hot_fire[h] = fire_t + self.rng.exponential(self.p.event_corr_q / self.p.event_rate_hot)
+
+    def _advance_events(self, t_from: float, t_to: float) -> None:
+        """v2 event dynamics over (t_from, t_to]. Collects every firing in the step, merges a firing into a live
+        event (lifetime extended, oldest fire time kept) and integrates g*w*(t - t_fire) exactly over the
+        measured window, segment by segment. Result in self._ev_last (per node)."""
+        p = self.p
+        lo, hi = max(t_from, p.T_burnin), min(t_to, p.T_horizon)
+        fir = {}
+        for i in np.where(self.next_event_at <= t_to)[0]:
+            while self.next_event_at[i] <= t_to:
+                s = max(self.next_event_at[i], t_from)
+                fir.setdefault(int(i), []).append((s, self.rng.uniform(p.tau_e_lo, p.tau_e_hi)))
+                self.next_event_at[i] = self._draw_next_event(s, i)
+        if p.event_corr_q > 0:
+            for h in range(len(self.next_hot_fire)):
+                while self.next_hot_fire[h] <= t_to:
+                    s = max(self.next_hot_fire[h], t_from)
+                    members = np.where(self.hot_id == h)[0]
+                    for i in members[self.rng.random(len(members)) < p.event_corr_q]:
+                        fir.setdefault(int(i), []).append((s, self.rng.uniform(p.tau_e_lo, p.tau_e_hi)))
+                    self.next_hot_fire[h] = s + self.rng.exponential(p.event_corr_q / p.event_rate_hot)
+        gw = p.event_gain * self.wi_base
+        f, u = self.event_fire, self.event_until
+        ev = np.zeros(p.M)
+        if hi > lo:
+            a = np.maximum(lo, f); b = np.minimum(hi, u)
+            live = np.isfinite(f) & (b > a)
+            if fir:
+                live[list(fir)] = False
+            ev[live] = 0.5 * gw[live] * ((b[live] - f[live]) ** 2 - (a[live] - f[live]) ** 2)
+
+        def seg(i, fi, s0, s1):
+            s0 = max(s0, fi, lo); s1 = min(s1, hi)
+            return 0.5 * gw[i] * ((s1 - fi) ** 2 - (s0 - fi) ** 2) if s1 > s0 else 0.0
+
+        for i, lst in fir.items():
+            lst.sort()
+            fi, ui, cur, acc = f[i], u[i], t_from, 0.0
+            for s, tau in lst:
+                if np.isfinite(fi) and ui > s:          # live: extend, keep the oldest fire time
+                    ui = max(ui, s + tau); self.events_merged += 1
+                else:
+                    if np.isfinite(fi):                  # previous event expired before this firing
+                        acc += seg(i, fi, cur, min(ui, s)); self.events_expired += 1
+                    fi, ui, cur = s, s + tau, s
+                    self.events_fired += 1
+            if np.isfinite(fi):
+                acc += seg(i, fi, cur, min(ui, t_to))
+            ev[i] = acc; f[i] = fi; u[i] = ui
+        self._ev_last = ev
 
     def expire_check(self, t: float) -> None:
         """Count events that died unvisited. Called once per sortie boundary."""
@@ -328,11 +399,13 @@ class SensorField:
         return self.backlog[i] / self.p.R
 
     def p_live_prior(self) -> np.ndarray:
-        """Stationary P(event live) from known rates: nu*tau/(1+nu*tau)."""
+        """Stationary P(event live) from known rates: 1 - exp(-nu*tau) (v2; legacy: nu*tau/(1+nu*tau))."""
         tau = 0.5 * (self.p.tau_e_lo + self.p.tau_e_hi)
         nu = np.where(self.in_hotspot, self.p.event_rate_hot, self.p.event_rate_cold)
         x = nu * tau
-        return x / (1.0 + x)
+        if self.p.legacy_events:
+            return x / (1.0 + x)           # old alternating-renewal formula
+        return 1.0 - np.exp(-x)            # number of live events is Poisson(nu * E[tau])
 
     def belief(self, t: float) -> np.ndarray:
         """Planner-side P(event live at i | observations). Kernel model:
@@ -534,6 +607,12 @@ class DynSim:
         self._empty_sorties = 0
         self._truncated_sorties = 0   # CONTEXT_69: reserve breach mid-route
         self._clock = 0.0          # global simulation clock -- monotonic
+        self._heap: list = []      # global event heap (attribute so _try_divert can push)
+        self._tok: dict = {}       # k -> seq of that drone's ONLY valid pending action; older pops are stale
+        self._breaches = 0         # arrivals where the reserve check refused service (any position in route)
+        self._reserve_dips = 0     # landings that ate into the reserve (E < 0 at touchdown)
+        self._reserve_violations = 0   # landings that exhausted the reserve entirely
+        self._reserve_used_max = 0.0   # J, worst reserve draw
         self._seq = 0               # heap tiebreaker
 
     # -- age integration -------------------------------------------------
@@ -549,7 +628,8 @@ class DynSim:
         a1 = self.field.age(t1)
         contrib = w * 0.5 * (a0 + a1) * (t1 - t0)
         if self.p.event_model == "separate":
-            ev = self.field.event_age_integral(t0, t1)
+            ev = (self.field._ev_last if (not self.p.legacy_events and self.field._ev_last is not None)
+                  else self.field.event_age_integral(t0, t1))
             self._event_integral += float(ev.sum())
             contrib = contrib + ev
         self._node_int += contrib
@@ -565,10 +645,18 @@ class DynSim:
         self._accumulate(self._clock, t_to)
         self._clock = t_to
 
+    def _push(self, t: float, kind, k: int) -> None:
+        """Every heap push goes through here. A drone has at most one valid pending action: pushing a
+        new one supersedes the previous (needed when a mid-leg diversion replaces an arrival)."""
+        heapq.heappush(self._heap, (t, self._seq, kind, k))
+        if kind != "launch":
+            self._tok[k] = self._seq
+        self._seq += 1
+
     # -- per-drone state --------------------------------------------------
     class _Drone:
         __slots__ = ("route", "ri", "pos", "E", "t_launch", "commute", "travel",
-                     "dwell", "tour_len", "n_visited", "phase", "leg_t0", "leg_len")
+                     "dwell", "tour_len", "n_visited", "phase", "leg_t0", "leg_len", "served")
 
     def _plan(self, k: int, t: float, start, E_rem: float, elapsed_frac: float, iters=None, own_done=()):
         """Build a SortieRequest from the CURRENT fleet state and return a route.
@@ -591,6 +679,10 @@ class DynSim:
             for kk, other in self._live.items():
                 if kk == k: continue
                 tt, cur = self._clock, other.pos
+                if (not p.legacy_eta and other.phase == "flying" and other.ri < len(other.route)
+                        and other.leg_len > 0):
+                    fr = min(1.0, (self._clock - other.leg_t0) * p.v / other.leg_len)
+                    cur = other.pos + (F.pos[other.route[other.ri]] - other.pos) * fr
                 for j in other.route[other.ri:]:
                     tt += float(np.linalg.norm(F.pos[j] - cur)) / p.v; cur = F.pos[j]
                     tt += np.minimum(age[j] * lam[j], p.B_bits) / p.R
@@ -637,7 +729,7 @@ class DynSim:
         d = self._Drone()
         d.pos = p.home.copy(); d.E = p.E_usable; d.t_launch = t
         d.commute = d.travel = d.dwell = d.tour_len = 0.0
-        d.n_visited = 0; d.phase = "flying"; d.route, d.ri = [], 0
+        d.n_visited = 0; d.phase = "flying"; d.route, d.ri = [], 0; d.served = []
         d.leg_t0 = t; d.leg_len = 0.0
         self._live[k] = d
         d.route = self._plan(k, t, None, p.E_usable, 0.5)
@@ -669,6 +761,8 @@ class DynSim:
         j_old = d.route[d.ri]
         frac = 0.0 if d.leg_len <= 0 else min(1.0, (t - d.leg_t0) * p.v / d.leg_len)
         here = d.pos + (F.pos[j_old] - d.pos) * frac        # where the drone actually is now
+        sunk = float(np.linalg.norm(here - d.pos))
+        E_now = d.E - p.e_fly(sunk)                          # the partial leg is flown whatever we decide
         age = F.age(t)
         claimed = np.zeros(p.M, dtype=bool)
         for kk, o in self._live.items():
@@ -678,7 +772,7 @@ class DynSim:
         d_here = np.linalg.norm(F.pos - here, axis=1)
         d_home = np.linalg.norm(F.pos - p.home, axis=1)
         need = p.e_fly(d_here + d_home) + p.e_hover(np.minimum(age * F.lam_est, p.B_bits) / p.R)
-        feas = (~claimed) & (need <= d.E) & (np.arange(p.M) != j_old)
+        feas = (~claimed) & (need <= E_now) & (np.arange(p.M) != j_old)
         if not feas.any():
             return False
         val = np.where(feas, w * age / np.maximum(p.e_fly(d_here), 1.0), -np.inf)
@@ -686,8 +780,15 @@ class DynSim:
         val_old = w[j_old] * age[j_old] / max(p.e_fly(d_here[j_old]), 1.0)
         if val[j_new] <= p.divert_margin * val_old:
             return False
-        d.pos = here; d.leg_t0 = t                            # commit the sunk leg
+        # commit: pay for the sunk leg, re-route, and SUPERSEDE the pending arrival at j_old.
+        # (Previously only d.route/d.pos changed; the stale arrival event still fired and served j_old.)
+        d.E = E_now
+        if d.n_visited == 0: d.commute += sunk / p.v
+        else: d.travel += sunk / p.v; d.tour_len += sunk
+        d.pos = here
         d.route = d.route[:d.ri] + [j_new]                    # new target; rest is replanned on arrival
+        t_next, nxt = self._next_event_time(d)                # leg from `here`, starting now
+        self._push(t_next, nxt, k)
         self._n_diverts += 1
         return True
 
@@ -707,15 +808,16 @@ class DynSim:
     def run(self) -> dict:
         p = self.p
         drones: dict = {}
-        heap: list = []
+        heap = self._heap
 
         for k in range(p.K):
             t0 = k * p.t_c / max(p.K, 1)
-            heapq.heappush(heap, (t0, self._seq, "launch", k))
-            self._seq += 1
+            self._push(t0, "launch", k)
 
         while heap:
-            t_event, _, kind, k = heapq.heappop(heap)
+            t_event, seq, kind, k = heapq.heappop(heap)
+            if kind != "launch" and self._tok.get(k) != seq:
+                continue                    # superseded (diverted leg)
             if kind == "launch":
                 if t_event >= p.T_horizon:
                     continue
@@ -723,8 +825,7 @@ class DynSim:
                 d = self._launch(k, t_event)
                 drones[k] = d
                 t_next, action = self._next_event_time(d)
-                heapq.heappush(heap, (t_next, self._seq, action, k))
-                self._seq += 1
+                self._push(t_next, action, k)
                 continue
 
             # action tuple was stashed as `kind` above for non-launch events
@@ -740,6 +841,14 @@ class DynSim:
                 e_step = p.e_fly(dist_leg) + p.e_hover(td_true)
                 if e_step + p.e_fly(d_home) > d.E:
                     # reserve breached -- do not serve this node, head home instead
+                    self._breaches += 1
+                    if not p.legacy_breach:
+                        # The leg to j WAS flown (we are at j). Pay for it and go home from j.
+                        # (Previously: no charge, and the return leg started from the previous node.)
+                        d.E -= p.e_fly(dist_leg)
+                        if d.n_visited == 0: d.commute += dist_leg / p.v
+                        else: d.travel += dist_leg / p.v; d.tour_len += dist_leg
+                        d.pos = self.field.pos[j].copy()
                     if d.ri < len(d.route) - 1:
                         # nodes remained in the PLANNED route beyond this one:
                         # a genuine mid-route truncation (CONTEXT_69), not just
@@ -747,8 +856,7 @@ class DynSim:
                         self._truncated_sorties += 1
                     d.ri = len(d.route)  # force "arrive_home" branch next
                     t_next, nxt = self._next_event_time(d)
-                    heapq.heappush(heap, (t_next, self._seq, nxt, k))
-                    self._seq += 1
+                    self._push(t_next, nxt, k)
                     continue
 
                 if d.n_visited == 0:
@@ -766,30 +874,45 @@ class DynSim:
                     if a_arr < t_event - d.t_launch:
                         self._n_dup_post += 1
                 td = self.field.visit(t_event, j)
-                self._advance_global(t_event + td)   # dwell consumes time too
                 d.dwell += td
                 d.E -= e_step
                 d.pos = self.field.pos[j].copy()
                 d.n_visited += 1
                 d.ri += 1
-                if p.replan_mode == "per_leg":
-                    self._replan(k, d, t_event + td)
+                d.served.append(j)
+                if p.legacy_clock:           # old handling, kept for paired comparison only
+                    self._advance_global(t_event + td)
+                    if p.replan_mode == "per_leg":
+                        self._replan(k, d, t_event + td)
+                    t_next, nxt = self._next_event_time(d)
+                    self._push(t_next, nxt, k)
+                else:
+                    d.phase = "dwell"            # not divertible while hovering
+                    # Dwell is a heap event: the global clock must not run ahead of other drones' events.
+                    self._push(t_event + td, ("dwell_end",), k)
 
+            elif action[0] == "dwell_end":
+                d.phase = "flying"
+                if p.replan_mode == "per_leg":
+                    self._replan(k, d, t_event)
                 t_next, nxt = self._next_event_time(d)
-                heapq.heappush(heap, (t_next, self._seq, nxt, k))
-                self._seq += 1
+                self._push(t_next, nxt, k)
 
             else:  # arrive_home -> land, record, relaunch
                 dist_leg = action[2]
                 d.commute += dist_leg / p.v
                 d.E -= p.e_fly(dist_leg)
+                if d.E < 0:
+                    self._reserve_dips += 1
+                    self._reserve_used_max = max(self._reserve_used_max, -d.E)
+                    if -d.E > p.rho * p.E_each: self._reserve_violations += 1
                 self.field.expire_check(t_event)
 
                 rec = SortieRecord(
                     t_launch=d.t_launch, t_land=t_event, n_visited=d.n_visited,
                     commute_time=d.commute, travel_time=d.travel,
                     dwell_time=d.dwell, energy_used=p.E_usable - d.E,
-                    tour_len=d.tour_len, drone=k, visited=tuple(d.route[:d.ri]),
+                    tour_len=d.tour_len, drone=k, visited=tuple(d.served),
                 )
                 self.records.append(rec)
                 dur = t_event - d.t_launch
@@ -801,8 +924,7 @@ class DynSim:
                     # do not spin (CONTEXT_65's original guard, same rationale)
                     self._empty_sorties += 1
                     t_next_launch = t_event + p.t_c
-                heapq.heappush(heap, (t_next_launch, self._seq, "launch", k))
-                self._seq += 1
+                self._push(t_next_launch, "launch", k)
 
         return self.metrics()
 
@@ -890,6 +1012,7 @@ class DynSim:
             "events_fired": F.events_fired,
             "events_caught": F.events_caught,
             "catch_rate": F.events_caught / max(F.events_fired, 1),
+            "events_merged": F.events_merged,
             # --- crit 7: tour exponent (regress offline over cells) ---
             "mean_n_visited": float(n_vis.mean()),
             "mean_tour_len": float(np.mean([r.tour_len for r in recs])),
@@ -897,8 +1020,14 @@ class DynSim:
             "n_sorties": len(recs),
             "commute_frac": float(commute.sum() / max(T_s.sum(), 1e-9)),
             "bits_dropped": F.bits_dropped,
+            "drop_frac": F.bits_dropped_win / max(F.bits_gen_win, 1e-9),
             "empty_sorties": self._empty_sorties,
             "truncated_sorties": self._truncated_sorties,
+            "breach_frac": self._breaches / max(len(self.records), 1),
+            "reserve_breaches": self._breaches,
+            "reserve_breach_frac": self._breaches / max(len(self.records), 1),
+            "reserve_dips": self._reserve_dips, "reserve_violations": self._reserve_violations,
+            "reserve_used_max_J": self._reserve_used_max,
             "n_sorties_total": len(self.records),
         }
 

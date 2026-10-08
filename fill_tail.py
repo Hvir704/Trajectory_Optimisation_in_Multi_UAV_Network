@@ -32,7 +32,7 @@ from collections import defaultdict
 # environment before any worker starts (spawn workers re-import run_depot, which applies it).
 if os.environ.get("DEPOT_FRAC"):
     import run_depot  # noqa: F401  (applies the override at import)
-from run_grid import one, FIELDS
+from run_grid import one, FIELDS, SIM_VERSION
 
 
 def std(r):
@@ -55,6 +55,8 @@ def load(paths, planner=None):
         if not os.path.exists(p) or not os.path.getsize(p): continue
         for r in csv.DictReader(open(p)):
             if not std(r): continue
+            if r.get("sim_version") != SIM_VERSION and os.environ.get("ALLOW_V1") != "1":
+                sys.exit(f"{p}: row with sim_version={r.get('sim_version')!r}, expected {SIM_VERSION!r}. Fills and unions must use current files only.")
             if planner and r.get("planner", "sa") != planner: continue
             try:
                 key = (r["layout"], int(float(r["M"])), float(r["Emax"]),
@@ -106,6 +108,10 @@ def main():
     only = {(c.split(",")[0], int(c.split(",")[1]), float(c.split(",")[2])) for c in a.only}
     union = load(a.union) if a.union else None
     new = not (os.path.exists(a.out) and os.path.getsize(a.out))
+    if not new:
+        with open(a.out) as f_: hdr_ = f_.readline().strip().split(",")
+        if hdr_ != FIELDS:
+            sys.exit(f"{a.out} has a different header from the current run_grid FIELDS; write to a new file.")
     for rnd in range(30):
         d = load(a.inputs + [a.out], planner=None if a.planner == "sa" else a.planner)
         if only: d = {k: v for k, v in d.items() if k[:3] in only}

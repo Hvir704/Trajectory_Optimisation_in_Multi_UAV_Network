@@ -1,5 +1,8 @@
 import sys, csv, math, collections, os, numpy as np
 CORRECTED = os.environ.get('P6_ALGEBRA','corrected') == 'corrected'
+# P6_SCALE=rad (default): c_i = 2 Pf r_i / v.  P6_SCALE=consistent: c_i = alpha * 2 Pf r_i / v with
+# alpha = Pbar*tau_s / (2 Pf rbar / v), so that the mean cost equals the measured energy per stop (Lemma 'cost scale').
+SCALE = os.environ.get('P6_SCALE', 'rad')
 sys.path.insert(0,".")
 from dyn_env import DynParams, SensorField
 rows=[r for r in csv.DictReader(open(sys.argv[1] if len(sys.argv)>1 else 'grid.csv')) if r["coord"]=="exclude" and r["replan"]=="launch" and float(r.get("Th",0))==43200]
@@ -15,6 +18,8 @@ for key in sorted(cells):
         F=SensorField(DynParams(M=M,Emax=E,layout=lay,L=L), np.random.default_rng(s))
         r=np.linalg.norm(F.pos-p0.home,axis=1); w=F.wi_base; c=2*p0.Pf*r/p0.v
         Ks=sorted(byK); r0=byK[Ks[0]]; rc=float(r0["r_c"]); Pb=float(r0["P_bar"]); tc=2*rc/p0.v
+        if SCALE == 'consistent':
+            tau_s=(float(r0["T_s_over_t_c"])*p0.t_c-tc)/float(r0["mean_n"]); c=c*(Pb*tau_s/(2*p0.Pf*r.mean()/p0.v))
         Phi=lambda K:(K*(U-K*p0.Pf*tc)/(U+K*tc*(Pb-p0.Pf))) if (U+K*tc*(Pb-p0.Pf))>0 else -1
         reach=lambda K: p0.v*(U/K-p0.Ph*p0.B_bits/p0.R)/(2*p0.Pf)
         Kc=U/(tc*(p0.Pf+(p0.Pf*Pb)**.5)); Kr=p0.v*U/(2*p0.Pf*r.max()+p0.v*p0.Ph*p0.B_bits/p0.R)
