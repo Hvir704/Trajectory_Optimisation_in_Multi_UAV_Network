@@ -11,15 +11,16 @@ from multiprocessing import Pool
 from dyn_env import DynParams, DynSim, SensorField
 from sa_sortie import build_sa_planner
 
-# Version stamp written into every row. v2.1 = reserve-breach, dwell-clock, event-merge, event-prior and ETA fixes
-# (the earlier exported sim_v2.patch wrote "v2" without the event/ETA fixes; such rows must not be used).
-SIM_VERSION = "v2.1"
+# Version stamp written into every row. v2.1 = reserve-breach, dwell-clock, event-merge, event-prior and ETA fixes.
+# v2.2 = v2.1 + departure check (no leg is started whose flight plus return is unaffordable) + common-random-number
+# event streams. Rows of any other version must not be mixed in ("v2" lacked the event/ETA fixes).
+SIM_VERSION = "v2.2"
 _SIM_HOOK = None   # diagnostics only: callable(sim) run just before sim.run() (diag_sec5.py); never set in experiments
 
 FIELDS = ["layout","M","Emax","K","seed","coord","replan","divert","q","belief","tau","planner","L","Th","J","n_diverts","J_age","J_event","n_replans","n_never","share_never","n_reach_inf",
           "K_reach_i","K_commute_i","r_max","r_c","rmax_over_rc","regime_bnd","P_bar","dup_frac",
           "trunc_frac","empty_frac","T_s_over_t_c","mean_n","catch_rate","T_rev","n_sorties","secs",
-          "breach_frac","reserve_dips","reserve_violations","events_merged","drop_frac","cp_decisions","cp_optimal","sim_version"]
+          "breach_frac","reserve_dips","reserve_violations","events_merged","drop_frac","cp_decisions","cp_optimal","depart_skip_frac","reserve_used_max_J","sim_version"]
 
 def k_range(layout, M, Emax, seed, L=None):
     p = DynParams(M=M, Emax=Emax, layout=layout, **({"L": L} if L else {}))
@@ -106,6 +107,11 @@ def one(args):
     p.legacy_clock = _all or os.environ.get("LEGACY_CLOCK") == "1"
     p.legacy_events = _all or os.environ.get("LEGACY_EVENTS") == "1"
     p.legacy_eta = _all or os.environ.get("LEGACY_ETA") == "1"
+    p.legacy_divert = _all or os.environ.get("LEGACY_DIVERT") == "1"
+    # v2.1 behaviour (for paired v2.1 -> v2.2 checks): LEGACY_V21=1 sets the three switches below
+    p.legacy_depart = _all or os.environ.get("LEGACY_DEPART") == "1" or os.environ.get("LEGACY_V21") == "1"
+    p.legacy_rng = _all or os.environ.get("LEGACY_RNG") == "1" or os.environ.get("LEGACY_V21") == "1"
+    p.legacy_divert_weight = _all or os.environ.get("LEGACY_DIVERT_WEIGHT") == "1" or os.environ.get("LEGACY_V21") == "1"
     sim = DynSim(p, pl, seed=seed, coordinate=(coord != "none"))
     if hasattr(pl, "bind_sim"): pl.bind_sim(sim)       # planners that need the drone index
     if planner == "sa_launchdwell":   # ablation: the old launch-time dwell estimate (no arrival correction)
@@ -148,8 +154,10 @@ def one(args):
         dup_frac=m["dup_frac"], trunc_frac=m["trunc_frac"], empty_frac=m["empty_frac"],
         breach_frac=m["breach_frac"], reserve_dips=m["reserve_dips"], reserve_violations=m["reserve_violations"],
         events_merged=m["events_merged"], drop_frac=m["drop_frac"],
+        depart_skip_frac=m["depart_skip_frac"], reserve_used_max_J=m["reserve_used_max_J"],
         cp_decisions=(pl.stats["n"] if hasattr(pl, "stats") else ""), cp_optimal=(pl.stats["optimal"] if hasattr(pl, "stats") else ""),
-        sim_version=("v1-legacy" if (p.legacy_breach or p.legacy_clock or p.legacy_events or p.legacy_eta) else SIM_VERSION),
+        sim_version=("legacy" if (p.legacy_breach or p.legacy_clock or p.legacy_events or p.legacy_eta or p.legacy_divert
+                                  or p.legacy_depart or p.legacy_rng or p.legacy_divert_weight) else SIM_VERSION),
         T_s_over_t_c=m["T_s_over_t_c"], mean_n=m["mean_n_visited"], catch_rate=m["catch_rate"],
         T_rev=m["T_rev"], n_sorties=m["n_sorties"], secs=time.time()-t)
 

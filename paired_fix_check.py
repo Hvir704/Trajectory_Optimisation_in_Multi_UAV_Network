@@ -13,10 +13,11 @@ from run_grid import k_range, parse_seeds
 def one(a):
     lay, M, E, seed, K, legacy = a
     p = DynParams(M=M, K=K, Emax=E, layout=lay, legacy_breach=legacy, legacy_clock=legacy,
-                  legacy_events=legacy, legacy_eta=legacy)   # whole old simulator vs v2
+                  legacy_events=legacy, legacy_eta=legacy, legacy_divert=legacy,
+                  legacy_depart=legacy, legacy_rng=legacy, legacy_divert_weight=legacy)   # whole old simulator vs current
     t = time.time(); m = DynSim(p, build_sa_planner(iters=1200, seed_base=seed), seed=seed).run()
     from run_grid import SIM_VERSION
-    return dict(layout=lay, M=M, Emax=E, seed=seed, K=K, legacy=int(legacy), sim_version=("v1-legacy" if legacy else SIM_VERSION), J=m["J_timeavg"],
+    return dict(layout=lay, M=M, Emax=E, seed=seed, K=K, legacy=int(legacy), sim_version=("legacy" if legacy else SIM_VERSION), J=m["J_timeavg"],
                 breach_frac=m["breach_frac"], trunc_frac=m["trunc_frac"], secs=time.time() - t)
 
 if __name__ == "__main__":

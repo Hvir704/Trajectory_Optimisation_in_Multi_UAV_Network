@@ -2,8 +2,8 @@
 
 Deployment = (layout, M, Emax, seed), primary grid (M <= 200, 1.5/3 MJ, seeds 1-12, L = 12.6 km, 12 h).
 Own optimum = argmin_K J over all of that planner's rows for the deployment. Completeness (registered rule):
-the optimum is not at the largest K and the three largest K each exceed 1.5x the minimum; incomplete sweeps are
-listed, never silently used.  The rule's l per deployment comes from the SA rows (smallest K), as in analyze_liu.py.
+the optimum is not at the largest K and the three largest K each exceed 1.5x the minimum. Incomplete sweeps are
+listed in section 1 but still enter the comparisons; the numbers are final only when section 1 reports 0 incomplete.  The rule's l per deployment comes from the SA rows (smallest K), as in analyze_liu.py.
 
 Prints
   1) completeness per planner;

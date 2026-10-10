@@ -17,7 +17,7 @@ for k, byK in sorted(inst.items()):
     law = lambda c: (int(min(kr, c)) if min(kr, c) == kr else int(round(min(kr, c))))
     p = DynParams(M=M, Emax=E, layout=lay); F = SensorField(DynParams(M=M, Emax=E, layout=lay), np.random.default_rng(s))
     r = np.linalg.norm(F.pos - p.home, axis=1)
-    rc_e, Pb_e, _ = X.exante(p, r, F.lam_bits, F.pos, Ks[0])
+    rc_e, Pb_e, _ = X.exante(p, r, np.full(M, p.lam_bits), F.pos, Ks[0])   # nominal rates: true rates are unknown ex ante
     l_m, l_e = law(kc), law(X.Kc(p, rc_e, Pb_e))
     reg = lambda l: J[min(max(l, Ks[0]), Ks[-1])] / J[am] - 1
     out.append((lay, M, E, s, am, l_m, l_e, float(r0["rmax_over_rc"]), float(r0["regime_bnd"]), reg(l_m), reg(l_e), Ks[-1] == am))

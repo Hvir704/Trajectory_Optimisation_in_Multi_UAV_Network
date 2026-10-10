@@ -20,27 +20,42 @@ Ex-ante inputs only: sensor positions (site survey), nominal generation rates la
 Variants reported, so the error can be attributed:
   oracle_n   : order statistic with the MEASURED n  -> error of the order-statistic formula alone
   exante     : everything ex-ante                    -> the honest price of ex-ante use
-usage: python exante_rc.py grid_final.csv [--out exante.csv]
+usage: python exante_rc.py grid_final.csv [--out exante.csv] [--rc-model two|nearest]
 """
 import sys, csv, math, argparse
 import numpy as np
 from collections import defaultdict
 from dyn_env import DynParams, SensorField
 
+RC_MODEL = "two"     # "two": r_c = mean of the nearest and second-nearest of n draws (r_c is the mean of the first and
+                     # last legs); "nearest": the old E[min of n] (biased low by construction). Set by --rc-model.
+
+
 def order_stat_rc(radii, n):
-    """E[min of n i.i.d. draws from the empirical radial distribution] = int (1-F)^n dx."""
+    """Order-statistic estimate of the realised commute radius for n i.i.d. radial draws from the empirical
+    distribution. E[r_(1)] = int S^n dx, E[r_(2)] = int S^n + n F S^(n-1) dx (S = 1 - F, piecewise constant).
+    r_c is the mean of the first and last legs, so with n >= 2 stops it is (E r_(1) + E r_(2))/2; with one stop it is
+    E r_(1). Between n = 1 and 2 the two are blended linearly so the estimate is continuous in n."""
     x = np.sort(radii); m = len(x)
-    # piecewise-constant survival on [x_k, x_{k+1}): S = (m-k-1)/m
     edges = np.concatenate([[0.0], x])
     surv = np.concatenate([[1.0], (m - np.arange(1, m + 1)) / m])[:-1]
-    widths = np.diff(edges)
-    return float(np.sum(widths * np.power(surv, max(n, 1.0))))
+    widths = np.diff(edges); n = max(n, 1.0)
+    e1 = float(np.sum(widths * np.power(surv, n)))
+    if RC_MODEL == "nearest":
+        return e1
+    e2 = e1 + float(np.sum(widths * n * (1 - surv) * np.power(surv, n - 1)))
+    wgt = min(max(n - 1.0, 0.0), 1.0)
+    return e1 + wgt * 0.5 * (e2 - e1)
 
 
+_NN = {}
 def exante(p, r, lam, pos, K, n_override=None, iters=60):
     U = (1 - p.rho) * p.Emax; Eu = U / K
-    d = np.linalg.norm(pos[:, None, :] - pos[None, :, :], axis=-1); np.fill_diagonal(d, np.inf)
-    tau_hop = d.min(axis=1).mean() / p.v
+    key = (pos.shape, float(pos.sum()), float(p.v))
+    if key not in _NN:
+        d = np.linalg.norm(pos[:, None, :] - pos[None, :, :], axis=-1); np.fill_diagonal(d, np.inf)
+        _NN.clear(); _NN[key] = d.min(axis=1).mean() / p.v
+    tau_hop = _NN[key]
     H = lam.sum() / p.R                           # fleet hover, UAV-equivalents
     rc = np.median(r); n = 10.0; Pb = p.Pf
     for _ in range(iters):
@@ -65,7 +80,8 @@ def Kc(p, rc, Pb):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("grid"); ap.add_argument("--out", default=None)
-    a = ap.parse_args()
+    ap.add_argument("--rc-model", choices=["two", "nearest"], default="two")
+    a = ap.parse_args(); RC_MODEL = a.rc_model
 
     inst = defaultdict(dict)
     for r in csv.DictReader(open(a.grid)):
@@ -84,18 +100,24 @@ if __name__ == "__main__":
 
         rc_o, _, _ = exante(p, r, lam, F.pos, Ks[0], n_override=n_m)
         rc_e, Pb_e, n_e = exante(p, r, lam, F.pos, Ks[0])
-        # commute fixed point K = Kc(rc(K)), started from the smallest swept K
-        Kfp = float(Ks[0])
-        for _ in range(40):
-            rc_f, Pb_f, _ = exante(p, r, lam, F.pos, max(Kfp, 1.0))
-            Knew = Kc(p, rc_f, Pb_f)
-            if abs(Knew - Kfp) < 1e-3: break
-            Kfp = 0.5 * Kfp + 0.5 * Knew
+        # commute fixed point: g(K) = Kc(rc_hat(K), Pb_hat(K)) decreases in K (fewer stops -> larger r_c), so the
+        # estimator is the smallest K with g(K) <= K, found by bisection. Where g jumps across the diagonal (n_hat hits
+        # its floor) no exact fixed point exists; the crossing is then flagged (fp_jump) and its residual reported.
+        g = lambda K: Kc(p, *exante(p, r, lam, F.pos, max(K, 1.0))[:2])
+        lo, hi = 1.0, max(2.0, float(Ks[0]))
+        while g(hi) > hi: hi *= 2.0
+        if g(lo) <= lo: hi = lo
+        for _ in range(50):
+            if hi - lo < 1e-4: break
+            mid = 0.5 * (lo + hi); lo, hi = (mid, hi) if g(mid) > mid else (lo, mid)
+        Kfp = hi
+        rc_f, Pb_f, _ = exante(p, r, lam, F.pos, max(Kfp, 1.0))
+        fp_res = Kc(p, rc_f, Pb_f) - Kfp; fp_jump = abs(fp_res) > 0.05 * max(Kfp, 1.0)
         def rule(kc):
             law = min(kr, kc); return int(law) if law == kr else int(round(law))
         out = dict(layout=lay, M=M, Emax=E, L=L, seed=seed, argmin=am,
                    rc_meas=rc_m, rc_oracle_n=rc_o, rc_exante=rc_e, n_meas=n_m, n_exante=n_e,
-                   Pb_meas=Pb_m, Pb_exante=Pb_e, rc_fp=rc_f, Pb_fp=Pb_f, K_fp=Kfp,
+                   Pb_meas=Pb_m, Pb_exante=Pb_e, rc_fp=rc_f, Pb_fp=Pb_f, K_fp=Kfp, fp_residual=fp_res, fp_jump=int(fp_jump),
                    rule_meas=rule(float(r0["K_commute_i"])), rule_oracle_n=rule(Kc(p, rc_o, Pb_m)),
                    rule_exante=rule(Kc(p, rc_e, Pb_e)), rule_fixedpoint=rule(Kfp),
                    reg_meas=0.0, reg_exante=0.0, reg_fixedpoint=0.0, ratio_meas=float(r0["rmax_over_rc"]),
@@ -127,6 +149,9 @@ if __name__ == "__main__":
         reg_m = np.array([(x["ratio_meas"] > x["bnd_meas"]) for x in R]); reg_e = np.array([(x["ratio_exante"] > x["bnd_exante"]) for x in R])
         print(f"   regime classification (reach vs commute) agrees with measured-input classification: {np.mean(reg_m==reg_e):.3f}")
 
+    print(f"commute fixed point: {sum(x['fp_jump'] for x in rows)} of {len(rows)} instances have no exact fixed point "
+          f"(g jumps across the diagonal); |residual| median {np.median([abs(x['fp_residual']) for x in rows]):.3f} UAVs, "
+          f"max {max(abs(x['fp_residual']) for x in rows):.3f}")
     summ(rows, "ALL 272")
     summ([x for x in rows if x["L"] == 12600], "primary 240")
     for fam in ("paper", "ring", "core"):

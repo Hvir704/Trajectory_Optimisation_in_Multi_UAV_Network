@@ -129,6 +129,11 @@ class Ctx:
             t0 = t; E = Eu; cur = M; nvis = 0
             for j in route:
                 d = D[cur][j]
+                if not getattr(self.p, "legacy_depart", False) and Pf_v * (d + dh[j]) > E:
+                    # v2.2 departure check, as DynSim._next_event_time: flying to j and then home already
+                    # exceeds the energy left, so the UAV goes home from cur without flying the leg.
+                    # (Never at the first stop: cut_sortie admits j only if 2*Pf_v*dh[j] + hover <= Eu.)
+                    break
                 ta = t + d / v
                 dw = min((ta - tlast[j]) * lam, B) / R
                 e_step = Pf_v * d + Ph * dw

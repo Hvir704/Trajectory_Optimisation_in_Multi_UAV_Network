@@ -16,12 +16,16 @@ def load(f, sa=False):
 def rule(b):
     r0 = b[min(b)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"]); law = min(kr, kc)
     return int(law) if law == kr else int(round(law))
+# The rule's point predictor is planner-independent: by default every planner is scored against the l computed from
+# the annealer's smallest-K row (as planners_v2.py and Tables XII-XIII do). --rule-from own reproduces the v1
+# convention (l from the planner's own smallest-K r_c and Pbar).
+OWN = "--rule-from" in sys.argv and sys.argv[sys.argv.index("--rule-from") + 1] == "own"
 S, C = load(sys.argv[1], True), load(sys.argv[2])
 rows = []
 for k in sorted(set(S) & set(C)):
     Ks = sorted(set(S[k]) & set(C[k])); js = {K: float(S[k][K]["J"]) for K in Ks}; jc = {K: float(C[k][K]["J"]) for K in Ks}
     a, c = min(js, key=js.get), min(jc, key=jc.get)
-    rows.append(dict(cell=k[:3], fam=k[0], a=a, c=c, lc=rule(C[k]), ls=rule(S[k]), own=jc[c] / js[a] - 1, same=[jc[K] / js[K] - 1 for K in Ks]))
+    rows.append(dict(cell=k[:3], fam=k[0], a=a, c=c, lc=(rule(C[k]) if OWN else rule(S[k])), ls=rule(S[k]), own=jc[c] / js[a] - 1, same=[jc[K] / js[K] - 1 for K in Ks]))
 def summary(R, lab):
     g = lambda f: np.array([f(x) for x in R], float)
     own = g(lambda x: x["own"]); same = np.concatenate([x["same"] for x in R])

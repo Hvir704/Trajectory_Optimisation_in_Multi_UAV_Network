@@ -51,3 +51,12 @@ for c in order:
     print(f"{c[0]:16}{c[1]:9}{c[2]:13}{c[3]:>4}{st.mean(J):11.3e}"
           f"{100 * st.mean(diff) / st.mean(Jr):+11.1f}%{s_:>6}/{n:<3}{p:8.4f}"
           f"{len(ks):>7}{tr:7.2f}{du:6.2f}")
+# Table III's diversion row: diversion only runs inside per-leg replanning (_try_divert is called from _replan),
+# so the row is "per-leg + diversion" and its own effect is the paired difference against the per-leg row.
+pl, dv = ("sa", "exclude", "per_leg_sa", "0"), ("sa", "exclude", "per_leg_sa", "1")
+if pl in d and dv in d:
+    ks = sorted(set(d[pl]) & set(d[dv]))
+    J = [float(d[dv][s]["J"]) for s in ks]; Jr = [float(d[pl][s]["J"]) for s in ks]
+    s_, n, p = sign([a - b for a, b in zip(J, Jr)])
+    print(f"\nper-leg + diversion vs per-leg alone: dJ {100 * (st.mean(J) - st.mean(Jr)) / st.mean(Jr):+.1f}%  "
+          f"worse in {s_}/{n}  p={p:.4f}  seeds {len(ks)}")

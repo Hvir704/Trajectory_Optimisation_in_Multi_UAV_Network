@@ -104,6 +104,15 @@ class DynParams:
                                   # event is live OVERWROTE it (age restarted), one firing per sensor per step,
                                   # and the event integral ran after the firings (losing replaced tails).
     legacy_eta: bool = False      # True: ETAs of other UAVs start from the START of their current leg.
+    legacy_divert: bool = False   # True reproduces the pre-Oct-2026 diversion: the sunk part of the leg was not
+                                  # charged and the pending arrival at the old target was NOT superseded.
+    legacy_depart: bool = False   # True reproduces v2.1: a UAV left a stop for the next one without checking it
+                                  # could fly there and back home, so the last leg could dip into the reserve.
+    legacy_divert_weight: bool = False   # True reproduces <= v2.1 diversion scoring: targets weighted with the event
+                                  # prior even for the event-blind planner (v2.2 weights them as _plan does).
+    legacy_rng: bool = False      # True reproduces <= v2.1 event draws from the one simulator stream, whose order
+                                  # depends on step boundaries (so planners/K at one seed saw different events).
+                                  # False (v2.2): per-sensor and per-hotspot streams -> common random numbers.
     legacy_breach: bool = False   # True reproduces the pre-Oct-2026 bug: on a reserve breach the leg to the
                                   # node was not charged and the UAV returned from its PREVIOUS position.
                                   # Kept only so the effect of the fix can be measured paired.
@@ -240,14 +249,21 @@ class SensorField:
         self.event_until = np.full(M, -np.inf)   # event live while t < this
         self.event_fire = np.full(M, np.inf)     # fire time of the current live event
         self.next_event_at = np.empty(M)
+        if not p.legacy_rng:
+            # v2.2 common random numbers: every event draw of sensor i (hotspot h) comes from its own stream,
+            # seeded from the field's seed only. The layout draws above are unchanged, so the same seed gives the
+            # same field AND the same event history whatever the planner, K or step partition.
+            base = int(rng.integers(0, 2**62))
+            self._srng = [np.random.default_rng([base, 0, i]) for i in range(M)]
+            self._hrng = [np.random.default_rng([base, 1, h]) for h in range(p.n_hotspots)]
         for i in range(M):
             self.next_event_at[i] = self._draw_next_event(0.0, i)
         # v3: hotspot-level firing (members fire together w.p. q). Hotspot members' own
         # per-sensor clocks are disabled when q > 0.
         if p.event_corr_q > 0:
             self.next_event_at[self.hot_id >= 0] = np.inf
-            self.next_hot_fire = np.array([self.rng.exponential(p.event_corr_q / p.event_rate_hot)
-                                           for _ in range(p.n_hotspots)])
+            self.next_hot_fire = np.array([self._hr(h).exponential(p.event_corr_q / p.event_rate_hot)
+                                           for h in range(p.n_hotspots)])
         # observations: what drones have SEEN (event state on arrival). Planner-side only.
         self.obs_t = np.full(M, -np.inf)     # time of last observation of node i
         self.obs_live = np.zeros(M, dtype=bool)
@@ -266,8 +282,14 @@ class SensorField:
     def _rate(self, i: int) -> float:
         return self.p.event_rate_hot if self.in_hotspot[i] else self.p.event_rate_cold
 
+    def _sr(self, i: int) -> np.random.Generator:
+        return self.rng if self.p.legacy_rng else self._srng[i]
+
+    def _hr(self, h: int) -> np.random.Generator:
+        return self.rng if self.p.legacy_rng else self._hrng[h]
+
     def _draw_next_event(self, t: float, i: int) -> float:
-        return t + self.rng.exponential(1.0 / self._rate(i))
+        return t + self._sr(i).exponential(1.0 / self._rate(i))
 
     def advance(self, t_from: float, t_to: float) -> None:
         """Advance world state. Buffers fill; events fire and expire."""
@@ -295,7 +317,7 @@ class SensorField:
             fire_t = self.next_event_at[i]
             if fire_t < t_from:
                 fire_t = t_from
-            tau = self.rng.uniform(self.p.tau_e_lo, self.p.tau_e_hi)
+            tau = self._sr(i).uniform(self.p.tau_e_lo, self.p.tau_e_hi)
             self.event_until[i] = fire_t + tau
             self.event_fire[i] = fire_t
             self.events_fired += 1
@@ -304,12 +326,12 @@ class SensorField:
             for h in np.where(self.next_hot_fire <= t_to)[0]:
                 fire_t = max(self.next_hot_fire[h], t_from)
                 members = np.where(self.hot_id == h)[0]
-                hit = members[self.rng.random(len(members)) < self.p.event_corr_q]
+                hit = members[self._hr(h).random(len(members)) < self.p.event_corr_q]
                 for i in hit:
-                    self.event_until[i] = fire_t + self.rng.uniform(self.p.tau_e_lo, self.p.tau_e_hi)
+                    self.event_until[i] = fire_t + self._sr(i).uniform(self.p.tau_e_lo, self.p.tau_e_hi)
                     self.event_fire[i] = fire_t
                     self.events_fired += 1
-                self.next_hot_fire[h] = fire_t + self.rng.exponential(self.p.event_corr_q / self.p.event_rate_hot)
+                self.next_hot_fire[h] = fire_t + self._hr(h).exponential(self.p.event_corr_q / self.p.event_rate_hot)
 
     def _advance_events(self, t_from: float, t_to: float) -> None:
         """v2 event dynamics over (t_from, t_to]. Collects every firing in the step, merges a firing into a live
@@ -321,16 +343,16 @@ class SensorField:
         for i in np.where(self.next_event_at <= t_to)[0]:
             while self.next_event_at[i] <= t_to:
                 s = max(self.next_event_at[i], t_from)
-                fir.setdefault(int(i), []).append((s, self.rng.uniform(p.tau_e_lo, p.tau_e_hi)))
+                fir.setdefault(int(i), []).append((s, self._sr(i).uniform(p.tau_e_lo, p.tau_e_hi)))
                 self.next_event_at[i] = self._draw_next_event(s, i)
         if p.event_corr_q > 0:
             for h in range(len(self.next_hot_fire)):
                 while self.next_hot_fire[h] <= t_to:
                     s = max(self.next_hot_fire[h], t_from)
                     members = np.where(self.hot_id == h)[0]
-                    for i in members[self.rng.random(len(members)) < p.event_corr_q]:
-                        fir.setdefault(int(i), []).append((s, self.rng.uniform(p.tau_e_lo, p.tau_e_hi)))
-                    self.next_hot_fire[h] = s + self.rng.exponential(p.event_corr_q / p.event_rate_hot)
+                    for i in members[self._hr(h).random(len(members)) < p.event_corr_q]:
+                        fir.setdefault(int(i), []).append((s, self._sr(i).uniform(p.tau_e_lo, p.tau_e_hi)))
+                    self.next_hot_fire[h] = s + self._hr(h).exponential(p.event_corr_q / p.event_rate_hot)
         gw = p.event_gain * self.wi_base
         f, u = self.event_fire, self.event_until
         ev = np.zeros(p.M)
@@ -612,6 +634,7 @@ class DynSim:
         self._breaches = 0         # arrivals where the reserve check refused service (any position in route)
         self._reserve_dips = 0     # landings that ate into the reserve (E < 0 at touchdown)
         self._reserve_violations = 0   # landings that exhausted the reserve entirely
+        self._depart_skips = 0         # v2.2: departures turned home because next stop + return was unaffordable
         self._reserve_used_max = 0.0   # J, worst reserve draw
         self._seq = 0               # heap tiebreaker
 
@@ -762,13 +785,17 @@ class DynSim:
         frac = 0.0 if d.leg_len <= 0 else min(1.0, (t - d.leg_t0) * p.v / d.leg_len)
         here = d.pos + (F.pos[j_old] - d.pos) * frac        # where the drone actually is now
         sunk = float(np.linalg.norm(here - d.pos))
-        E_now = d.E - p.e_fly(sunk)                          # the partial leg is flown whatever we decide
+        E_now = d.E if p.legacy_divert else d.E - p.e_fly(sunk)   # the partial leg is flown whatever we decide
         age = F.age(t)
         claimed = np.zeros(p.M, dtype=bool)
         for kk, o in self._live.items():
             if kk != k and o.ri < len(o.route):
                 claimed[o.route[o.ri:]] = True
-        b = F.belief(t); w = F.wi_base * (1 + (p.event_gain - 1) * b) if b is not None else F.wi_base
+        if p.legacy_divert or p.legacy_divert_weight:
+            b = F.belief(t)
+        else:   # weight targets exactly as the planner does (_plan): the event-blind planner ignores the prior
+            b = F.belief(t) if (p.planner_knows_rates or p.belief_mode != "prior") else None
+        w = F.wi_base * (1 + (p.event_gain - 1) * b) if b is not None else F.wi_base
         d_here = np.linalg.norm(F.pos - here, axis=1)
         d_home = np.linalg.norm(F.pos - p.home, axis=1)
         need = p.e_fly(d_here + d_home) + p.e_hover(np.minimum(age * F.lam_est, p.B_bits) / p.R)
@@ -780,6 +807,11 @@ class DynSim:
         val_old = w[j_old] * age[j_old] / max(p.e_fly(d_here[j_old]), 1.0)
         if val[j_new] <= p.divert_margin * val_old:
             return False
+        if p.legacy_divert:                                   # old behaviour, paired comparison only
+            d.pos = here; d.leg_t0 = t
+            d.route = d.route[:d.ri] + [j_new]
+            self._n_diverts += 1
+            return True
         # commit: pay for the sunk leg, re-route, and SUPERSEDE the pending arrival at j_old.
         # (Previously only d.route/d.pos changed; the stale arrival event still fired and served j_old.)
         d.E = E_now
@@ -795,6 +827,15 @@ class DynSim:
     def _next_event_time(self, d: "_Drone") -> tuple:
         """Time of this drone's next action, and what that action is."""
         p, F = self.p, self.field
+        if d.ri < len(d.route) and not p.legacy_depart:
+            # v2.2 departure check: distances and remaining energy are known exactly here (only the dwell at j is
+            # not). If flying to j and then home already exceeds the usable energy, go home now instead.
+            j = d.route[d.ri]
+            dist = float(np.linalg.norm(F.pos[j] - d.pos))
+            if p.e_fly(dist) + p.e_fly(float(np.linalg.norm(F.pos[j] - p.home))) > d.E:
+                self._depart_skips += 1
+                if d.ri < len(d.route) - 1: self._truncated_sorties += 1
+                d.ri = len(d.route)
         if d.ri < len(d.route):
             j = d.route[d.ri]
             dist = float(np.linalg.norm(F.pos[j] - d.pos))
@@ -1028,6 +1069,7 @@ class DynSim:
             "reserve_breach_frac": self._breaches / max(len(self.records), 1),
             "reserve_dips": self._reserve_dips, "reserve_violations": self._reserve_violations,
             "reserve_used_max_J": self._reserve_used_max,
+            "depart_skip_frac": self._depart_skips / max(len(self.records), 1),
             "n_sorties_total": len(self.records),
         }
 

@@ -73,10 +73,15 @@ report("primary 240: exact", prim, 0); report("primary 240: within one", prim, 1
 for fam in ("paper", "ring", "core"):
     sub = [r for r in prim if r[0][0] == fam]
     report(f"{fam}: exact", sub, 0); report(f"{fam}: within one", sub, 1)
-bad = {("ring", 50, 3e6), ("ring", 100, 3e6), ("core", 100, 1.5e6), ("core", 200, 1.5e6), ("core", 200, 3e6)}
+# the excluded cells are derived from the data exactly as make_table4.py does: per-cell within-one < 0.9
+_pc = defaultdict(list)
+for c, v in prim: _pc[c[:3]].append(v[1])
+bad = {c for c, v in _pc.items() if np.mean(v) < 0.9}
 good = [r for r in prim if r[0][:3] not in bad]
-report("15 cells outside the failure families: exact", good, 0)
-report("15 cells outside the failure families: within one", good, 1)
+print(f"  cells with within-one < 0.9 (excluded below): {sorted(bad)}")
+ng = len({r[0][:3] for r in good})
+report(f"{ng} cells with within-one >= 0.9: exact", good, 0)
+report(f"{ng} cells with within-one >= 0.9: within one", good, 1)
 report("all 272: exact", rec, 0); report("all 272: within one", rec, 1)
 
 # per-cell Clopper-Pearson

@@ -4,3 +4,4 @@ scipy>=1.10
 ortools>=9.8
 matplotlib>=3.7
 # the DRL reproduction additionally needs torch; install it separately for your platform
+pandas>=2.0

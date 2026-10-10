@@ -55,9 +55,9 @@ def main():
     # ---------------------------------------------------------------- 1. check
     print("== 1. check")
     for p in sorted(glob.glob(os.path.join(RES, "*.csv"))):
-        if os.path.basename(p).startswith(("fixcheck", "regularity")): continue   # legacy-vs-v2 pairs; own-sim diagnostics
         rows = read(p); v = Counter(r.get("sim_version") for r in rows)
-        bad = {k: n for k, n in v.items() if k != SIM_VERSION}
+        ok_versions = {SIM_VERSION, "legacy"} if os.path.basename(p).startswith("fixcheck") else {SIM_VERSION}
+        bad = {k: n for k, n in v.items() if k not in ok_versions}
         if bad and not a.allow_v1:
             problems.append(f"{os.path.basename(p)}: rows with sim_version {bad}")
         print(f"   {os.path.basename(p):32s} {len(rows):6d} rows  versions {dict(v)}")
@@ -99,7 +99,7 @@ def main():
     emit("asghar_eval.csv", ["asghar_rev.csv", "asghar_rev_fill.csv"], "asghar_rev", std)
     emit("liu_all.csv", ["liu_mpga.csv", "liu_mpga_fill.csv"], "liu_mpga", std)
     emit("m40_sa.csv", ["m40_sa.csv"]); emit("m40_rr.csv", ["m40_rr_tour.csv"]); emit("m40_cluster.csv", ["m40_cluster_patrol.csv"])
-    # Table IX bottom: CP-SAT at its default budget on paper, at the converged threefold budget on ring
+    # Table XI bottom: CP-SAT at its default budget on paper, at the converged threefold budget on ring
     cp = [r for r in (read(R("m40_cpsat_d5.csv")) if have("m40_cpsat_d5.csv") else []) if r["layout"] == "paper"]
     cp += read(R("m40_cpsat_d15.csv")) if have("m40_cpsat_d15.csv") else []
     for r in cp: r["planner"] = "cpsat"
@@ -111,7 +111,7 @@ def main():
         for pl in ("cyc", "cluster_patrol"):
             emit(f"depot_{d}_{pl}.csv", [f"depot_{d}_{pl}.csv", f"depot_{d}_{pl}_fill.csv"], pl, None, DF, ("depot_x", "depot_y"))
     emit("hetero.csv", ["hetero.csv"], None, None, FIELDS + ["alloc"], ("alloc",))
-    emit("mass.csv", ["mass.csv"])
+    emit("mass.csv", ["mass.csv"], None, None, FIELDS + ["mass_model"])
     # ablation: every variant in one file for ablation.py
     emit("ablation.csv", sorted(os.path.basename(p) for p in glob.glob(R("abl_*.csv"))))
     gf = A("grid_final.csv")
@@ -146,86 +146,118 @@ def main():
         write(A("verdicts.csv"), ver, ["layout", "M", "Emax", "seed", "verdict_current", "verdict_superseded"])
         c = Counter((x["layout"], x["verdict_current"]) for x in ver)
         print(f"   verdicts (held-out 216): {dict(sorted(c.items()))}")
-    # Fig. 5 selection rule (registered): per family (paper, ring) at M=100, 1.5 MJ, the deployment whose
-    # C4-vs-cluster own-optimum ratio is closest to that family's median
+    # Fig. 4 selection rule (registered): per family (paper, ring), the M=100, 1.5 MJ deployment whose C4-vs-cluster
+    # own-optimum ratio is closest to the median of that ratio over the WHOLE family (all M and budgets)
     if os.path.exists(A("eval_all_v2.csv")):
         import numpy as np
         d = defaultdict(lambda: defaultdict(dict))
         for r in read(A("eval_all_v2.csv")):
-            if int(float(r["M"])) == 100 and float(r["Emax"]) == 1.5e6 and r["layout"] in ("paper", "ring"):
-                d[(r["layout"], int(float(r["seed"])))][r["planner"]][int(float(r["K"]))] = float(r["J"])
+            if r["layout"] in ("paper", "ring"):
+                d[(r["layout"], int(float(r["M"])), float(r["Emax"]), int(float(r["seed"])))][r["planner"]][int(float(r["K"]))] = float(r["J"])
         sel = {}
         for fam in ("paper", "ring"):
-            rat = {s: min(b["cyc"].values()) / min(b["cluster_patrol"].values()) - 1 for (f_, s), b in d.items()
-                   if f_ == fam and "cyc" in b and "cluster_patrol" in b}
-            if rat:
-                med = float(np.median(list(rat.values()))); sel[fam] = min(rat, key=lambda s: (abs(rat[s] - med), s))
-        json.dump(sel, open(A("selected.json"), "w")); print(f"   Fig. 5 deployments (rule re-applied on v2): {sel}  (v1: paper 10, ring 12)")
+            rat = {k: min(b["cyc"].values()) / min(b["cluster_patrol"].values()) - 1 for k, b in d.items()
+                   if k[0] == fam and "cyc" in b and "cluster_patrol" in b}
+            cand = {k: v for k, v in rat.items() if k[1] == 100 and k[2] == 1.5e6}
+            if cand:
+                med = float(np.median(list(rat.values())))
+                sel[fam] = min(cand, key=lambda k: (abs(cand[k] - med), k[3]))[3]
+        json.dump(sel, open(A("selected.json"), "w")); print(f"   Fig. 4 deployments (registered rule): {sel}  (v1: paper 10, ring 12)")
     # censoring report: every planner's sweeps on the union grid must meet the registered rule
     import fill_tail
     os.environ["ALLOW_V1"] = "1" if a.allow_v1 else os.environ.get("ALLOW_V1", "")
-    union_files = [A(n) for n in ("sa_rerun.csv", "rr_tour_win.csv", "cluster_win.csv", "eval_all_v2.csv", "gzz_eval.csv",
-                                  "asghar_eval.csv", "liu_all.csv") if os.path.exists(A(n))]
-    union = fill_tail.load(union_files)
+    def merged(pairs):
+        """Union K grid exactly as the fills build it: the listed (file, planner) pairs and nothing else."""
+        u = {}
+        for n, pl in pairs:
+            if os.path.exists(A(n)):
+                for k, b in fill_tail.load([A(n)], planner=pl).items(): u.setdefault(k, {}).update(b)
+        return u
+    # = $U in RERUN_V2.md / run_all_ryzen.ps1: SA, C4, cluster patrol, Gao, Asghar, Liu, tour patrol.
+    # (cyc_sector0 and rr_sweep are filled ON this grid but do not add to it.)
+    U_PAIRS = [("sa_rerun.csv", None), ("eval_all_v2.csv", "cyc"), ("cluster_win.csv", "cluster_patrol"),
+               ("gzz_eval.csv", "gzz_rev"), ("asghar_eval.csv", "asghar_rev"), ("liu_all.csv", "liu_mpga"),
+               ("rr_tour_win.csv", "rr_tour")]
+    union = merged(U_PAIRS)
+    unions = {"primary": union, "none": None,
+              "q": merged([(f"depot_q{x}.csv", None) for x in ("", "_cyc", "_cluster_patrol")]),
+              "e": merged([(f"depot_e{x}.csv", None) for x in ("", "_cyc", "_cluster_patrol")])}
     print("   censoring: runs fill_tail.py would still add (must all be 0):")
-    for n, pl in (("sa_rerun.csv", None), ("grid.csv", None), ("rr_tour_win.csv", "rr_tour"), ("rr_sweep_win.csv", "rr_sweep"),
-                  ("cluster_win.csv", "cluster_patrol"), ("eval_all_v2.csv", "cyc"), ("eval_all_v2.csv", "cyc_sector0"), ("gzz_eval.csv", "gzz_rev"),
-                  ("asghar_eval.csv", "asghar_rev"), ("liu_all.csv", "liu_mpga")):
+    for n, pl, un in (("sa_rerun.csv", None, "primary"), ("grid.csv", None, "none"), ("rr_tour_win.csv", "rr_tour", "primary"),
+                      ("rr_sweep_win.csv", "rr_sweep", "primary"), ("cluster_win.csv", "cluster_patrol", "primary"),
+                      ("eval_all_v2.csv", "cyc", "primary"), ("eval_all_v2.csv", "cyc_sector0", "primary"),
+                      ("gzz_eval.csv", "gzz_rev", "primary"), ("asghar_eval.csv", "asghar_rev", "primary"),
+                      ("liu_all.csv", "liu_mpga", "primary"),
+                      ("depot_q.csv", None, "q"), ("depot_q_cyc.csv", None, "q"), ("depot_q_cluster_patrol.csv", None, "q"),
+                      ("depot_e.csv", None, "e"), ("depot_e_cyc.csv", None, "e"), ("depot_e_cluster_patrol.csv", None, "e")):
         if not os.path.exists(A(n)): continue
         dd = fill_tail.load([A(n)], planner=pl)
-        jobs = fill_tail.needed(dd, union if n != "grid.csv" else None, 60, True)
-        print(f"      {n:20s} {pl or 'sa':15s} {len(jobs):4d}")
+        jobs = fill_tail.needed(dd, unions[un], 60, True)
+        over = len(fill_tail.needed(dd, unions[un], 10**6, True)) - len(jobs)     # wanted K above kmax = 60
+        print(f"      {n:26s} {pl or '-':15s} {len(jobs):4d}" + (f"   + {over} wanted above K=60 (cannot be run)" if over else ""))
+        if over: problems.append(f"{n}: {over} sweeps would need K > 60; the extension rule cannot be met there")
         if jobs: problems.append(f"{n}: {len(jobs)} runs still needed to meet the extension rule (rerun RERUN_V2 section C)")
 
     # ---------------------------------------------------------------- 4. run
     o = lambda n: os.path.join(OUT, n)
     STEPS = [
-        ("table4", "Table IV (tab:law), Sec. VI-B statistics, warning indicator, Table (field size)", ["make_table4.py", gf]),
+        ("table4", "Table IV (tab:law), Sec. VII-B statistics, warning indicator, Table VIII (field size)", ["make_table4.py", gf]),
         ("estimators", "Appendix B: choice of estimator", ["make_estimators.py", gf]),
         ("strand_rad", "Table V (tab:strand), Prop. 6 at the radial scale", ["strand_final.py", gf]),
         ("strand_consistent", "Prop. 6 at the consistent scale (Lemma: cost scale)", ["strand_final.py", gf], {"P6_SCALE": "consistent"}),
+        ("strand_old_algebra", "Sec. VII-C: the earlier form of Prop. 6 with Q held at Q_K (exact / within-one)", ["strand_final.py", gf], {"P6_ALGEBRA": "old"}),
+        ("strand_planners", "Sec. VII-C: other planners' optima vs l and Prop. 6 on the flagged held-out deployments",
+         ["strand_planners.py", A("sa_rerun.csv"), A("verdicts.csv"), A("eval_all_v2.csv"), A("gzz_eval.csv"), A("asghar_eval.csv")]
+         + ([A("liu_all.csv")] if os.path.exists(A("liu_all.csv")) else [])),
         ("scale_lemma", "Lemma (cost scale): verdict pairs, alpha, regret of changed verdicts", ["scale_lemma.py", gf]),
         ("criterion", "criterion (5): pass/flag regret by family (global form)", ["criterion_variants.py", gf, "-", "--tex"]),
-        ("table8", "Table VIII (tab:regret)", ["make_table8.py", gf, A("apriori_regret.csv")]),
-        ("exante", "Sec. VI-H ex-ante commute inputs", ["exante_rc.py", gf, "--out", A("exante.csv")]),
-        ("criterion_exante_fp", "Sec. VI-H criterion with ex-ante inputs at the commute fixed point",
+        ("table8", "Table VII (tab:regret)", ["make_table8.py", gf, A("apriori_regret.csv")]),
+        ("exante", "Sec. VII-J ex-ante commute inputs (incl. the fixed-point existence count)", ["exante_rc.py", gf, "--out", A("exante.csv")]),
+        ("criterion_exante_fp", "Sec. VII-J criterion with ex-ante inputs at the commute fixed point (not used in the paper)",
          ["criterion_variants.py", gf, "-", A("exante.csv"), "--fixedpoint", f"--dump={o('verdicts_exante_fp.json')}"]),
-        ("criterion_exante_min", "Sec. VI-H criterion with ex-ante inputs at the smallest candidate K",
+        ("criterion_exante_min", "Sec. VII-J criterion with ex-ante inputs at the smallest candidate K (the paper's estimator)",
          ["criterion_variants.py", gf, "-", A("exante.csv"), f"--dump={o('verdicts_exante_min.json')}"]),
-        ("verdict_changes", "Sec. VI-H: verdicts changed by ex-ante inputs (and in which direction)", None),
-        ("reach_bracket", "Sec. IV-A reach bracket, K_flight comparison", ["reach_bracket.py", gf]),
-        ("perturb_inputs", "Sec. VI-H sensitivity to known inputs", ["perturb_inputs.py", gf]),
-        ("theory", "Sec. IV: r_c(K), P_bar spread, tau_hop(K), Prop. 3 with measured tau_hop", ["theory_checks.py", gf, "--tour", A("rr_tour_win.csv")]),
-        ("bootstrap", "95% intervals (Sec. VI-B, VI-J), per-cell CSV", ["bootstrap_ci.py", gf, A("sa_rerun.csv"), A("rr_tour_win.csv"),
+        ("verdict_changes", "Sec. VII-J: verdicts changed by ex-ante inputs (and in which direction)", None),
+        ("reach_bracket", "Sec. V-A reach bracket, K_flight comparison", ["reach_bracket.py", gf]),
+        ("perturb_inputs", "Sec. VII-J sensitivity to known inputs", ["perturb_inputs.py", gf]),
+        ("theory", "Sec. V and VII-I: r_c(K), P_bar spread, tau_hop(K), Prop. 3 with measured tau_hop", ["theory_checks.py", gf, "--tour", A("rr_tour_win.csv")]),
+        ("bootstrap", "95% intervals (Sec. VII-B, VII-K), per-cell CSV", ["bootstrap_ci.py", gf, A("sa_rerun.csv"), A("rr_tour_win.csv"),
                                                                         A("rr_sweep_win.csv"), A("m40_sa.csv"), A("m40_rr.csv"), A("m40_cp_final.csv"), f"--out={o('per_cell_ci.csv')}"]),
-        ("baseline_patrols", "Table IX: tour and sweep patrol rows", ["baseline_table.py", A("sa_rerun.csv"), A("rr_tour_win.csv"), A("rr_sweep_win.csv"), "--by-family"]),
-        ("baseline_cluster", "Table IX: cluster patrol row", ["baseline_table.py", A("sa_rerun.csv"), A("cluster_win.csv")]),
-        ("baseline_m40", "Table IX bottom (M=40)", ["baseline_table.py", A("m40_sa.csv"), A("m40_rr.csv"), A("m40_cp_final.csv"), "--by-family"]),
-        ("baseline_cluster_m40", "Table IX bottom: cluster patrol row", ["baseline_table.py", A("m40_sa.csv"), A("m40_cluster.csv")]),
-        ("paired_diff", "Sec. VI-J paired agreement differences", ["paired_diff.py", A("sa_rerun.csv"), A("rr_tour_win.csv")]),
-        ("cluster", "Sec. VI-J cluster patrol vs SA", ["cluster_compare.py", A("sa_rerun.csv"), A("cluster_win.csv")]),
-        ("planners", "Tables IX (dagger rows), XI (split), XII (published); C4 vs SA; cost of sizing",
+        ("baseline_patrols", "Table XI: tour and sweep patrol rows", ["baseline_table.py", A("sa_rerun.csv"), A("rr_tour_win.csv"), A("rr_sweep_win.csv"), "--by-family", "--rule-from", "sa"]),
+        ("baseline_cluster", "Table XI: cluster patrol row", ["baseline_table.py", A("sa_rerun.csv"), A("cluster_win.csv"), "--rule-from", "sa"]),
+        ("baseline_m40", "Table XI bottom (M=40)", ["baseline_table.py", A("m40_sa.csv"), A("m40_rr.csv"), A("m40_cp_final.csv"), "--by-family", "--rule-from", "sa"]),
+        ("baseline_cluster_m40", "Table XI bottom: cluster patrol row", ["baseline_table.py", A("m40_sa.csv"), A("m40_cluster.csv"), "--rule-from", "sa"]),
+        ("paired_diff", "Sec. VII-K paired agreement differences", ["paired_diff.py", A("sa_rerun.csv"), A("rr_tour_win.csv")]),
+        ("cluster", "Sec. VII-K cluster patrol vs SA", ["cluster_compare.py", A("sa_rerun.csv"), A("cluster_win.csv")]),
+        ("planners", "Tables XI (dagger rows), XII (split), XIII (published); C4 vs SA; cost of sizing",
          ["planners_v2.py", "--sa", A("sa_rerun.csv"), "--files"] + [A(n) for n in ("eval_all_v2.csv", "gzz_eval.csv", "asghar_eval.csv", "liu_all.csv")
                                                                      if os.path.exists(A(n))] + ["--verdicts", A("verdicts.csv")]),
         ("c4_sectors", "C4 paragraph: equal sectors without search vs the published method",
          ["own_opt_compare.py", A("eval_all_v2.csv"), A("eval_all_v2.csv"), "--pa", "cluster_patrol", "--pb", "cyc_sector0"]),
         ("liu", "Liu et al. paragraph (registered analysis)", ["analyze_liu.py", "--liu", A("liu_all.csv"), "--sa", A("sa_rerun.csv"),
                                                               "--others", A("eval_all_v2.csv"), A("gzz_eval.csv"), A("asghar_eval.csv"), "--verdicts", A("verdicts.csv")]),
-        ("depot", "Table (depot)", ["depot_table.py", A("depot_q.csv"), A("depot_e.csv")]),
+        ("depot", "Table IX (depot)", ["depot_table.py", A("depot_q.csv"), A("depot_e.csv")]),
         ("depot_c4_q", "depot: C4 vs cluster patrol, quarter point", ["own_opt_compare.py", A("depot_q_cluster_patrol.csv"), A("depot_q_cyc.csv")]),
         ("depot_c4_e", "depot: C4 vs cluster patrol, edge", ["own_opt_compare.py", A("depot_e_cluster_patrol.csv"), A("depot_e_cyc.csv")]),
-        ("hetero", "Sec. VI-C reserved sortie vs equal shares", ["analyze_hetero.py", A("sa_rerun.csv"), A("hetero.csv")]),
+        ("hetero", "Sec. VII-C reserved share vs equal shares", ["analyze_hetero.py", A("sa_rerun.csv"), A("hetero.csv")]),
         ("mass", "Remark 1 battery mass", ["analyze_mass.py", A("mass.csv"), A("sa_rerun.csv")]),
-        ("ablation", "Table III (ablation, K=4)", ["ablation.py", A("ablation.csv"), "4"]),
-        ("ablation_K2", "Sec. V hover budgeting at K=2", ["ablation.py", A("ablation.csv"), "2"]),
-        ("singlecell", "Tables VI (horizon), VII (coord), XIV (info); per-leg paragraph", ["singlecell_v2.py", RES]),
-        ("outage", "Sec. VI-B grounding test", None),
-        ("regularity", "Sec. IV-B CV of inter-visit intervals; Sec. VI-J rate/allocation/regularity decomposition", None),
-        ("reserve", "Sec. VI-A: reserve use and skipped final stops over the SA grid", None),
-        ("cpsat_proofs", "Sec. VI-J: CP-SAT share of decisions proven optimal", None),
+        ("mass_static", "Remark 1 battery share and static fixed point (pack = E_max/K)", ["mass_static.py", gf]),
+        ("ablation", "Table III (ablation, K=4); per-leg + diversion against per-leg alone", ["ablation.py", A("ablation.csv"), "4"]),
+        ("ablation_K2", "Sec. VI hover budgeting at K=2", ["ablation.py", A("ablation.csv"), "2"]),
+        ("singlecell", "Tables VI (horizon), X (coord), XIV (info); per-leg paragraph (Sec. VII-H)", ["singlecell_v2.py", RES]),
+        ("outage", "Sec. VII-B grounding test", None),
+        ("regularity", "Sec. V-B CV of inter-visit intervals; Sec. VII-K rate/allocation/regularity decomposition", None),
+        ("reserve", "Sec. VII-A: reserve use, departure skips and skipped stops over the SA grid", None),
+        ("sweep_stats", "Sec. VII-A: run count, largest K per cell, sweeps extended by the fills, optima moved by them", None),
+        ("edges", "optima at the top of their sweep in the files the censoring check does not cover (M=40, hetero, mass)", None),
+        ("cpsat_proofs", "Sec. VII-K: CP-SAT share of decisions proven optimal", None),
+        ("alpha", "Table XV (fitted commute exponent) and App. B per-sortie energy regressions",
+         ["alpha_fit.py", gf, "--sorties", R("sortie_ring.csv")]),
+        ("relcost_drift", "Sec. V-B drift of the relative-cost profile (paper M=100 1.5 MJ, seeds 1-6)",
+         ["relcost_drift.py", os.path.join(RES, "nodes", "nodes_sa_paper_M100_E1500000_K*_s*_exclude_launch.npz")]),
         ("fig_JvsK_regime", "Figs. 2-3", ["make_figures.py", gf]),
-        ("fig_planners", "Fig. (planners, M=40)", ["fig_planners.py", A("m40_sa.csv"), A("m40_rr.csv"), A("m40_cp_final.csv"), o("fig_planners.pdf")]),
-        ("fig_five", "Fig. 5 (five planners)", ["fig_five.py", o("fig_five.pdf"), "--sa", A("sa_rerun.csv"), "--eval", A("eval_all_v2.csv"),
+        ("fig_planners", "Fig. 5 (planners, M=40)", ["fig_planners.py", A("m40_sa.csv"), A("m40_rr.csv"), A("m40_cp_final.csv"), o("fig_planners.pdf")]),
+        ("fig_five", "Fig. 4 (five planners)", ["fig_five.py", o("fig_five.pdf"), "--sa", A("sa_rerun.csv"), "--eval", A("eval_all_v2.csv"),
                                                 "--extra", A("gzz_eval.csv"), A("asghar_eval.csv"), "--selected", A("selected.json")]),
     ]
     failed = []
@@ -238,8 +270,9 @@ def main():
             with open(log, "w") as f:
                 try:
                     {"outage": outage_summary, "cpsat_proofs": cpsat_summary, "verdict_changes": verdict_changes,
-                     "regularity": regularity_summary, "reserve": reserve_summary}[name](
-                        OUT if name == "verdict_changes" else (ASM if name == "reserve" else RES), f)
+                     "regularity": regularity_summary, "reserve": reserve_summary, "sweep_stats": sweep_stats,
+                     "edges": edges_summary}[name](
+                        OUT if name == "verdict_changes" else (ASM if name in ("reserve", "edges") else RES), f)
                     ok = True
                 except Exception as e:
                     f.write(f"FAILED: {e!r}\n"); ok = False
@@ -282,9 +315,48 @@ def reserve_summary(ASM, f):
         if not x: continue
         b = np.array([float(r["breach_frac"]) for r in x]); t = np.array([float(r["trunc_frac"]) for r in x])
         dips = sum(int(float(r["reserve_dips"])) for r in x); viol = sum(int(float(r["reserve_violations"])) for r in x)
-        f.write(f"{fam:5s} runs {len(x):5d}  skipped-stop share median {np.median(b):.3f} p90 {np.quantile(b, .9):.3f}  "
+        ds = np.array([float(r.get("depart_skip_frac") or 0) for r in x]); um = max(float(r.get("reserve_used_max_J") or 0) for r in x)
+        f.write(f"{fam:5s} runs {len(x):5d}  arrival skips (true dwell too long) median {np.median(b):.3f} p90 {np.quantile(b, .9):.3f}  "
+                f"departure skips median {np.median(ds):.3f} p90 {np.quantile(ds, .9):.3f}  "
                 f"mid-route truncation median {np.median(t):.3f} p90 {np.quantile(t, .9):.3f}  "
-                f"landings into reserve {dips}  reserve exhausted {viol}\n")
+                f"landings into reserve {dips} (largest {um / 1e3:.2f} kJ)  reserve exhausted {viol}\n")
+
+
+def sweep_stats(RES, f):
+    """Counts for Sec. VI-A: runs in the primary analysis file, largest K per cell, how many sweeps the fills extended
+    and whether extending moved any per-instance optimum (argmin with vs without the fill rows)."""
+    def load(names):
+        d = defaultdict(dict)
+        for n in names:
+            p = os.path.join(RES, n)
+            if not os.path.exists(p): continue
+            for r in read(p):
+                if r.get("planner") != "sa" or r["coord"] != "exclude" or r["replan"] != "launch" or float(r["Th"]) != 43200: continue
+                if str(r.get("divert", "0")) not in ("0", "0.0") or float(r.get("q", 0)) != 0 or r.get("belief", "prior") != "prior": continue
+                d[(r["layout"], int(float(r["M"])), float(r["Emax"]), float(r["L"]), int(float(r["seed"])))][int(float(r["K"]))] = float(r["J"])
+        return d
+    base_names = ["sa_grid.csv", "sa_m400.csv", "sa_6mj.csv"] + [f"sa_L{L}.csv" for L in (8000, 10000, 16000, 20000)]
+    base, full = load(base_names), load(base_names + ["sa_fill.csv"])
+    f.write(f"runs (standard SA rows, grid + fills): {sum(len(b) for b in full.values())} over {len(full)} instances\n")
+    ext = [k for k in full if len(full[k]) > len(base.get(k, {}))]
+    moved = [k for k in ext if k in base and min(base[k], key=base[k].get) != min(full[k], key=full[k].get)]
+    f.write(f"sweeps extended by the fills: {len(ext)}; per-instance optimum moved by the extension: {len(moved)}\n")
+    for k in moved: f.write(f"   moved: {k}  {min(base[k], key=base[k].get)} -> {min(full[k], key=full[k].get)}\n")
+    cells = defaultdict(list)
+    for k, b in full.items(): cells[k[:4]].append(max(b))
+    for c in sorted(cells): f.write(f"   {c}: largest K swept {max(cells[c])}, extended instances {sum(1 for k in ext if k[:4] == c)}\n")
+
+
+def edges_summary(ASM, f):
+    for n in ("m40_sa.csv", "m40_rr.csv", "m40_cluster.csv", "m40_cp_final.csv", "hetero.csv", "mass.csv"):
+        p = os.path.join(ASM, n)
+        if not os.path.exists(p): f.write(f"{n}: missing\n"); continue
+        d = defaultdict(dict)
+        for r in read(p): d[(r["layout"], r["M"], r["Emax"], r["seed"], r.get("alloc", ""))][int(float(r["K"]))] = float(r["J"])
+        top = [k for k, b in d.items() if min(b, key=b.get) == max(b)]
+        r15 = [k for k, b in d.items() if not all(b[K] > 1.5 * min(b.values()) for K in sorted(b)[-3:])]
+        f.write(f"{n}: {len(top)} of {len(d)} instances have their optimum at the largest K swept{(': ' + str(top[:6])) if top else ''}; "
+                f"{len(r15)} do not meet the 1.5x rule (three largest K > 1.5 x min)\n")
 
 
 def regularity_summary(RES, f):
@@ -294,7 +366,7 @@ def regularity_summary(RES, f):
     g = defaultdict(list)
     for p in files:
         for r in read(p): g[(os.path.basename(p), r["planner"], r["layout"], r["M"], r["Emax"], int(r["K"]))].append(r)
-    cols = ("CV", "CV_w", "share_sparse", "tau_hop", "Gamma", "E_alloc", "E_reg", "r_c", "J")
+    cols = ("CV", "cv2_wf", "share_sparse", "tau_hop", "tau_hop_per_hop", "Gamma", "E_alloc", "E_reg", "r_c", "J")
     f.write("file planner layout M Emax K n | " + " ".join(cols) + "  (means over seeds; Gamma in visits/h)\n")
     for k, rs in sorted(g.items()):
         vals = []

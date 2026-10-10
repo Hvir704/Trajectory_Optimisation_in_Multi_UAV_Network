@@ -27,7 +27,7 @@ for k, x in ap.items():
     kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"]); law = min(kr, kc)
     li = int(law) if law == kr else int(round(law)); reg = J[li] / min(J.values()) - 1
     if x["reach_bound"] != "True":
-        for v in ("banked", "corrected_KR", "KG", "global"): res[v].append((k[0], None, reg))
+        for v in ("corrected_KR", "KG", "global"): res[v].append((k[0], None, reg))
         continue
     lay, M, E, seed = k; p = DynParams(M=M, Emax=E, layout=lay); U = (1 - p.rho) * E
     F = SensorField(DynParams(M=M, Emax=E, layout=lay), np.random.default_rng(seed))
@@ -49,7 +49,6 @@ for k, x in ap.items():
     F0 = Js(K0) + H * WA(K0)
     v_gl = bool(all(Js(K) + H * WA(K) > F0 for K in Kgrid))
     VERD[str(k)] = v_gl
-    res["banked"].append((k[0], x["passes"] == "True", reg))
     res["corrected_KR"].append((k[0], v_KR, reg)); res["KG"].append((k[0], v_KG, reg)); res["global"].append((k[0], v_gl, reg))
     am = min(J, key=J.get); detail.append((k, K0, KR, am))
 
@@ -58,7 +57,7 @@ def row(lab, R):
     if len(x) == 0: return f"{lab:24s} n=  0"
     return (f"{lab:24s} n={len(x):3d} median {np.median(x):6.1%} p90 {np.quantile(x,.9,method='higher'):6.1%} "
             f"max {x.max():6.1%} <5% {np.mean(x<0.05):4.0%}")
-for v in ("banked", "corrected_KR", "KG", "global"):
+for v in ("corrected_KR", "KG", "global"):     # ("banked" = verdicts from an external file; no longer used)
     print(f"--- {v}")
     R = res[v]
     for fam in ("paper", "core"):

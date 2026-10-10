@@ -1,5 +1,6 @@
 """analyze_mass.py -- battery mass: does the optimum move, and does the fixed-point rule follow it?
-Mass model (run_mass.py defaults): m(K) = 2.0 + (U/K)/(180 Wh/kg); Pf = 300 (m/2.5)^1.0, Ph = 400 (m/2.5)^1.5.
+Mass model (run_mass.py defaults): m(K) = 2.0 + (E_max/K)/(180 Wh/kg) (the pack carries the reserve);
+Pf = 300 (m/2.5)^1.0, Ph = 400 (m/2.5)^1.5.
 Rules: constant-power (the paper's: K_reach, K_commute with Pf=300, Ph=400, Pbar measured) vs
 mass-aware: reach cap = fixed point K = vU/(2Pf(K) rmax + v Ph(K) B/Ru); commute cap = integer argmax of
 Gamma(K) = K(U - K Pf(K) t_c)/(U + K t_c (Pbar(K) - Pf(K))) with Pbar(K) = Pbar_meas * Pf(K)/Pf(K_min).
@@ -18,12 +19,15 @@ def load(fn):
             d[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]))][int(r["K"])] = r
     return d
 mass, const = load(sys.argv[1]), load(sys.argv[2])
+_models = {r.get("mass_model") for r in csv.DictReader(open(sys.argv[1]))}
+if _models != {"pack=Emax/K;gamma=1.0;mdry=2.0;whkg=180.0;mbref=0.5"}:
+    sys.exit(f"mass file holds mass model(s) {_models}; this analysis assumes the default E_max/K model")
 rows = []; unconverged = 0
 for k, b in sorted(mass.items()):
     Ks = sorted(b); J = {K: float(b[K]["J"]) for K in Ks}; am = min(J, key=J.get)
     if am == Ks[-1] or J[Ks[-1]] < J[Ks[-2]]: unconverged += 1
     U = (1 - p.rho) * k[2]; r0 = b[Ks[0]]; rmax = float(r0["r_max"]); rc = float(r0["r_c"]); Pb0 = float(r0["P_bar"])
-    m = lambda K: mdry + (U / K) / e_b
+    m = lambda K: mdry + (k[2] / K) / e_b              # pack = E_max/K (usable share + reserve)
     Pf = lambda K: 300.0 * (m(K) / mref) ** gam; Ph = lambda K: 400.0 * (m(K) / mref) ** 1.5
     # constant-power rule (as in the paper)
     Kr_c = p.v * U / (2 * 300.0 * rmax + p.v * 400.0 * p.B_bits / p.R)

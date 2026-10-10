@@ -12,6 +12,7 @@ def load(p):
         if float(r["Th"]) == 43200 and r["coord"] == "exclude" and r["replan"] == "launch":
             d[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]))][int(r["K"])] = r
     return d
+OWN = "--rule-from" in sys.argv and sys.argv[sys.argv.index("--rule-from") + 1] == "own"   # default: SA's l for both
 def rule(b):
     r0 = b[min(b)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"]); law = min(kr, kc)
     return int(law) if law == kr else int(round(law))
@@ -21,7 +22,7 @@ for k in sorted(set(sa) & set(rr)):
     Ks = sorted(set(sa[k]) & set(rr[k]))
     if len(Ks) < 3: continue
     a = min(Ks, key=lambda K: float(sa[k][K]["J"])); b = min(Ks, key=lambda K: float(rr[k][K]["J"]))
-    pp = abs(a - b) <= 1; sr = abs(a - rule(sa[k])) <= 1; rr_ = abs(b - rule(rr[k])) <= 1
+    pp = abs(a - b) <= 1; sr = abs(a - rule(sa[k])) <= 1; rr_ = abs(b - rule(rr[k] if OWN else sa[k])) <= 1
     cells[k[:3]].append((pp - sr, pp - rr_))
 G = [np.array(v, float) for v in cells.values()]; allv = np.vstack(G)
 for j, lab in ((0, "patrol~SA  minus  SA~rule"), (1, "patrol~SA  minus  patrol~rule")):

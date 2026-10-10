@@ -35,7 +35,7 @@ def apply_hetero():
         d = self._Drone()
         d.pos = p.home.copy(); d.E = e; d.t_launch = t
         d.commute = d.travel = d.dwell = d.tour_len = 0.0
-        d.n_visited = 0; d.phase = "flying"; d.route, d.ri = [], 0
+        d.n_visited = 0; d.phase = "flying"; d.route, d.ri = [], 0; d.served = []   # v2.1+: served list
         d.leg_t0 = t; d.leg_len = 0.0
         self._live[k] = d
         d.route = self._plan(k, t, None, e, 0.5)

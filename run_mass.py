@@ -1,7 +1,8 @@
 """run_mass.py -- does the fleet-size optimum move when rotor power depends on battery mass?
 
-The shared inventory U is divided among K airframes, so each carries E_u = U/K of battery. Take-off
-mass m(K) = m_dry + (U/K)/e_b, constant within a run. Flight and hover power follow
+The inventory E_max is divided among K airframes. Each pack holds E_max/K (its usable share U/K plus its share
+of the reserve), so take-off mass is m(K) = m_dry + (E_max/K)/e_b, constant within a run. (Before Oct 2026 the
+pack was sized as U/K, omitting the reserve it carries; rows of that model have no mass_model column.) Flight and hover power follow
     Pf(K) = Pf0 (m(K)/m_ref)^gamma_f,    Ph(K) = Ph0 (m(K)/m_ref)^1.5   (momentum theory, hover),
 with Pf0 = 300 W, Ph0 = 400 W referenced to m_ref = m_dry + m_bref. Defaults: m_dry 2.0 kg,
 180 Wh/kg, m_bref 0.5 kg, gamma_f 1.0. Everything else is run_grid's protocol (12 h, SA 1200 iters,
@@ -27,8 +28,7 @@ def apply_mass(gamma, mdry, whkg, mbref):
     orig_init = cls.__init__
     def init(self, *args, **kw):
         orig_init(self, *args, **kw)
-        U = (1 - self.rho) * self.Emax
-        m = mdry + (U / self.K) / e_b
+        m = mdry + (self.Emax / self.K) / e_b          # the pack carries the reserve too
         self.Pf = 300.0 * (m / m_ref) ** gamma
         self.Ph = 400.0 * (m / m_ref) ** 1.5
     cls.__init__ = init; cls._mass_wrapped = True
@@ -38,6 +38,7 @@ if os.environ.get("MASS_MODEL"):                       # spawn workers re-import
     apply_mass(*(float(v) for v in os.environ["MASS_MODEL"].split(",")))
 
 from run_grid import one, k_range, FIELDS, parse_seeds, SIM_VERSION
+OUT_FIELDS = FIELDS + ["mass_model"]
 
 
 def main():
@@ -49,13 +50,15 @@ def main():
     ap.add_argument("--whkg", type=float, default=180.0); ap.add_argument("--mbref", type=float, default=0.5)
     a = ap.parse_args()
     os.environ["MASS_MODEL"] = f"{a.gamma},{a.mdry},{a.whkg},{a.mbref}"; apply_mass(a.gamma, a.mdry, a.whkg, a.mbref)
+    tag = f"pack=Emax/K;gamma={a.gamma};mdry={a.mdry};whkg={a.whkg};mbref={a.mbref}"
     done = {}
     if os.path.exists(a.out) and os.path.getsize(a.out):
         for r in csv.DictReader(open(a.out)):
             if r.get("sim_version") != SIM_VERSION: sys.exit(f"{a.out} holds rows from another simulator version; write to a new file")
+            if r.get("mass_model") != tag: sys.exit(f"{a.out} holds rows of another mass model ({r.get('mass_model')!r}); delete it or write to a new file")
             done[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]), int(r["K"]))] = float(r["J"])
     new = not done
-    f = open(a.out, "a", newline=""); w = csv.DictWriter(f, fieldnames=FIELDS)
+    f = open(a.out, "a", newline=""); w = csv.DictWriter(f, fieldnames=OUT_FIELDS)
     if new: w.writeheader(); f.flush()
     def run_many(keys):
         args = [(l, M, E, K, s, "exclude", "launch", 0.0, 0.0, "prior", 0.0, "sa", 12600.0, 43200.0, 1200)
@@ -64,7 +67,7 @@ def main():
         from multiprocessing import Pool
         with Pool(max(1, min(a.procs, len(args)))) as pool:
             for r in pool.imap_unordered(one, args):
-                w.writerow(r); f.flush(); done[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]), int(r["K"]))] = float(r["J"])
+                r["mass_model"] = tag; w.writerow(r); f.flush(); done[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]), int(r["K"]))] = float(r["J"])
                 print(f"{r['layout']} M={r['M']} E={float(r['Emax']):.1e} s={r['seed']} K={r['K']} J={float(r['J']):.3e}", flush=True)
     insts = list(itertools.product(a.layouts, a.M, a.Emax, parse_seeds(a.seeds)))
     run_many([(l, M, E, s, K) for l, M, E, s in insts for K in k_range(l, M, E, s)])

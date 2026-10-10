@@ -44,7 +44,10 @@ def argmins(d, seeds):
     return out
 
 KS = range(2, 9); SEEDS = range(1, 13)
-base = byKseed([r for r in rows("sa_grid.csv") if r.get("planner") == "sa" and r["coord"] == "exclude" and r["replan"] == "launch"])
+SA_STD = lambda r: (r.get("planner") == "sa" and r["coord"] == "exclude" and r["replan"] == "launch" and str(r.get("divert", "0")) in ("0", "0.0")
+                    and r.get("belief", "prior") == "prior" and float(r.get("q", 0)) == 0 and float(r.get("tau", 0)) == 0)
+SA_ROWS = [r for r in rows("sa_grid.csv") + rows("sa_fill.csv") if SA_STD(r)]     # grid AND its fills
+base = byKseed(SA_ROWS)
 none = byKseed(rows("coord_none.csv"))
 perl = byKseed(rows("coord_perleg.csv"))
 
@@ -54,15 +57,17 @@ for lab, d, col in (("coordinated, launch-time SA", base, "J"), ("uncoordinated"
     vals = []
     for K in KS:
         v = [float(d[K][s][col]) for s in SEEDS if K in d and s in d[K]]
-        vals.append((np.mean(v) / (1e5 if col == "J" else 1)) if v else float("nan"))
-    print(f"   {lab:30s} " + " ".join(f"{x:6.2f}" for x in vals))
+        vals.append(((np.mean(v) / (1e5 if col == "J" else 1)) if v else float("nan"), len(v)))
+    print(f"   {lab:30s} " + " ".join(f"{x:6.2f}" for x, _ in vals) + "   n per K: " + " ".join(str(n) for _, n in vals))
 for lab, d in (("coordinated", base), ("uncoordinated", none), ("per-leg", perl)):
     am = argmins({K: d[K] for K in KS if K in d}, SEEDS)
     if am: print(f"   mean argmin over K=2..8, {lab}: {np.mean(am):.2f} (n={len(am)})")
-if 4 in base and 4 in none:
-    r4 = np.mean([float(none[4][s]["J"]) for s in SEEDS]) / np.mean([float(base[4][s]["J"]) for s in SEEDS])
-    mb = min(np.mean([float(base[K][s]["J"]) for s in SEEDS]) for K in KS if K in base)
-    mn = min(np.mean([float(none[K][s]["J"]) for s in SEEDS]) for K in KS if K in none)
+common = [s for s in SEEDS if all(K in base and s in base[K] and K in none and s in none[K] for K in KS)]
+print(f"   seeds with every K in both coordinated and uncoordinated rows: {len(common)} of {len(SEEDS)} (ratios below use these)")
+if common:
+    mean = lambda d, K: np.mean([float(d[K][s]["J"]) for s in common])
+    r4 = mean(none, 4) / mean(base, 4)
+    mb = min(mean(base, K) for K in KS); mn = min(mean(none, K) for K in KS)
     print(f"   J ratio uncoordinated/coordinated: at K=4 {r4:.2f}x; at each variant's own optimum (cell means) {mn/mb:.2f}x")
 
 print("\n== perleg: per-leg vs launch-time SA, same seeds")
@@ -75,15 +80,15 @@ for K in KS:
 ab, ap_ = argmins({K: base[K] for K in KS if K in base}, SEEDS), argmins({K: perl[K] for K in KS if K in perl}, SEEDS)
 if ab and ap_: print(f"   optimum unchanged in {sum(1 for x, y in zip(ab, ap_) if x == y)} of {len(ab)} instances")
 
-print("\n== horizon (tab:horizon): J(24 h)/J(12 h), mean over seeds 1-6 of the per-seed ratio")
+print("\n== horizon (tab:horizon): J(24 h)/J(12 h), mean over seeds 1-6 of the per-seed ratio (n seeds in brackets)")
 h24 = rows("horizon24.csv")
 for lay in ("paper", "ring"):
-    d12 = byKseed([r for r in rows("sa_grid.csv") if r.get("planner") == "sa"], layout=lay)
+    d12 = byKseed(SA_ROWS, layout=lay)
     d24 = byKseed(h24, layout=lay, Th=86400.0)
     out = []
     for K in KS:
         rr = [float(d24[K][s]["J"]) / float(d12[K][s]["J"]) for s in range(1, 7) if K in d24 and K in d12 and s in d24[K] and s in d12[K]]
-        out.append(f"{np.mean(rr):.2f}" if rr else "--")
+        out.append(f"{np.mean(rr):.2f}({len(rr)})" if rr else "--")
     print(f"   {lay:6s} " + " ".join(f"{x:>5s}" for x in out))
 
 print("\n== info (tab:info): vs event-blind per-leg (M2), paired over seeds 1-12, K=4")

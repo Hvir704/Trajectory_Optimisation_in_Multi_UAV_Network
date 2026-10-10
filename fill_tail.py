@@ -17,13 +17,11 @@ another planner has for the same deployment are also added (own optima on a comm
 Rows are appended to OUT (run_grid schema) with the planner given; inputs are never modified. Run it
 on the same machine as the input file (SA is not bit-reproducible across platforms).
 
-usage:
-  python fill_tail.py fill_sa.csv      --inputs sa_rerun.csv      --planner sa             --procs 22
-  python fill_tail.py fill_tour.csv    --inputs rr_tour_win.csv   --planner rr_tour        --procs 22
-  python fill_tail.py fill_cluster.csv --inputs cluster_win.csv   --planner cluster_patrol --procs 22
-  add --union sa_rerun.csv fill_sa.csv to the patrol runs to put them on SA's K grid as well
-  python fill_tail.py fill_depot_q.csv --inputs depot_q.csv --planner sa --depot 0.25 0.25 --procs 22
-  python fill_tail.py fill_sa_rule15.csv --inputs sa_rerun.csv --planner sa --rule15 --procs 22
+usage (v2 naming: the fill of <base>.csv is <base>_fill.csv -- reproduce_v2.py merges exactly these names;
+the full command list is in run_all_ryzen.ps1):
+  python fill_tail.py results_v2/sa_fill.csv      --inputs results_v2/sa_grid.csv ... --planner sa --union $U --rule15
+  python fill_tail.py results_v2/rr_tour_fill.csv --inputs results_v2/rr_tour.csv --planner rr_tour --union $U --rule15
+  python fill_tail.py results_v2/depot_q_fill.csv --inputs results_v2/depot_q.csv --planner sa --depot 0.25 0.25 --union $DQ --rule15
   add --dry to list the runs first
 """
 import argparse, csv, math, os, sys
