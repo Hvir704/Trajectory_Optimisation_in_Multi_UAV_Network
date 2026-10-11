@@ -1,0 +1,58 @@
+runs (standard SA rows, grid + fills): 3801 over 272 instances
+sweeps extended by the fills: 171; per-instance optimum moved by the extension: 32
+   moved: ('core', 200, 1500000.0, 12600.0, 1)  9 -> 13
+   moved: ('core', 200, 1500000.0, 12600.0, 2)  8 -> 13
+   moved: ('core', 200, 1500000.0, 12600.0, 3)  8 -> 14
+   moved: ('core', 200, 1500000.0, 12600.0, 4)  10 -> 14
+   moved: ('core', 200, 1500000.0, 12600.0, 5)  5 -> 14
+   moved: ('core', 200, 1500000.0, 12600.0, 6)  8 -> 14
+   moved: ('core', 200, 1500000.0, 12600.0, 7)  8 -> 14
+   moved: ('core', 200, 1500000.0, 12600.0, 8)  9 -> 14
+   moved: ('core', 200, 1500000.0, 12600.0, 9)  8 -> 14
+   moved: ('core', 200, 1500000.0, 12600.0, 10)  9 -> 13
+   moved: ('core', 200, 1500000.0, 12600.0, 11)  9 -> 14
+   moved: ('core', 200, 1500000.0, 12600.0, 12)  8 -> 13
+   moved: ('core', 200, 3000000.0, 12600.0, 1)  18 -> 30
+   moved: ('core', 200, 3000000.0, 12600.0, 2)  16 -> 29
+   moved: ('core', 200, 3000000.0, 12600.0, 3)  15 -> 30
+   moved: ('core', 200, 3000000.0, 12600.0, 4)  19 -> 30
+   moved: ('core', 200, 3000000.0, 12600.0, 6)  10 -> 31
+   moved: ('core', 200, 3000000.0, 12600.0, 7)  16 -> 30
+   moved: ('core', 200, 3000000.0, 12600.0, 8)  12 -> 30
+   moved: ('core', 200, 3000000.0, 12600.0, 9)  10 -> 31
+   moved: ('core', 200, 3000000.0, 12600.0, 10)  12 -> 30
+   moved: ('core', 200, 3000000.0, 12600.0, 11)  17 -> 30
+   moved: ('core', 200, 3000000.0, 12600.0, 12)  16 -> 30
+   moved: ('core', 100, 1500000.0, 12600.0, 3)  5 -> 15
+   moved: ('core', 100, 1500000.0, 12600.0, 7)  4 -> 15
+   moved: ('core', 100, 1500000.0, 12600.0, 10)  8 -> 15
+   moved: ('core', 100, 1500000.0, 12600.0, 11)  8 -> 15
+   moved: ('core', 100, 3000000.0, 12600.0, 3)  10 -> 31
+   moved: ('core', 100, 3000000.0, 12600.0, 11)  15 -> 32
+   moved: ('core', 50, 1500000.0, 12600.0, 2)  4 -> 16
+   moved: ('core', 50, 1500000.0, 12600.0, 5)  9 -> 15
+   moved: ('core', 50, 3000000.0, 12600.0, 5)  11 -> 31
+   ('core', 50, 1500000.0, 12600.0): largest K swept 20, extended instances 12
+   ('core', 50, 3000000.0, 12600.0): largest K swept 41, extended instances 12
+   ('core', 100, 1500000.0, 12600.0): largest K swept 21, extended instances 12
+   ('core', 100, 3000000.0, 12600.0): largest K swept 39, extended instances 12
+   ('core', 200, 1500000.0, 12600.0): largest K swept 20, extended instances 12
+   ('core', 200, 3000000.0, 12600.0): largest K swept 37, extended instances 12
+   ('paper', 50, 1500000.0, 12600.0): largest K swept 11, extended instances 3
+   ('paper', 50, 3000000.0, 12600.0): largest K swept 17, extended instances 0
+   ('paper', 100, 1500000.0, 8000.0): largest K swept 13, extended instances 0
+   ('paper', 100, 1500000.0, 10000.0): largest K swept 12, extended instances 1
+   ('paper', 100, 1500000.0, 12600.0): largest K swept 11, extended instances 12
+   ('paper', 100, 1500000.0, 16000.0): largest K swept 9, extended instances 6
+   ('paper', 100, 1500000.0, 20000.0): largest K swept 9, extended instances 8
+   ('paper', 100, 3000000.0, 12600.0): largest K swept 16, extended instances 0
+   ('paper', 100, 6000000.0, 12600.0): largest K swept 32, extended instances 0
+   ('paper', 200, 1500000.0, 12600.0): largest K swept 11, extended instances 12
+   ('paper', 200, 3000000.0, 12600.0): largest K swept 15, extended instances 0
+   ('paper', 400, 1500000.0, 12600.0): largest K swept 11, extended instances 12
+   ('ring', 50, 1500000.0, 12600.0): largest K swept 9, extended instances 12
+   ('ring', 50, 3000000.0, 12600.0): largest K swept 15, extended instances 9
+   ('ring', 100, 1500000.0, 12600.0): largest K swept 9, extended instances 12
+   ('ring', 100, 3000000.0, 12600.0): largest K swept 12, extended instances 0
+   ('ring', 200, 1500000.0, 12600.0): largest K swept 9, extended instances 12
+   ('ring', 200, 3000000.0, 12600.0): largest K swept 12, extended instances 0

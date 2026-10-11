@@ -1,0 +1,4 @@
+C4 designs at the own-optimum K: 216; share of sensors outside the base class: median 2.0%, mean 3.1%, max 18.0%
+  paper: median 4.0%; start chosen: kmeans 23, sector 49
+  ring: median 1.0%; start chosen: kmeans 32, sector 40
+  core: median 3.0%; start chosen: kmeans 26, sector 46

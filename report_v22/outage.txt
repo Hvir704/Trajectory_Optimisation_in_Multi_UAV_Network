@@ -1,0 +1,6 @@
+('core', '50', '1500000.0', '3'): no grounding  K_flight vs K_reach -16.9%;  3 h grounding +33.5%;  gray lost (flight) 1/1, (reach) 0/0
+('core', '50', '1500000.0', '6'): no grounding  K_flight vs K_reach -21.9%;  3 h grounding +67.5%;  gray lost (flight) 1/1, (reach) 0/0
+('core', '50', '3000000.0', '12'): no grounding  K_flight vs K_reach -10.2%;  3 h grounding +76.5%;  gray lost (flight) 1/1, (reach) 0/0
+('paper', '100', '3000000.0', '12'): no grounding  K_flight vs K_reach -8.5%;  3 h grounding +11.7%;  gray lost (flight) 1/1, (reach) 0/0
+('paper', '50', '3000000.0', '3'): no grounding  K_flight vs K_reach -11.0%;  3 h grounding +70.1%;  gray lost (flight) 2/2, (reach) 0/0
+('paper', '50', '3000000.0', '6'): no grounding  K_flight vs K_reach -1.8%;  3 h grounding -2.4%;  gray lost (flight) 0/1, (reach) 0/0

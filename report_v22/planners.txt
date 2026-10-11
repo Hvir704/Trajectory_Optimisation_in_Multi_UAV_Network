@@ -1,0 +1,85 @@
+deployments with SA rows: 216
+
+1) completeness (registered rule: optimum interior, three largest K > 1.5 x min)
+  SA              deployments 216  incomplete   0
+  C4              deployments 216  incomplete   0
+  cluster patrol  deployments 216  incomplete   0
+  Gao et al.      deployments 216  incomplete   0
+  Asghar et al.   deployments 216  incomplete   0
+  Liu et al.      deployments 216  incomplete   0
+
+2) tab:published: C4 vs X at each planner's own optimum, and at K = l
+  C4 vs cluster patrol (own optimum)
+     paper  -24.7% [-26.7%, -19.0%]  C4 lower 72/72
+     core   -10.3% [-12.0%, -9.3%]  C4 lower 72/72
+     ring    -5.9% [-7.3%, -3.3%]  C4 lower 61/72
+     all    -11.5% [-13.2%, -10.0%]  C4 lower 205/216
+  C4 vs cluster patrol (K = l)
+     paper  -26.6% [-29.8%, -21.9%]  C4 lower 72/72
+     core   -10.4% [-13.0%, -9.5%]  C4 lower 72/72
+     ring    -3.1% [-5.5%, -2.0%]  C4 lower 58/72
+     all    -12.3% [-14.9%, -10.4%]  C4 lower 202/216
+  C4 vs Gao et al. (own optimum)
+     paper  -43.8% [-46.1%, -42.2%]  C4 lower 72/72
+     core   -20.9% [-24.2%, -18.2%]  C4 lower 72/72
+     ring   -34.7% [-36.9%, -32.2%]  C4 lower 72/72
+     all    -34.4% [-36.6%, -31.8%]  C4 lower 216/216
+  C4 vs Gao et al. (K = l)
+     paper  -49.3% [-53.6%, -47.0%]  C4 lower 72/72
+     core   -21.2% [-25.0%, -18.8%]  C4 lower 72/72
+     ring   -36.5% [-39.7%, -34.7%]  C4 lower 72/72
+     all    -36.0% [-38.3%, -33.1%]  C4 lower 216/216
+  C4 vs Asghar et al. (own optimum)
+     paper  -63.5% [-66.6%, -61.8%]  C4 lower 72/72
+     core   -57.0% [-58.7%, -54.2%]  C4 lower 72/72
+     ring   -67.5% [-70.5%, -63.7%]  C4 lower 72/72
+     all    -62.2% [-63.5%, -59.8%]  C4 lower 216/216
+  C4 vs Asghar et al. (K = l)
+     paper  -71.4% [-73.8%, -69.9%]  C4 lower 72/72
+     core   -62.2% [-64.0%, -59.6%]  C4 lower 72/72
+     ring   -69.4% [-76.1%, -66.4%]  C4 lower 72/72
+     all    -67.7% [-69.4%, -65.7%]  C4 lower 216/216
+  C4 vs Liu et al. (own optimum)
+     paper   -9.3% [-13.1%, -6.5%]  C4 lower 61/72
+     core   -10.9% [-11.6%, -8.6%]  C4 lower 72/72
+     ring    -4.8% [-6.7%, -1.7%]  C4 lower 50/72
+     all     -8.7% [-9.8%, -7.2%]  C4 lower 183/216
+  C4 vs Liu et al. (K = l)
+     paper   -9.3% [-12.9%, -5.8%]  C4 lower 61/72
+     core   -11.5% [-12.7%, -9.6%]  C4 lower 71/72
+     ring    -2.4% [-4.1%, +0.0%]  C4 lower 44/72
+     all     -8.1% [-9.9%, -6.4%]  C4 lower 176/216
+
+3) X vs cluster patrol and X vs Liu (own optimum; positive = X higher)
+  SA              vs cluster patrol  all +1.8%  paper -26.4%  core +41.1%  ring +4.5%
+  Gao et al.      vs cluster patrol  all +31.0%  paper +33.5%  core +15.0%  ring +45.3%
+  Asghar et al.   vs cluster patrol  all +120.6%  paper +113.0%  core +99.2%  ring +176.6%
+  SA              vs Liu et al.      all +6.4%  paper -11.1%  core +42.0%  ring +6.6%
+  cluster patrol  vs Liu et al.      all +4.6%  paper +15.8%  core +2.0%  ring +2.1%
+  Gao et al.      vs Liu et al.      all +44.8%  paper +63.0%  core +14.8%  ring +47.6%
+  Asghar et al.   vs Liu et al.      all +133.5%  paper +137.8%  core +100.9%  ring +175.6%
+
+4) rule agreement (exact / within one) with l, split by the design-time test; agreement with SA's optimum
+  planner                      all             passes              flags     =SA / +-1 SA
+  SA              0.56 / 0.75 (216)  0.62 / 0.82 (134)  0.46 / 0.62 ( 82)              --
+  C4              0.52 / 0.88 (216)  0.52 / 0.93 (134)  0.51 / 0.79 ( 82)     0.55 / 0.83
+  cluster patrol  0.50 / 0.84 (216)  0.54 / 0.90 (134)  0.44 / 0.76 ( 82)     0.47 / 0.71
+  Gao et al.      0.38 / 0.76 (216)  0.34 / 0.74 (134)  0.45 / 0.80 ( 82)     0.31 / 0.61
+  Asghar et al.   0.26 / 0.64 (216)  0.32 / 0.84 (134)  0.16 / 0.33 ( 82)     0.21 / 0.62
+  Liu et al.      0.55 / 0.86 (216)  0.58 / 0.91 (134)  0.49 / 0.77 ( 82)     0.54 / 0.77
+  test passes in 134 of 216 deployments (core 24, paper 38, ring 72)
+
+5) cost of sizing with l: J(l)/J* - 1 (exploratory)
+  SA              median  0.0%  p90  34.7%  (n=216)
+  C4              median  0.0%  p90  15.5%  (n=216)
+  cluster patrol  median  0.0%  p90  29.1%  (n=216)
+  Gao et al.      median  4.1%  p90  34.3%  (n=216)
+  Asghar et al.   median 20.4%  p90  73.3%  (n=216)
+  Liu et al.      median  0.0%  p90  17.5%  (n=216)
+
+6) C4 vs SA (secondary comparison)
+  C4 vs SA (own optimum)
+     paper   -1.8% [-11.0%, +3.6%]  C4 lower 42/72
+     core   -40.4% [-45.9%, -31.4%]  C4 lower 72/72
+     ring    -9.9% [-13.0%, -7.3%]  C4 lower 64/72
+     all    -13.7% [-14.9%, -11.8%]  C4 lower 178/216

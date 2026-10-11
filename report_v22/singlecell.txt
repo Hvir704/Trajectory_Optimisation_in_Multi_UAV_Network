@@ -1,0 +1,37 @@
+== coord (tab:coord): mean J x1e5 over seeds 1-12
+   coordinated, launch-time SA     18.37  10.59   7.65   8.64  16.07  34.64  62.50   n per K: 12 12 12 12 12 12 12
+   uncoordinated                   25.82  20.50  22.31  25.04  39.66  57.27  78.27   n per K: 12 12 12 12 12 12 12
+   duplicate-visit fraction         0.35   0.46   0.56   0.58   0.64   0.68   0.71   n per K: 12 12 12 12 12 12 12
+   coordinated, per-leg SA         18.55  11.19   8.29   9.49  16.60  34.99  62.81   n per K: 12 12 12 12 12 12 12
+   mean argmin over K=2..8, coordinated: 4.25 (n=12)
+   mean argmin over K=2..8, uncoordinated: 3.58 (n=12)
+   mean argmin over K=2..8, per-leg: 4.17 (n=12)
+   seeds with every K in both coordinated and uncoordinated rows: 12 of 12 (ratios below use these)
+   J ratio uncoordinated/coordinated: at K=4 2.92x; at each variant's own optimum (cell means) 2.68x
+
+== perleg: per-leg vs launch-time SA, same seeds
+   K=2: J +1.0%  trunc launch 5.8% -> per-leg 0.0%
+   K=3: J +5.7%  trunc launch 2.9% -> per-leg 0.0%
+   K=4: J +8.3%  trunc launch 1.2% -> per-leg 0.0%
+   K=5: J +9.9%  trunc launch 0.5% -> per-leg 0.0%
+   K=6: J +3.3%  trunc launch 0.3% -> per-leg 0.0%
+   K=7: J +1.0%  trunc launch 0.0% -> per-leg 0.1%
+   K=8: J +0.5%  trunc launch 0.0% -> per-leg 0.0%
+   optimum unchanged in 11 of 12 instances
+
+== horizon (tab:horizon): J(24 h)/J(12 h), mean over seeds 1-6 of the per-seed ratio (n seeds in brackets)
+   paper  0.98(6) 0.99(6) 1.00(6) 1.19(6) 1.46(6) 1.56(6) 1.58(6)
+   ring   1.02(6) 1.00(6) 0.99(6) 1.19(6) 1.73(6)    --    --
+
+== info (tab:info): vs event-blind per-leg (M2), paired over seeds 1-12, K=4
+   67 min, q=0    kernel      dJ -2.3%  dJ_age +1.2%  dJ_event -8.2%  dcatch +0.8%  worse 3/12 p=0.146  (event share of M2's J 36%)
+   67 min, q=0    prior_rates dJ +3.4%  dJ_age +9.6%  dJ_event -7.3%  dcatch +0.1%  worse 9/12 p=0.146  (event share of M2's J 36%)
+   67 min, q=0.5  kernel      dJ -1.9%  dJ_age +1.8%  dJ_event -8.3%  dcatch +0.4%  worse 5/12 p=0.774  (event share of M2's J 36%)
+   67 min, q=0.5  prior_rates dJ +2.8%  dJ_age +9.6%  dJ_event -9.1%  dcatch -0.3%  worse 9/12 p=0.146  (event share of M2's J 36%)
+   67 min, q=1    kernel      dJ -2.8%  dJ_age +1.5%  dJ_event -9.9%  dcatch +0.7%  worse 4/12 p=0.388  (event share of M2's J 37%)
+   67 min, q=1    prior_rates dJ +2.4%  dJ_age +9.6%  dJ_event -9.6%  dcatch -0.1%  worse 9/12 p=0.146  (event share of M2's J 37%)
+   15 min, q=1    kernel      dJ +3.6%  dJ_age +5.5%  dJ_event -4.2%  dcatch +6.3%  worse 11/12 p=0.006  (event share of M2's J 20%)
+   15 min, q=1    prior_rates dJ +2.1%  dJ_age +3.7%  dJ_event -4.3%  dcatch +5.0%  worse 10/12 p=0.039  (event share of M2's J 20%)
+   5 min, q=1     kernel      dJ +2.8%  dJ_age +3.0%  dJ_event -1.2%  dcatch +10.0%  worse 11/12 p=0.006  (event share of M2's J 4%)
+   5 min, q=1     prior_rates dJ +1.1%  dJ_age +1.2%  dJ_event -1.1%  dcatch -3.0%  worse 9/12 p=0.146  (event share of M2's J 4%)
+   K* agreement kernel vs event-blind at q=1, K=2..8: 12/12

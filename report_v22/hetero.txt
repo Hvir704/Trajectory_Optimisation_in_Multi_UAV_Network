@@ -1,0 +1,2 @@
+core M=100 1.5MJ n=12 | argmin equal 8.33 reserved 12.75 (censored 0) | stranded at optimum equal 0.33 reserved 0.00 | J reserved/equal-1 median -52.6% better in 12/12 | split-fleet cap: exact 4 within-one 11
+core M=200 1.5MJ n=12 | argmin equal 13.67 reserved 12.17 (censored 0) | stranded at optimum equal 1.00 reserved 0.00 | J reserved/equal-1 median -20.2% better in 11/12 | split-fleet cap: exact 10 within-one 12

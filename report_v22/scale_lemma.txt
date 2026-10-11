@@ -1,0 +1,6 @@
+reach-bound instances: 168
+alpha (consistent / radial): median 0.183  max 0.480  min 0.111
+verdict pairs (radial, consistent): {'flag/flag': 39, 'flag/pass': 56, 'pass/pass': 73}
+lemma violations (pass at radial, flag at consistent): 0 
+paper: 32 instances flagged at the radial scale but passed at the consistent scale; regret median 0.0%, max 11.1%, >=10%: 2
+core: 24 instances flagged at the radial scale but passed at the consistent scale; regret median 5.9%, max 34.3%, >=10%: 10

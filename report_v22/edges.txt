@@ -1,0 +1,6 @@
+m40_sa.csv: 0 of 24 instances have their optimum at the largest K swept; 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
+m40_rr.csv: 0 of 24 instances have their optimum at the largest K swept; 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
+m40_cluster.csv: 0 of 24 instances have their optimum at the largest K swept; 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
+m40_cp_final.csv: 0 of 24 instances have their optimum at the largest K swept; 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
+hetero.csv: 0 of 24 instances have their optimum at the largest K swept; 24 do not meet the 1.5x rule (three largest K > 1.5 x min)
+mass.csv: 0 of 72 instances have their optimum at the largest K swept; 59 do not meet the 1.5x rule (three largest K > 1.5 x min)

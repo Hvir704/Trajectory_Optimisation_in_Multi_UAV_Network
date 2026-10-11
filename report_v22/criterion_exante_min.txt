@@ -1,0 +1,26 @@
+--- corrected_KR
+  paper pass               n=  9 median   0.0% p90  11.4% max  11.4% <5%  78%
+  paper flagged            n= 87 median   0.0% p90   5.0% max  14.8% <5%  91%
+  core pass                n= 15 median   0.0% p90  19.4% max  26.4% <5%  53%
+  core flagged             n= 57 median  20.7% p90 109.8% max 167.8% <5%  32%
+  regret >10%: 44 instances, passed (missed)  6
+  regret >20%: 30 instances, passed (missed)  1
+  regret >30%: 23 instances, passed (missed)  0; max regret among passes 26.4%
+--- KG
+  paper pass               n=  9 median   0.0% p90  11.4% max  11.4% <5%  78%
+  paper flagged            n= 87 median   0.0% p90   5.0% max  14.8% <5%  91%
+  core pass                n= 15 median   0.0% p90  19.4% max  26.4% <5%  53%
+  core flagged             n= 57 median  20.7% p90 109.8% max 167.8% <5%  32%
+  regret >10%: 44 instances, passed (missed)  6
+  regret >20%: 30 instances, passed (missed)  1
+  regret >30%: 23 instances, passed (missed)  0; max regret among passes 26.4%
+--- global
+  paper pass               n= 48 median   0.0% p90   5.0% max  14.8% <5%  90%
+  paper flagged            n= 48 median   0.0% p90   5.4% max  11.1% <5%  90%
+  core pass                n= 22 median   0.0% p90  21.6% max  26.4% <5%  59%
+  core flagged             n= 50 median  22.9% p90 118.9% max 167.8% <5%  26%
+  regret >10%: 44 instances, passed (missed)  9
+  regret >20%: 30 instances, passed (missed)  3
+  regret >30%: 23 instances, passed (missed)  0; max regret among passes 26.4%
+
+Result-1 interval [K0, K_R] contains the measured argmin in 167/168 reach-bound instances

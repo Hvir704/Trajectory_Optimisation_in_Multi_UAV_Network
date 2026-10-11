@@ -1,0 +1,2 @@
+Fig. 3: 262 instances plotted, 10 without a stranding-free K
+wrote figs/fig_JvsK.pdf figs/fig_regime.pdf

@@ -1,0 +1,11 @@
+Table XV (ring): cell, measured mean optimum, alpha=1 (round K_commute), alpha-corrected, fitted alpha, 1/alpha
+  M= 50 3.0 MJ  measured 8.50  alpha=1 6.00  corrected 7  alpha 0.66  1/alpha 1.51   (79 stranding-free rows, 12 instances)
+  M=100 3.0 MJ  measured 7.92  alpha=1 6.00  corrected 7  alpha 0.72  1/alpha 1.39   (75 stranding-free rows, 12 instances)
+  M=200 3.0 MJ  measured 6.67  alpha=1 6.00  corrected 6  alpha 0.84  1/alpha 1.19   (72 stranding-free rows, 12 instances)
+  M=100 1.5 MJ  measured 3.00  alpha=1 3.00  corrected 3  alpha 0.88  1/alpha 1.13   (37 stranding-free rows, 12 instances)
+
+Per-sortie regressions (ring, stranding-free runs, sorties with n >= 2; 95% bootstrap over runs)
+  M= 50 3.0 MJ  runs 25  sorties 4931  beta_hop 1.06 [0.88, 1.21]  beta_hover 1.08 [1.01, 1.15]  beta_productive 1.05 [0.88, 1.17]  hover share 6.7%  (E_hov/n)/(Ph H/Gamma) 0.973
+  M=100 3.0 MJ  runs 25  sorties 4907  beta_hop 0.92 [0.66, 1.06]  beta_hover 0.94 [0.82, 1.09]  beta_productive 0.90 [0.70, 1.01]  hover share 12.6%  (E_hov/n)/(Ph H/Gamma) 0.992
+  M=200 3.0 MJ  runs 24  sorties 4525  beta_hop 0.93 [0.80, 0.99]  beta_hover 0.87 [0.79, 0.98]  beta_productive 0.91 [0.81, 0.97]  hover share 23.9%  (E_hov/n)/(Ph H/Gamma) 0.995
+  conservation constant across cells: 0.987 +- 0.012 (sd)

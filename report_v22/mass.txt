@@ -1,0 +1,9 @@
+72 mass-model instances; sweeps not converged (top edge or descending): 0
+all     n=72 | optimum: constant power  7.79, mass  8.69 (moved in 46%) | constant-power rule: exact 0.38 w1 0.83 regret med 3.8% | fixed-point rule: exact 0.43 w1 0.83 regret med 1.7%
+paper 1.5 n=12 | optimum: constant power  4.25, mass  4.33 (moved in 8%) | constant-power rule: exact 0.92 w1 1.00 regret med 0.0% | fixed-point rule: exact 0.92 w1 1.00 regret med 0.0%
+paper 3 n=12 | optimum: constant power  9.25, mass  9.50 (moved in 25%) | constant-power rule: exact 0.67 w1 1.00 regret med 0.0% | fixed-point rule: exact 0.67 w1 1.00 regret med 0.0%
+ring 1.5 n=12 | optimum: constant power  3.00, mass  3.83 (moved in 83%) | constant-power rule: exact 0.17 w1 1.00 regret med 1.7% | fixed-point rule: exact 0.17 w1 1.00 regret med 1.7%
+ring 3  n=12 | optimum: constant power  7.92, mass  7.42 (moved in 50%) | constant-power rule: exact 0.00 w1 0.58 regret med 8.1% | fixed-point rule: exact 0.00 w1 0.58 regret med 8.1%
+core 1.5 n=12 | optimum: constant power  8.33, mass  9.58 (moved in 50%) | constant-power rule: exact 0.42 w1 0.67 regret med 14.8% | fixed-point rule: exact 0.50 w1 0.67 regret med 6.9%
+core 3  n=12 | optimum: constant power 14.00, mass 17.50 (moved in 58%) | constant-power rule: exact 0.08 w1 0.75 regret med 9.0% | fixed-point rule: exact 0.33 w1 0.75 regret med 9.0%
+fixed-point K_reach / constant K_reach: median 1.010

@@ -1,0 +1,2 @@
+gamma=0.5: n=240  battery share of take-off mass at K_r 16.1%-21.0% (median 19.3%); fixed point vs K_r median +0.5% (range -0.8% to +2.9%); floor(K_r) changes in 12
+gamma=1.5: n=240  battery share of take-off mass at K_r 16.1%-21.0% (median 19.3%); fixed point vs K_r median +1.9% (range -2.8% to +9.7%); floor(K_r) changes in 53

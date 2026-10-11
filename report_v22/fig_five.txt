@@ -1,0 +1,3 @@
+paper: rule l = 5; own optima: {'sa': 5, 'cyc': 4, 'cyc_sector0': 5, 'cluster_patrol': 4, 'gzz_rev': 3, 'asghar_rev': 6}
+ring: rule l = 3; own optima: {'sa': 3, 'cyc': 3, 'cyc_sector0': 3, 'cluster_patrol': 3, 'gzz_rev': 3, 'asghar_rev': 2}
+saved C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\results_v2\report\fig_five.pdf

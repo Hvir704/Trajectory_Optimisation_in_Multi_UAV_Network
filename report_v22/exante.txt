@@ -1,0 +1,31 @@
+commute fixed point: 151 of 272 instances have no exact fixed point (g jumps across the diagonal); |residual| median 3.001 UAVs, max 25.327
+ALL 272                n=272 | r_c ratio est/meas: oracle-n 0.79 ex-ante 0.65 [0.32,0.95] | Pbar ex-ante/meas 0.999 | n ex-ante/meas 2.15
+   rule with meas      : exact 0.559 within-one 0.798  regret median  0.0% p90 25.2%
+   rule with oracle_n  : exact 0.559 within-one 0.798
+   rule with exante    : exact 0.559 within-one 0.798  regret median  0.0% p90 25.2%
+   rule with fixedpoint: exact 0.559 within-one 0.798  regret median  0.0% p90 25.2%
+   regime classification (reach vs commute) agrees with measured-input classification: 1.000
+primary 240            n=240 | r_c ratio est/meas: oracle-n 0.78 ex-ante 0.63 [0.31,0.95] | Pbar ex-ante/meas 0.999 | n ex-ante/meas 2.30
+   rule with meas      : exact 0.554 within-one 0.771  regret median  0.0% p90 26.5%
+   rule with oracle_n  : exact 0.554 within-one 0.771
+   rule with exante    : exact 0.554 within-one 0.771  regret median  0.0% p90 26.5%
+   rule with fixedpoint: exact 0.554 within-one 0.771  regret median  0.0% p90 26.5%
+   regime classification (reach vs commute) agrees with measured-input classification: 1.000
+paper                  n= 96 | r_c ratio est/meas: oracle-n 0.78 ex-ante 0.60 [0.34,0.75] | Pbar ex-ante/meas 0.999 | n ex-ante/meas 1.98
+   rule with meas      : exact 0.750 within-one 1.000  regret median  0.0% p90  5.0%
+   rule with oracle_n  : exact 0.750 within-one 1.000
+   rule with exante    : exact 0.750 within-one 1.000  regret median  0.0% p90  5.0%
+   rule with fixedpoint: exact 0.750 within-one 1.000  regret median  0.0% p90  5.0%
+   regime classification (reach vs commute) agrees with measured-input classification: 1.000
+ring                   n= 72 | r_c ratio est/meas: oracle-n 0.95 ex-ante 0.95 [0.94,0.96] | Pbar ex-ante/meas 0.999 | n ex-ante/meas 2.53
+   rule with meas      : exact 0.500 within-one 0.681  regret median  0.4% p90 21.8%
+   rule with oracle_n  : exact 0.500 within-one 0.681
+   rule with exante    : exact 0.500 within-one 0.681  regret median  0.4% p90 21.8%
+   rule with fixedpoint: exact 0.500 within-one 0.681  regret median  0.4% p90 21.8%
+   regime classification (reach vs commute) agrees with measured-input classification: 1.000
+core                   n= 72 | r_c ratio est/meas: oracle-n 0.49 ex-ante 0.44 [0.26,0.62] | Pbar ex-ante/meas 0.999 | n ex-ante/meas 2.61
+   rule with meas      : exact 0.347 within-one 0.556  regret median 11.7% p90 88.2%
+   rule with oracle_n  : exact 0.347 within-one 0.556
+   rule with exante    : exact 0.347 within-one 0.556  regret median 11.7% p90 88.2%
+   rule with fixedpoint: exact 0.347 within-one 0.556  regret median 11.7% p90 88.2%
+   regime classification (reach vs commute) agrees with measured-input classification: 1.000

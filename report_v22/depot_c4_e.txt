@@ -1,0 +1,56 @@
+cyc vs cluster_patrol: 48 paired deployments (0 unpaired dropped)
+family      n  median J_b/J_a-1               95% CI   b wins  cens a/b
+paper      24           -23.44% [-32.53%, -19.43%]   24/24     0/0   
+ring       24            -2.35% [-4.72%, -0.45%]   20/24     0/0   
+all        48           -12.72% [-19.86%, -4.72%]   44/48     0/0   
+
+per deployment:
+layout   M    Emax  seed  K_a       J_a  K_b       J_b        rel  censored_a  censored_b
+ paper 100 1.5e+06     1    3 1.685e+06    3 1.373e+06    -0.1849       False       False
+ paper 100 1.5e+06     2    2 2.386e+06    3 1.864e+06    -0.2187       False       False
+ paper 100 1.5e+06     3    3 1.653e+06    3 1.601e+06   -0.03125       False       False
+ paper 100 1.5e+06     4    2 2.816e+06    3 2.529e+06    -0.1019       False       False
+ paper 100 1.5e+06     5    2  2.41e+06    2 2.076e+06    -0.1387       False       False
+ paper 100 1.5e+06     6    2 2.263e+06    3  1.82e+06    -0.1958       False       False
+ paper 100 1.5e+06     7    3 2.203e+06    2 1.808e+06    -0.1793       False       False
+ paper 100 1.5e+06     8    3 2.059e+06    3 1.639e+06    -0.2038       False       False
+ paper 100 1.5e+06     9    2 2.607e+06    2 2.306e+06    -0.1157       False       False
+ paper 100 1.5e+06    10    3 2.056e+06    3 1.387e+06    -0.3253       False       False
+ paper 100 1.5e+06    11    2 1.934e+06    3 1.461e+06    -0.2447       False       False
+ paper 100 1.5e+06    12    2 2.805e+06    3 2.101e+06    -0.2509       False       False
+ paper 100   3e+06     1    4 6.785e+05    6 4.182e+05    -0.3836       False       False
+ paper 100   3e+06     2    6 6.116e+05    6 4.901e+05    -0.1986       False       False
+ paper 100   3e+06     3    5 6.504e+05    6 4.118e+05    -0.3668       False       False
+ paper 100   3e+06     4    4 7.614e+05    5 5.907e+05    -0.2242       False       False
+ paper 100   3e+06     5    4 9.158e+05    6 5.475e+05    -0.4021       False       False
+ paper 100   3e+06     6    5 6.333e+05    6 4.605e+05    -0.2729       False       False
+ paper 100   3e+06     7    5 6.468e+05    6  4.42e+05    -0.3166       False       False
+ paper 100   3e+06     8    5 5.285e+05    6 4.314e+05    -0.1838       False       False
+ paper 100   3e+06     9    4 1.291e+06    5 5.518e+05    -0.5724       False       False
+ paper 100   3e+06    10    6 6.658e+05    6 4.313e+05    -0.3522       False       False
+ paper 100   3e+06    11    5  6.78e+05    6 3.793e+05    -0.4405       False       False
+ paper 100   3e+06    12    4 7.699e+05    6  5.13e+05    -0.3337       False       False
+  ring 100 1.5e+06     1    2 1.331e+06    2 1.293e+06   -0.02849       False       False
+  ring 100 1.5e+06     2    2 1.308e+06    2 1.516e+06      0.159       False       False
+  ring 100 1.5e+06     3    1 1.181e+06    2 1.089e+06   -0.07805       False       False
+  ring 100 1.5e+06     4    2 1.533e+06    2 1.263e+06    -0.1759       False       False
+  ring 100 1.5e+06     5    1 1.248e+06    1 1.195e+06   -0.04236       False       False
+  ring 100 1.5e+06     6    2 1.208e+06    2  1.09e+06    -0.0977       False       False
+  ring 100 1.5e+06     7    1 1.084e+06    2 8.508e+05    -0.2153       False       False
+  ring 100 1.5e+06     8    2 1.096e+06    2 1.086e+06  -0.008899       False       False
+  ring 100 1.5e+06     9    2 1.247e+06    2 1.247e+06 -0.0001613       False       False
+  ring 100 1.5e+06    10    2  1.48e+06    2 1.146e+06    -0.2256       False       False
+  ring 100 1.5e+06    11    2 1.383e+06    1 1.358e+06   -0.01856       False       False
+  ring 100 1.5e+06    12    1   1.3e+06    2 1.226e+06   -0.05708       False       False
+  ring 100   3e+06     1    4 4.187e+05    4 4.064e+05   -0.02929       False       False
+  ring 100   3e+06     2    4 4.671e+05    5 4.199e+05     -0.101       False       False
+  ring 100   3e+06     3    4 4.206e+05    4 4.202e+05 -0.0008426       False       False
+  ring 100   3e+06     4    4 4.577e+05    4 4.584e+05   0.001535       False       False
+  ring 100   3e+06     5    4 4.609e+05    4 4.391e+05   -0.04723       False       False
+  ring 100   3e+06     6    4 4.344e+05    4 4.382e+05   0.008833       False       False
+  ring 100   3e+06     7    4 3.987e+05    4 3.971e+05  -0.003774       False       False
+  ring 100   3e+06     8    4 4.149e+05    4  4.13e+05  -0.004539       False       False
+  ring 100   3e+06     9    4  4.45e+05    4 4.411e+05  -0.008714       False       False
+  ring 100   3e+06    10    4 4.651e+05    5 4.458e+05    -0.0414       False       False
+  ring 100   3e+06    11    5 4.201e+05    5 4.148e+05    -0.0127       False       False
+  ring 100   3e+06    12    4 4.352e+05    4 4.381e+05   0.006628       False       False

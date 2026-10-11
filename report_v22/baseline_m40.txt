@@ -1,0 +1,14 @@
+planner    fam       n   J vs SA   =SA   ~SA  =rule  ~rule   bias  cens
+sa         all      24    +0.0%  1.00  1.00   0.67   1.00  +0.00  0.00
+sa         paper    12    +0.0%  1.00  1.00   0.75   1.00  +0.00  0.00
+sa         ring     12    +0.0%  1.00  1.00   0.58   1.00  +0.00  0.00
+rr_tour    all      24    +3.4%  0.75  1.00   0.75   1.00  -0.17  0.00
+rr_tour    paper    12    +7.8%  0.75  1.00   0.83   1.00  -0.25  0.00
+rr_tour    ring     12    -2.9%  0.75  1.00   0.67   1.00  -0.08  0.00
+cpsat      all      24    -5.9%  0.75  1.00   0.67   1.00  +0.00  0.00
+cpsat      paper    12    -2.6%  0.83  1.00   0.75   1.00  +0.00  0.00
+cpsat      ring     12    -6.9%  0.67  1.00   0.58   1.00  +0.00  0.00
+
+=SA/~SA: agreement of this planner's argmin with SA's. =rule/~rule: with the closed-form rule,
+computed directly, not by transitivity. bias: mean(argmin - SA argmin). cens: fraction whose
+argmin sits at the top of the swept K range (not a reliable optimum).

@@ -1,0 +1,7 @@
+== C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\results_v2\report\assembled\depot_q.csv: n=216  measured inputs: exact 0.57 within-one 0.95 | ex-ante: exact 0.58 within-one 0.95 | regret median 0.0% max 42.7% | censored 0
+  paper n= 72 exact 0.85  within-one 1.00  bias (measured - rule) +0.07  regret median 0.0% p90 5.6%
+  core  n= 72 exact 0.61  within-one 0.89  bias (measured - rule) +0.29  regret median 0.0% p90 16.8%
+  ring  n= 72 exact 0.25  within-one 0.96  bias (measured - rule) -0.79  regret median 9.2% p90 21.7%
+== C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\results_v2\report\assembled\depot_e.csv: n=48  measured inputs: exact 0.44 within-one 1.00 | ex-ante: exact 0.44 within-one 1.00 | regret median 4.7% max 56.4% | censored 0
+  paper n= 24 exact 0.88  within-one 1.00  bias (measured - rule) -0.12  regret median 0.0% p90 0.8%
+  ring  n= 24 exact 0.00  within-one 1.00  bias (measured - rule) -1.00  regret median 22.3% p90 40.7%

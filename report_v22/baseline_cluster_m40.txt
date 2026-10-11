@@ -1,0 +1,7 @@
+planner    fam       n   J vs SA   =SA   ~SA  =rule  ~rule   bias  cens
+sa         all      24    +0.0%  1.00  1.00   0.67   1.00  +0.00  0.00
+cluster_patrol all      24    +4.9%  0.50  0.88   0.42   0.96  -0.62  0.00
+
+=SA/~SA: agreement of this planner's argmin with SA's. =rule/~rule: with the closed-form rule,
+computed directly, not by transitivity. bias: mean(argmin - SA argmin). cens: fraction whose
+argmin sits at the top of the swept K range (not a reliable optimum).

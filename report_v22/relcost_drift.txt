@@ -1,0 +1,12 @@
+  K  seeds   served  mean r (m)  c-bar ratio  drift vs K0
+  2      6    1.000        3950       1.0000       0.0000
+  3      6    1.000        3950       1.0000       0.0000
+  4      6    1.000        3950       1.0000       0.0000
+  5      6    0.983        3882       0.9829       0.0171
+  6      6    0.937        3719       0.9411       0.0589
+  7      6    0.848        3488       0.8828       0.1172
+  8      6    0.718        3174       0.8040       0.1960
+
+c-bar ratio < 1 means the served set at that K is closer to the depot than at K=2.
+Drift is driven entirely by that scale change -- the profile shape is K-invariant by
+construction, since c_i depends only on r_i and the layout does not depend on K.

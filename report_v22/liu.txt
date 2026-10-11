@@ -1,0 +1,31 @@
+deployments with Liu: 216  (Liu sweeps not yet meeting the 1.5x rule / top-edge: 0)
+
+PRIMARY: C4 vs Liu, own optimum (median J*_C4/J*_Liu - 1, 95% CI, C4 lower)
+  paper -9.3% [-13.3%, -6.1%]  61/72
+  core  -10.9% [-11.6%, -8.6%]  72/72
+  ring  -4.8% [-6.5%, -1.7%]  50/72
+  all   -8.7% [-9.9%, -7.2%]  183/216
+  criterion (C4 lower in median in EACH family): True
+
+SECONDARY 1: C4 vs Liu at K = l
+  paper -9.3% [-12.9%, -5.8%]  61/72
+  core  -11.5% [-12.7%, -9.5%]  71/72
+  ring  -2.4% [-4.1%, +0.0%]  44/72
+  all   -8.1% [-9.9%, -6.5%]  176/216
+
+SECONDARY 2: each planner X vs Liu, own optimum (median J*_X/J*_Liu - 1; negative = X lower)
+  SA              paper -11.1% [-15.9%,-5.2%] 48/72  core +42.0% [+29.1%,+65.2%] 9/72  ring +6.6% [+5.0%,+8.7%] 14/72  all +6.4% [+3.8%,+8.8%] 71/216
+  cluster patrol  paper +15.8% [+12.0%,+18.1%] 7/72  core +2.0% [-0.9%,+4.1%] 29/72  ring +2.1% [+0.5%,+3.8%] 27/72  all +4.6% [+3.2%,+6.0%] 63/216
+  Gao et al.      paper +63.0% [+55.9%,+65.7%] 0/72  core +14.8% [+10.2%,+18.7%] 5/72  ring +47.6% [+42.0%,+51.9%] 0/72  all +44.8% [+38.8%,+48.1%] 5/216
+  Asghar et al.   paper +137.8% [+124.5%,+156.4%] 0/72  core +100.9% [+91.6%,+113.1%] 0/72  ring +175.6% [+161.6%,+208.6%] 0/72  all +133.5% [+126.6%,+142.9%] 0/216
+
+SECONDARY 3-5: Liu rule agreement (exact / within one), split by the design-time test, cost of sizing with l
+  all   0.55 / 0.86  (n=216)
+  core  0.44 / 0.75  (n=72)
+  paper 0.62 / 0.96  (n=72)
+  ring  0.57 / 0.86  (n=72)
+  test passes: 0.58 / 0.91 (n=134)
+  test flags:  0.49 / 0.77 (n=82)
+  cost of sizing with l: median 0.0%, 90th percentile 17.5% (n=216; exploratory)
+
+SECONDARY 6: already-seen deployments (M=50, 1.5 MJ): 36 of 216

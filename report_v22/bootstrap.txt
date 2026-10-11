@@ -1,0 +1,33 @@
+Rule vs measured optimum (stratified bootstrap by cell, 95%)
+  primary 240: exact                           0.554  [0.508, 0.600]  n=240
+  primary 240: within one                      0.771  [0.746, 0.792]  n=240
+  paper: exact                                 0.750  [0.667, 0.823]  n=96
+  paper: within one                            1.000  [0.962, 1.000]  n=96 (CP, all-or-none)
+  ring: exact                                  0.500  [0.444, 0.569]  n=72
+  ring: within one                             0.681  [0.667, 0.708]  n=72
+  core: exact                                  0.347  [0.250, 0.444]  n=72
+  core: within one                             0.556  [0.472, 0.625]  n=72
+  cells with within-one < 0.9 (excluded below): [('core', 50, 1500000.0), ('core', 100, 1500000.0), ('core', 100, 3000000.0), ('core', 200, 1500000.0), ('core', 200, 3000000.0), ('ring', 50, 3000000.0), ('ring', 100, 3000000.0)]
+  13 cells with within-one >= 0.9: exact       0.731  [0.667, 0.795]  n=156
+  13 cells with within-one >= 0.9: within one  0.994  [0.981, 1.000]  n=156
+  all 272: exact                               0.559  [0.515, 0.603]  n=272
+  all 272: within one                          0.798  [0.776, 0.820]  n=272
+  per-cell Clopper-Pearson intervals -> C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\results_v2\report\per_cell_ci.csv
+
+Independent planners (stratified bootstrap by cell, 95%)
+  tour patrol = SA                             0.611  [0.560, 0.662]  n=216
+  tour patrol within one of SA                 0.917  [0.889, 0.940]  n=216
+  tour patrol = rule                           0.528  [0.472, 0.579]  n=216
+  tour patrol within one of rule               0.787  [0.755, 0.815]  n=216
+  sweep patrol within one of SA (paper+ring)   0.924  [0.882, 0.958]  n=144
+  sweep patrol within one of rule (paper+ring) 0.854  [0.819, 0.889]  n=144
+  SA = rule (same 216)                         0.560  [0.514, 0.606]  n=216
+  SA within one of rule (same 216)             0.745  [0.718, 0.773]  n=216
+
+M=40, 24 instances
+  SA within one of rule                        1.000  [0.858, 1.000]  n=24 (CP, all-or-none)
+  tour patrol within one of SA                 1.000  [0.858, 1.000]  n=24 (CP, all-or-none)
+  tour patrol within one of rule               1.000  [0.858, 1.000]  n=24 (CP, all-or-none)
+  CP-SAT within one of SA                      1.000  [0.858, 1.000]  n=24 (CP, all-or-none)
+  CP-SAT within one of rule                    1.000  [0.858, 1.000]  n=24 (CP, all-or-none)
+  CP-SAT = SA                                  0.750  [0.583, 0.917]  n=24

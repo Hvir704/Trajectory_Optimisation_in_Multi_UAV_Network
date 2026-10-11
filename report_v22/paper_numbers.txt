@@ -1,0 +1,266 @@
+C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packages\numpy\_core\fromnumeric.py:3824: RuntimeWarning: Mean of empty slice
+  return _methods._mean(a, axis=axis, dtype=dtype,
+C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packages\numpy\_core\_methods.py:142: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+
+=== abstract/intro: rule's l in the representative cell (paper M=100 1.5 MJ), core M=100 1.5 MJ
+  ('paper', 100, 1500000.0): l values [4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5]  l=4 in 9 of 12  mean 4.25  floor K_r values [4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5]
+  ('core', 100, 1500000.0): l values [4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6]  l=4 in 6 of 12  mean 4.58  floor K_r values [4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6]
+
+=== model: empty sorties, P_bar range, commute time t_c
+  paper: empty-sortie share max over all runs 8.7%, at the optimum median 0.0% max 1.6%
+  core: empty-sortie share max over all runs 18.3%, at the optimum median 0.0% max 9.3%
+  ring: empty-sortie share max over all runs 100.0%, at the optimum median 0.0% max 0.8%
+  P_bar over all SA runs that serve anything: 301-400 W;  realised commute time 2 r_c / v median 2.0 min; nominal t_c 8.0 min
+
+=== Lemma 1: in-reach sensors unserved at floor(K_r), clustered M=400 1.5 MJ
+  seed 1: K0=4 n_never at K0 = 3
+  seed 2: K0=4 n_never at K0 = 1
+  seed 3: K0=4 n_never at K0 = 7
+  seed 4: K0=4 n_never at K0 = 4
+  seed 5: K0=4 n_never at K0 = 1
+  seed 6: K0=4 n_never at K0 = 2
+  seed 7: K0=4 n_never at K0 = 1
+  seed 8: K0=4 n_never at K0 = 0
+  seed 9: K0=4 n_never at K0 = 0
+  seed 10: K0=4 n_never at K0 = 1
+  seed 11: K0=4 n_never at K0 = 2
+  seed 12: K0=4 n_never at K0 = 1
+
+=== criterion (5): verdict changes when the gray set is treated as served / with K-dependent commute inputs
+  gray set served: 31 of 168 change; pass->flag 31, flag->pass 0
+     largest regret among pass->flag: 26.4% ('core', 50, 1500000.0, 6)
+  r_c(K), P_bar(K): 9 of 168 change; pass->flag 1, flag->pass 8
+     largest regret among pass->flag: 7.0% ('core', 50, 3000000.0, 5)
+  base: 73 pass of 168; largest passing regret 26.4% ('core', 50, 1500000.0, 6)
+
+=== criterion: flagged core instances, J(K0) above the minimum; sufficient variants on zero-regret clustered instances
+  flagged core: 48; J(K0)/J* - 1 median 24.1% max 167.8%
+
+=== regret: reach-bound passing instances (all families)
+  n=73 median 0.0% p90 11.4% max 26.4%
+  ring (commute-bound) n=72 median 0.4% max 27.4%, instances above 30%: 0
+  all instances above 30%: 23; of which reach-bound and passing: 0
+
+=== Remark 4: r_max / mean r per family
+  paper: 1.64-2.35  (boundary 2.0: deviation -18.2% to +17.7%)
+  ring: 1.13-1.18  (boundary 2.0: deviation -43.5% to -40.8%)
+  core: 4.15-5.95  (boundary 2.0: deviation +107.4% to +197.6%)
+
+=== tau_hop (theory_checks definition) per cell: cell mean at the smallest and largest K with >= 3 stranding-free seeds
+  ('core', 50, 1500000.0): 50.5 s (K=2) -> 37.1 s (K=6)  change -27%
+  ('core', 50, 3000000.0): 69.0 s (K=4) -> 49.0 s (K=12)  change -29%
+  ('core', 100, 1500000.0): 26.6 s (K=2) -> 24.9 s (K=5)  change -7%
+  ('core', 100, 3000000.0): 42.0 s (K=4) -> 36.2 s (K=11)  change -14%
+  ('core', 200, 1500000.0): 16.6 s (K=2) -> 16.3 s (K=5)  change -2%
+  ('core', 200, 3000000.0): 21.2 s (K=5) -> 21.0 s (K=12)  change -1%
+  ('paper', 50, 1500000.0): 69.9 s (K=2) -> 63.2 s (K=5)  change -10%
+  ('paper', 50, 3000000.0): 90.1 s (K=4) -> 65.7 s (K=11)  change -27%
+  ('paper', 100, 1500000.0): 51.5 s (K=2) -> 46.2 s (K=5)  change -10%
+  ('paper', 100, 3000000.0): 58.6 s (K=4) -> 51.4 s (K=10)  change -12%
+  ('paper', 100, 6000000.0): 79.4 s (K=9) -> 62.2 s (K=21)  change -22%
+  ('paper', 200, 1500000.0): 38.6 s (K=2) -> 37.8 s (K=4)  change -2%
+  ('paper', 200, 3000000.0): 40.3 s (K=4) -> 39.4 s (K=9)  change -2%
+  ('ring', 50, 1500000.0): 50.7 s (K=2) -> 23.8 s (K=5)  change -53%
+  ('ring', 50, 3000000.0): 70.4 s (K=4) -> 24.6 s (K=10)  change -65%
+  ('ring', 100, 1500000.0): 31.8 s (K=2) -> 25.0 s (K=4)  change -21%
+  ('ring', 100, 3000000.0): 42.5 s (K=4) -> 18.0 s (K=10)  change -58%
+  ('ring', 200, 1500000.0): 22.2 s (K=2) -> 17.4 s (K=4)  change -22%
+  ('ring', 200, 3000000.0): 24.0 s (K=4) -> 16.1 s (K=9)  change -33%
+
+=== sorties at the optimum: duration and stops
+  sortie duration at the optimum: 3.5-21.6 min (median 14.4)
+  clustered 1.5 MJ M=50: stops per sortie at the optimum 9.8
+  clustered 1.5 MJ M=100: stops per sortie at the optimum 14.2
+  clustered 1.5 MJ M=200: stops per sortie at the optimum 16.3
+  clustered 1.5 MJ M=400: stops per sortie at the optimum 15.7
+
+=== ring 3 MJ M=100: P_bar by K (cell mean, stranding-free)
+  K4:309  K5:309  K6:309  K7:309  K8:310  K9:312  K10:319
+
+=== Fig. 2: cell-mean J(K) and its argmin (M=100, 1.5 MJ)
+  paper: argmin of cell mean K=4; K2:18.37 K3:10.59 K4:7.65 K5:8.64 K6:16.07 K7:34.64 K8:62.50 K9:85.27 K10:108.04
+  ring: argmin of cell mean K=3; K2:10.78 K3:8.07 K4:8.72 K5:19.09 K6:102.51 K7:158.45 K8:158.35 K9:158.43
+  core: argmin of cell mean K=15; K3:3.45 K4:2.56 K5:2.57 K6:3.00 K7:3.07 K8:2.89 K9:2.76 K10:2.65 K11:2.57 K12:2.51 K13:2.46 K14:2.42 K15:2.41 K16:4.77 K17:14.23
+
+=== Fig. 3: argmin J_age over fleet sizes with every sensor served, relative to floor(K_r)
+  plotted 262 of 272; {'reach side: at floor K_r': 148, 'reach side: above': 41, 'commute side': 72, 'reach side: below': 1, 'no stranding-free K': 10}
+
+=== Sec. VII-B overall: 13 good cells, worst bias
+  good cell ('core', 50, 3000000.0): bias +2.08, within-one 0.92
+  good cell ('paper', 50, 1500000.0): bias -0.08, within-one 1.00
+  good cell ('paper', 50, 3000000.0): bias +0.33, within-one 1.00
+  good cell ('paper', 100, 1500000.0): bias +0.00, within-one 1.00
+  good cell ('paper', 100, 3000000.0): bias +0.08, within-one 1.00
+  good cell ('paper', 100, 6000000.0): bias +0.58, within-one 1.00
+  good cell ('paper', 200, 1500000.0): bias +0.33, within-one 1.00
+  good cell ('paper', 200, 3000000.0): bias +0.17, within-one 1.00
+  good cell ('paper', 400, 1500000.0): bias +0.42, within-one 1.00
+  good cell ('ring', 50, 1500000.0): bias +0.33, within-one 1.00
+  good cell ('ring', 100, 1500000.0): bias +0.00, within-one 1.00
+  good cell ('ring', 200, 1500000.0): bias +0.00, within-one 1.00
+  good cell ('ring', 200, 3000000.0): bias +0.67, within-one 1.00
+
+=== Sec. VII-B warning indicator: onsets for each planner (cell relative bias vs r_max/r_c, reach-limited cells)
+  cyc: 3.2:-1%  4.8:-7%  4.9:-3%  6.0:+4%  6.3:-3%  6.4:-9%  6.8:-4%  7.7:+7%  7.7:+26%  12.6:+65%  13.6:+29%  16.2:+118%
+  cluster_patrol: 3.2:-6%  4.8:-12%  4.9:-15%  6.0:+4%  6.3:-2%  6.4:-10%  6.8:+0%  7.7:+7%  7.7:+23%  12.6:+52%  13.6:+27%  16.2:+122%
+  gzz_rev: 3.2:-32%  4.8:-14%  4.9:-17%  6.0:-1%  6.3:-13%  6.4:-20%  6.8:+2%  7.7:+5%  7.7:+3%  12.6:+2%  13.6:+16%  16.2:+76%
+  asghar_rev: 3.2:-14%  4.8:+7%  4.9:-20%  6.0:-3%  6.3:+22%  6.4:-21%  6.8:+44%  7.7:+36%  7.7:+46%  12.6:+117%  13.6:+105%  16.2:+126%
+  liu_mpga: 3.2:-1%  4.8:-5%  4.9:-10%  6.0:+4%  6.3:-1%  6.4:-5%  6.8:+2%  7.7:+7%  7.7:+22%  12.6:+63%  13.6:+27%  16.2:+104%
+
+=== Sec. VII-C core M=200 1.5 MJ cell-mean J at K=4, 10 and its minimum
+  K=4 6.640e+05  K=10 3.664e+05  min 3.270e+05 at K=14
+  first K with a stranded sensor per seed: [6, 6, 5, 7, 6, 5, 6, 7, 6, 6, 6, 6]
+
+=== Sec. VII-C/VIII: optimum above floor(K_r) per planner, core 1.5 and 3 MJ; instances that strand at the optimum
+  ('core', 200, 1500000.0): sa 13.67 (+8.75, strand 12/12); rr_tour 11.00 (+6.08, strand 11/12); cluster_patrol 10.75 (+5.83, strand 10/12); cyc 10.58 (+5.67, strand 9/12); gzz_rev 8.50 (+3.58, strand 9/12); asghar_rev 11.00 (+6.08, strand 12/12); liu_mpga 9.92 (+5.00, strand 10/12)
+  ('core', 200, 3000000.0): sa 28.42 (+18.08, strand 11/12); rr_tour 27.67 (+17.33, strand 11/12); cluster_patrol 15.58 (+5.25, strand 4/12); cyc 16.83 (+6.50, strand 4/12); gzz_rev 10.58 (+0.25, strand 0/12); asghar_rev 22.25 (+11.92, strand 11/12); liu_mpga 16.83 (+6.50, strand 6/12)
+  ('core', 100, 1500000.0): sa 8.33 (+3.75, strand 4/12); rr_tour 7.92 (+3.33, strand 4/12); cluster_patrol 5.67 (+1.08, strand 1/12); cyc 5.75 (+1.17, strand 1/12); gzz_rev 5.25 (+0.67, strand 1/12); asghar_rev 9.00 (+4.42, strand 8/12); liu_mpga 5.67 (+1.08, strand 1/12)
+  ('core', 100, 3000000.0): sa 14.00 (+4.17, strand 2/12); rr_tour 13.83 (+4.00, strand 2/12); cluster_patrol 11.92 (+2.08, strand 1/12); cyc 12.17 (+2.33, strand 1/12); gzz_rev 10.08 (+0.25, strand 0/12); asghar_rev 13.92 (+4.08, strand 3/12); liu_mpga 11.83 (+2.00, strand 1/12)
+
+=== Sec. VII-D: neighbour cost at M=40 per family and planner (median over instances of the cheaper neighbour, min J(K*+-1)/J* - 1)
+  sa              paper: 22.2% (n=12)
+  sa              ring: 3.2% (n=12)
+  rr_tour         paper: 17.9% (n=12)
+  rr_tour         ring: 3.1% (n=12)
+  cpsat           paper: 18.8% (n=12)
+  cpsat           ring: 3.7% (n=12)
+  cluster_patrol  paper: 14.2% (n=12)
+  cluster_patrol  ring: 19.6% (n=12)
+  M=40 rr_tour within one of cpsat: 1.00 (n=24)
+
+=== Sec. VII-E field size: per L, rule vs argmin, regret of the misses; r_max/r_c
+  L=8000: n=8 argmin 7.25 rule 7.00 misses 2 regret 4.1%-11.6%  never-served at the optimum 0-0  argmins [7, 7, 7, 7, 7, 7, 8, 8] rules [6, 7, 7, 7, 7, 7, 7, 8]
+  L=10000: n=8 argmin 5.88 rule 5.25 misses 5 regret 0.9%-18.3%  never-served at the optimum 0-1  argmins [5, 6, 6, 6, 6, 6, 6, 6] rules [5, 5, 5, 5, 5, 5, 6, 6]
+  L=12600: n=12 argmin 4.25 rule 4.25 misses 0 regret 0.0%-0.0%  never-served at the optimum 0-0  argmins [4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5] rules [4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5]
+  L=16000: n=8 argmin 3.88 rule 3.25 misses 5 regret 2.8%-16.8%  never-served at the optimum 0-3  argmins [3, 4, 4, 4, 4, 4, 4, 4] rules [3, 3, 3, 3, 3, 3, 4, 4]
+  L=20000: n=8 argmin 3.00 rule 2.88 misses 1 regret 39.2%-39.2%  never-served at the optimum 0-1  argmins [3, 3, 3, 3, 3, 3, 3, 3] rules [2, 3, 3, 3, 3, 3, 3, 3]
+
+=== Sec. VII-F depot: rule one UAV too high on the ring; ex-ante changes per family
+  depot_q.csv paper: rule exactly one above the optimum in 3 of 72
+  depot_q.csv core: rule exactly one above the optimum in 8 of 72
+  depot_q.csv ring: rule exactly one above the optimum in 51 of 72
+  depot_e.csv paper: rule exactly one above the optimum in 3 of 24
+  depot_e.csv ring: rule exactly one above the optimum in 24 of 24
+
+=== Sec. VII-J ex-ante: P_bar-hat accuracy, r_max/r_c-hat
+  P_bar-hat: corr 0.976, mean |error| 1.4 W, measured range 303-339 W, best constant 7.4 W
+  paper: r_c-hat/r_c median 0.61 [0.39,0.76], with measured n 0.79
+  ring: r_c-hat/r_c median 0.95 [0.94,0.96], with measured n 0.95
+  core: r_c-hat/r_c median 0.44 [0.26,0.62], with measured n 0.49
+  smallest ex-ante r_max/r_c over reach-limited cells 8.1; core cells: 100/1.5:25.2 100/3.0:25.2 200/1.5:25.3 200/3.0:25.4 50/1.5:22.3 50/3.0:22.1
+  core per-instance range: 14.2-30.0
+
+=== Sec. VII-K: C4 vs SA per clustered cell (own optimum, median J_C4/J_SA - 1, C4 lower)
+  ('paper', 50, 1500000.0): -7.3%, C4 lower in 12/12
+  ('paper', 50, 3000000.0): -20.1%, C4 lower in 12/12
+  ('paper', 100, 1500000.0): +17.0%, C4 lower in 1/12
+  ('paper', 100, 3000000.0): -16.7%, C4 lower in 12/12
+  ('paper', 100, 6000000.0): +nan%, C4 lower in 0/0
+  ('paper', 200, 1500000.0): +30.3%, C4 lower in 0/12
+  ('paper', 200, 3000000.0): +3.1%, C4 lower in 5/12
+
+=== Sec. VII-K: tour patrol and sweep patrol J vs SA by family (own optimum, median)
+  rr_tour paper: median +24.7% (n=72)
+  rr_tour ring: median -11.4% (n=72)
+  rr_tour core: median +0.1% (n=72)
+  rr_sweep paper: median +111.6% (n=72)
+  rr_sweep ring: median -5.8% (n=72)
+  cluster_patrol paper: median +35.9% (n=72)
+  cluster_patrol ring: median -4.3% (n=72)
+  cluster_patrol core: median -29.1% (n=72)
+
+=== Sec. VII-K: Gao et al. misses (|argmin - l| > 1)
+  misses 51; undershoots at 3 MJ paper/ring 39 (by exactly two: 27); core overshoots 10; other 2
+  of the 3 MJ undershoots, where the test passes or does not apply: 33 (ring: 18)
+
+=== Liu et al.: C4 vs Liu on the 36 previously seen deployments (M=50, 1.5 MJ) and the rest
+  seen 36: median -7.1%;  rest 180: median -9.0%
+
+=== App. B: visit-rate argmax (K n/T_s from each planner's own rows) within one of the AoI optimum, ring
+  sa              all ring 100% (n=72); 3 MJ cells 100%
+  cyc             all ring 97% (n=72); 3 MJ cells 94%
+  cluster_patrol  all ring 92% (n=72); 3 MJ cells 83%
+  gzz_rev         all ring 83% (n=72); 3 MJ cells 72%
+  asghar_rev      all ring 71% (n=72); 3 MJ cells 89%
+  liu_mpga        all ring 92% (n=72); 3 MJ cells 83%
+  rr_tour         all ring 100% (n=72); 3 MJ cells 100%
+
+=== App. B: optima on the 3 MJ ring cells per planner (cell means)
+  sa              M=50: 8.50  M=100: 7.92  M=200: 6.67
+  cyc             M=50: 7.75  M=100: 6.92  M=200: 5.08
+  cluster_patrol  M=50: 7.08  M=100: 6.25  M=200: 5.00
+  asghar_rev      M=50: 6.92  M=100: 6.83  M=200: 6.58
+  gzz_rev         M=50: 4.42  M=100: 4.83  M=200: 5.08
+  liu_mpga        M=50: 7.67  M=100: 6.50  M=200: 5.17
+  rr_tour         M=50: 8.00  M=100: 7.17  M=200: 5.92
+  rr_sweep        M=50: 8.00  M=100: 7.00  M=200: 5.67
+
+=== App. B: stop count calibrated from each planner's two smallest stranding-free swept K (pilot runs), then argmax of K n/(t_c + n tau_s)
+  sa              all ring : calibrated within one 65/72, closed form 49/72
+  sa              3 MJ ring: calibrated within one 29/36, closed form 13/36  per cell calibrated: M=50:58% M=100:83% M=200:100%  closed form: M=50:0% M=100:8% M=200:100%
+  cyc             all ring : calibrated within one 56/72, closed form 63/72
+  cyc             3 MJ ring: calibrated within one 21/36, closed form 27/36  per cell calibrated: M=50:67% M=100:100% M=200:8%  closed form: M=50:25% M=100:100% M=200:100%
+  cluster_patrol  all ring : calibrated within one 65/72, closed form 65/72
+  cluster_patrol  3 MJ ring: calibrated within one 30/36, closed form 29/36  per cell calibrated: M=50:83% M=100:92% M=200:75%  closed form: M=50:75% M=100:100% M=200:67%
+  asghar_rev      all ring : calibrated within one 46/71, closed form 70/72
+  asghar_rev      3 MJ ring: calibrated within one 11/36, closed form 34/36  per cell calibrated: M=50:25% M=100:50% M=200:17%  closed form: M=50:83% M=100:100% M=200:100%
+  gzz_rev         all ring : calibrated within one 62/72, closed form 54/72
+  gzz_rev         3 MJ ring: calibrated within one 26/36, closed form 18/36  per cell calibrated: M=50:75% M=100:75% M=200:67%  closed form: M=50:33% M=100:42% M=200:75%
+  liu_mpga        all ring : calibrated within one 65/72, closed form 62/72
+  liu_mpga        3 MJ ring: calibrated within one 31/36, closed form 26/36  per cell calibrated: M=50:100% M=100:92% M=200:67%  closed form: M=50:33% M=100:100% M=200:83%
+
+=== Sec. VII-K: CP-SAT budget study on the ring (J changes, argmin agreement with SA)
+  d5 -> d15: J change -9.2% to +7.9%, median +0.0% (n=60)
+  d15 -> d45: s3 K3 +0.00%, s3 K4 +0.00%, s1 K3 +0.85%, s1 K4 +0.00%, s4 K3 -0.99%, s4 K4 +0.00%
+  ring argmin d5 = SA in 0.50 (n=12)
+  ring argmin d15 = SA in 0.67 (n=12)
+  d15 differs from SA at ('ring', 40, 1500000.0, 6): 4 vs 3; J(SA's K)/J(CP's K)-1 under CP-SAT +3.6%; proven share at those K 178/178 and 92/102
+  d15 differs from SA at ('ring', 40, 1500000.0, 8): 4 vs 3; J(SA's K)/J(CP's K)-1 under CP-SAT +1.6%; proven share at those K 174/178 and 101/102
+  d15 differs from SA at ('ring', 40, 1500000.0, 10): 3 vs 4; J(SA's K)/J(CP's K)-1 under CP-SAT +3.5%; proven share at those K 94/102 and 182/184
+  d15 differs from SA at ('ring', 40, 1500000.0, 11): 3 vs 4; J(SA's K)/J(CP's K)-1 under CP-SAT +1.0%; proven share at those K 97/102 and 180/180
+
+=== Sec. VII-K decomposition: ring tour patrol vs SA; J2/J_age; cluster vs SA
+  K=4 s=1: J_age ratio patrol/SA 0.903; rate factor 0.870, alloc 1.022, reg 1.003; product 0.892  (tau_hop 32.1 vs 39.8 s)
+  K=4 s=2: J_age ratio patrol/SA 0.877; rate factor 0.885, alloc 1.015, reg 1.009; product 0.906  (tau_hop 34.1 vs 42.1 s)
+  K=6 s=1: J_age ratio patrol/SA 0.898; rate factor 0.876, alloc 1.024, reg 0.994; product 0.892  (tau_hop 26.7 vs 33.4 s)
+  K=6 s=2: J_age ratio patrol/SA 0.909; rate factor 0.944, alloc 1.017, reg 0.955; product 0.917  (tau_hop 29.8 vs 35.2 s)
+  K=8 s=1: J_age ratio patrol/SA 0.930; rate factor 0.960, alloc 1.028, reg 0.952; product 0.939  (tau_hop 22.8 vs 26.2 s)
+  K=8 s=2: J_age ratio patrol/SA 1.022; rate factor 1.031, alloc 1.047, reg 0.956; product 1.032  (tau_hop 22.6 vs 25.6 s)
+  J2 vs J_age over 20 decomposed runs: within 0.5% in 17, max deviation 47.4%
+  regularity_core_cl.csv sa             s=13: r_c 547 m  Gamma 712/h  tau_hop 26.1 s  E_reg 1.189  E_alloc 1.045  J 2.696e+05
+  regularity_core_cl.csv sa             s=14: r_c 690 m  Gamma 734/h  tau_hop 24.5 s  E_reg 1.201  E_alloc 1.059  J 1.701e+05
+  regularity_core_cl.csv cluster_patrol s=13: r_c 738 m  Gamma 812/h  tau_hop 16.6 s  E_reg 1.000  E_alloc 1.072  J 2.313e+05
+  regularity_core_cl.csv cluster_patrol s=14: r_c 1446 m  Gamma 793/h  tau_hop 17.5 s  E_reg 1.000  E_alloc 1.078  J 1.328e+05
+  regularity_paper_cl.csv sa             s=13: r_c 1914 m  Gamma 214/h  tau_hop 49.3 s  E_reg 1.109  E_alloc 1.083  J 7.801e+05
+  regularity_paper_cl.csv sa             s=14: r_c 848 m  Gamma 247/h  tau_hop 48.4 s  E_reg 1.121  E_alloc 1.099  J 7.328e+05
+  regularity_paper_cl.csv cluster_patrol s=13: r_c 4674 m  Gamma 147/h  tau_hop 42.1 s  E_reg 1.005  E_alloc 1.143  J 1.217e+06
+  regularity_paper_cl.csv cluster_patrol s=14: r_c 4013 m  Gamma 166/h  tau_hop 43.2 s  E_reg 1.003  E_alloc 1.068  J 1.057e+06
+
+=== Sec. V: sufficient-type criterion variants on the zero-regret clustered instances (criterion_variants.py forms)
+  corrected_KR: zero-regret clustered 72, flagged 63 (88%)
+  KG: zero-regret clustered 72, flagged 68 (94%)
+  global: zero-regret clustered 72, flagged 34 (47%)
+
+=== Sec. VII-F depot: ex-ante rule changes per family (analyze_depot.py) and sweeps extended by the fills
+  depot_q.csv: ex-ante changes {('core', 'toward the optimum'): 3}
+  depot_e.csv: ex-ante changes {}
+  depot_q_fill.csv: 103 annealer sweeps extended
+  depot_e_fill.csv: 19 annealer sweeps extended
+
+=== Sec. VII-I: mean K_commute at M=100, 1.5 MJ (smallest-K inputs)
+  ('paper', 100, 1500000.0): 15.5
+  ('core', 100, 1500000.0): 36.3
+
+=== Sec. VII-K C4: vs cluster patrol per ring cell and largest loss; rule agreement per family vs cluster (paired bootstrap)
+  ('ring', 50, 1500000.0): median -3.4%, C4 lower 9/12, worst +2.5%
+  ('ring', 50, 3000000.0): median -6.3%, C4 lower 12/12, worst -0.8%
+  ('ring', 100, 1500000.0): median -0.8%, C4 lower 6/12, worst +8.4%
+  ('ring', 100, 3000000.0): median -6.8%, C4 lower 11/12, worst +0.5%
+  ('ring', 200, 1500000.0): median -5.8%, C4 lower 11/12, worst +0.6%
+  ('ring', 200, 3000000.0): median -12.4%, C4 lower 12/12, worst -0.5%
+  largest single loss of C4 against the cluster patrol: +8.4%
+  paper: C4 within one 96% (exact 68%), cluster 85%; difference +11.1 points [+2.8, +19.4]
+  ring: C4 within one 88% (exact 43%), cluster 90%; difference -2.8 points [-9.7, +4.2]
+  core: C4 within one 79% (exact 44%), cluster 78%; difference +1.4 points [+0.0, +4.2]
+  all: C4 within one 88% (exact 52%), cluster 84%; difference +3.2 points [-0.5, +6.9]
