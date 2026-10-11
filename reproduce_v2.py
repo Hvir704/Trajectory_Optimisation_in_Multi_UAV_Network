@@ -255,6 +255,8 @@ def main():
          ["alpha_fit.py", gf, "--sorties", R("sortie_ring.csv")]),
         ("relcost_drift", "Sec. V-B drift of the relative-cost profile (paper M=100 1.5 MJ, seeds 1-6)",
          ["relcost_drift.py", os.path.join(RES, "nodes", "nodes_sa_paper_M100_E1500000_K*_s*_exclude_launch.npz")]),
+        ("paper_numbers", "remaining numbers of the text (each labelled with its section in the output)", ["paper_numbers.py", RES, ASM]),
+        ("c4_classes", "Sec. VII-K: C4 frequency classes at its own optimum (rebuilds the 216 designs; minutes)", ["c4_classes.py", A("eval_all_v2.csv")]),
         ("fig_JvsK_regime", "Figs. 2-3", ["make_figures.py", gf]),
         ("fig_planners", "Fig. 5 (planners, M=40)", ["fig_planners.py", A("m40_sa.csv"), A("m40_rr.csv"), A("m40_cp_final.csv"), o("fig_planners.pdf")]),
         ("fig_five", "Fig. 4 (five planners)", ["fig_five.py", o("fig_five.pdf"), "--sa", A("sa_rerun.csv"), "--eval", A("eval_all_v2.csv"),

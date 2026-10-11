@@ -10,7 +10,7 @@ base=[r for r in rows if r['coord']=='exclude' and r['replan']=='launch' and r['
 def cell(layout,M,E):
     g=collections.defaultdict(list)
     for r in base:
-        if (r['layout'],r['M'],r['Emax'])==(layout,M,E): g[int(r['K'])].append(r)
+        if (r['layout'],r['M'],r['Emax'])==(layout,M,E) and r.get('L',12600)==12600: g[int(r['K'])].append(r)   # field-size cells excluded
     return g
 # --- Fig 1: J vs K, three families ---
 fig,ax=plt.subplots(1,3,figsize=(7.16,2.5))
@@ -31,14 +31,16 @@ ax[0].set_ylabel(r'$J$  ($\times10^5$)',fontsize=9); fig.tight_layout(); fig.sav
 # --- Fig 2: regime plot ---
 fig,a=plt.subplots(figsize=(3.5,2.9))
 pts=collections.defaultdict(list)
-for (lay,M,E) in {(r['layout'],r['M'],r['Emax']) for r in base}:
+nplot=nskip=0
+for (lay,M,E,L) in {(r['layout'],r['M'],r['Emax'],r.get('L',12600)) for r in base}:   # L in the key: one point per instance
     g=collections.defaultdict(dict)
     for r in base:
-        if (r['layout'],r['M'],r['Emax'])==(lay,M,E): g[r['seed']][int(r['K'])]=r
+        if (r['layout'],r['M'],r['Emax'],r.get('L',12600))==(lay,M,E,L): g[r['seed']][int(r['K'])]=r
     for s,byK in g.items():
         served={K:byK[K]['J_age'] if byK[K]['n_never']==0 else None for K in byK}
         ks=[K for K in served if served[K] is not None]
-        if not ks: continue
+        if not ks: nskip+=1; continue
+        nplot+=1
         am=min(ks,key=lambda K:served[K]); r0=byK[min(byK)]
         pts[lay].append((r0['rmax_over_rc'], am/r0['K_reach_i'], r0['regime_bnd']))
 for lay,c in zip(('paper','ring','core'),('C3','C0','C2')):
@@ -47,4 +49,5 @@ a.axvline(st.mean(r['regime_bnd'] for r in base),color='k',ls='--',label=r'$1+\s
 a.axhline(1,color='gray',lw=.5); a.set_xscale('log'); a.set_xlabel(r'$r_{\max}/r_c$',fontsize=9); a.set_ylabel(r'served argmin $/\,K_{\rm reach}$',fontsize=9)
 a.tick_params(labelsize=8); a.legend(fontsize=8,frameon=False,loc='lower right')
 fig.tight_layout(); fig.savefig('figs/fig_regime.pdf')
+print(f"Fig. 3: {nplot} instances plotted, {nskip} without a stranding-free K")
 print("wrote figs/fig_JvsK.pdf figs/fig_regime.pdf")

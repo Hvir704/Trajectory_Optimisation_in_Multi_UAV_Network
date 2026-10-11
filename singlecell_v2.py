@@ -27,7 +27,9 @@ def rows(name, **flt):
 def byKseed(rs, layout="paper", M=100, E=1.5e6, Th=43200.0):
     d = defaultdict(dict)
     for r in rs:
-        if r["layout"] == layout and int(float(r["M"])) == M and float(r["Emax"]) == E and float(r["Th"]) == Th:
+        # L must be filtered: sa_fill.csv also holds the field-size cells (paper, M=100, 1.5 MJ, L != 12.6 km)
+        if (r["layout"] == layout and int(float(r["M"])) == M and float(r["Emax"]) == E and float(r["Th"]) == Th
+                and float(r.get("L") or 12600) == 12600):
             d[int(float(r["K"]))][int(float(r["seed"]))] = r
     return d
 

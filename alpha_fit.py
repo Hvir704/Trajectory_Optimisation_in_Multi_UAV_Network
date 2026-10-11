@@ -2,7 +2,7 @@
 
 Table XV, per ring cell, from grid_final.csv (SA, standard settings, L = 12.6 km):
   stranding-free rows (n_never = 0); t_c = cell mean of 2 r_c / v; fit log n = log c + alpha log(U/K - Pf t_c);
-  tau_s = cell mean of (T_s - t_c) / n with T_s = (T_s/t_c) t_c; the alpha-corrected fleet size maximises
+  tau_s = cell mean of (T_s - t_c) / n with T_s = (T_s/t_c column) x nominal t_c; the alpha-corrected fleet size maximises
   K n(K) / (t_c + n(K) tau_s) over integers; "alpha = 1" is round(K_commute) (cell mean of the per-instance values);
   "measured" is the mean per-instance argmin of J.
 Per-sortie regressions (needs --sorties, from sortie_regress.py), per cell, on ONE sample: post-burn-in sorties of
@@ -38,7 +38,8 @@ for c in [(50, 3e6), (100, 3e6), (200, 3e6), (100, 1.5e6)]:
     K = np.array([float(r["K"]) for r in sf]); n = np.array([float(r["mean_n"]) for r in sf])
     X = U / K - Pf * tc; ok = (X > 0) & (n > 0)
     alpha, logc = np.polyfit(np.log(X[ok]), np.log(n[ok]), 1)
-    tau_s = float(np.mean((np.array([float(r["T_s_over_t_c"]) for r in sf]) * tc - tc) / n))
+    # T_s_over_t_c is the sortie duration over the NOMINAL commute time p.t_c (dyn_env metrics), not over 2 r_c / v
+    tau_s = float(np.mean((np.array([float(r["T_s_over_t_c"]) for r in sf]) * p.t_c - tc) / n))
     def G(k):
         e = U / k - Pf * tc
         if e <= 0: return -1.0

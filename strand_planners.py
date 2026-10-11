@@ -71,6 +71,6 @@ if rows:
     rec = lambda f: (miss & f).sum() / max(miss.sum(), 1); pre = lambda f: (miss & f).sum() / max(f.sum(), 1)
     print(f"\nwarnings against the four planners' misses ({miss.sum()} misses in {len(rows)} planner-deployments):")
     print(f"  design-time test          recall {rec(test):.2f}  precision {pre(test):.2f}")
-    for lev in (6.2, 6.8, 7.4):
+    for lev in (6.2, 6.8, 7.0, 7.25, 7.4, 7.6):
         f = ratio > lev
         print(f"  r_max/r_c > {lev:<4}          recall {rec(f):.2f}  precision {pre(f):.2f}")
