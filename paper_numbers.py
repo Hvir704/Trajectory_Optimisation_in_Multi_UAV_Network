@@ -377,10 +377,14 @@ for (K, s), b in sorted(rg.items()):
     meas = f("J_age"); rate = float(a["Gamma"]) / float(t["Gamma"]); alloc = f("E_alloc"); regl = f("E_reg")
     print(f"  K={K} s={s}: J_age ratio patrol/SA {meas:.3f}; rate factor {rate:.3f}, alloc {alloc:.3f}, reg {regl:.3f}; product {rate*alloc*regl:.3f}"
           f"  (tau_hop {float(t['tau_hop']):.1f} vs {float(a['tau_hop']):.1f} s)")
-chk = []
+chk = []; lab = []
 for n in ("regularity_ring.csv", "regularity_core_cl.csv", "regularity_paper_cl.csv"):
-    for r in read(R(n)): chk.append(abs(float(r["J2_alloc_cv"]) / float(r["J_age"]) - 1))
-chk = np.array(chk); print(f"  J2 vs J_age over {len(chk)} decomposed runs: within 0.5% in {int((chk <= .005).sum())}, max deviation {chk.max():.1%}")
+    for r in read(R(n)):
+        chk.append(abs(float(r["J2_alloc_cv"]) / float(r["J_age"]) - 1)); lab.append(f"{r['planner']} {r['layout']} K={r['K']} s={r['seed']}")
+chk = np.array(chk)
+print(f"  J2 vs J_age over {len(chk)} decomposed runs: within 0.5% in {int((chk <= .005).sum())}, within 0.6% in {int((chk <= .006).sum())},"
+      f" max deviation {chk.max():.1%}")
+print("  runs outside 0.6%: " + "; ".join(f"{l} ({c:.1%})" for l, c in zip(lab, chk) if c > .006))
 for n in ("regularity_core_cl.csv", "regularity_paper_cl.csv"):
     for r in read(R(n)):
         print(f"  {n} {r['planner']:14s} s={r['seed']}: r_c {float(r['r_c']):.0f} m  Gamma {float(r['Gamma'])*3600:.0f}/h  tau_hop {float(r['tau_hop']):.1f} s  E_reg {float(r['E_reg']):.3f}  E_alloc {float(r['E_alloc']):.3f}  J {float(r['J']):.3e}")
@@ -408,6 +412,23 @@ for name in ("depot_q.csv", "depot_e.csv"):
     print(f"  {name}: ex-ante changes {dict(ch)}")
 for name in ("depot_q_fill.csv", "depot_e_fill.csv"):
     print(f"  {name}: {len({(r['layout'], r['M'], r['Emax'], r['seed']) for r in read(R(name))})} annealer sweeps extended")
+
+hdr("Sec. VII-F depot: C4 vs cluster patrol own optima, censoring (argmin at an end of the sweep) and the comparison without censored deployments")
+for tag in ("q", "e"):
+    own = {}
+    for pl, name in (("cyc", f"depot_{tag}_cyc.csv"), ("cluster_patrol", f"depot_{tag}_cluster_patrol.csv")):
+        d = defaultdict(dict)
+        for r in read(A(name)):
+            if r.get("planner") == pl: d[(r["layout"], int(float(r["M"])), float(r["Emax"]), int(float(r["seed"])))][int(float(r["K"]))] = float(r["J"])
+        own[pl] = {k: (min(b, key=b.get), b[min(b, key=b.get)], (min(b, key=b.get) == max(b)) or (min(b, key=b.get) == min(b) and min(b) > 1)) for k, b in d.items()}
+    ks = [k for k in own["cyc"] if k in own["cluster_patrol"]]
+    cen = [k for k in ks if own["cyc"][k][2] or own["cluster_patrol"][k][2]]
+    print(f"  depot_{tag}: {len(ks)} paired deployments; censored own optima: C4 {sum(own['cyc'][k][2] for k in ks)}, cluster patrol "
+          f"{sum(own['cluster_patrol'][k][2] for k in ks)} (" + ", ".join(f"{k[0]} M={k[1]} {k[2]/1e6:.1f} MJ s={k[3]}" for k in cen) + ")")
+    for fam in sorted({k[0] for k in ks}):
+        for lab, sel in (("all", [k for k in ks if k[0] == fam]), ("uncensored", [k for k in ks if k[0] == fam and k not in cen])):
+            v = np.array([own["cyc"][k][1] / own["cluster_patrol"][k][1] - 1 for k in sel])
+            print(f"    {fam:5s} {lab:10s}: median {np.median(v):+.1%}, C4 lower {int((v < 0).sum())}/{len(v)}")
 
 hdr("Sec. VII-I: mean K_commute at M=100, 1.5 MJ (smallest-K inputs)")
 for c in [("paper", 100, 1.5e6), ("core", 100, 1.5e6)]:

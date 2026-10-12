@@ -227,7 +227,8 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
   K=6 s=2: J_age ratio patrol/SA 0.909; rate factor 0.944, alloc 1.017, reg 0.955; product 0.917  (tau_hop 29.8 vs 35.2 s)
   K=8 s=1: J_age ratio patrol/SA 0.930; rate factor 0.960, alloc 1.028, reg 0.952; product 0.939  (tau_hop 22.8 vs 26.2 s)
   K=8 s=2: J_age ratio patrol/SA 1.022; rate factor 1.031, alloc 1.047, reg 0.956; product 1.032  (tau_hop 22.6 vs 25.6 s)
-  J2 vs J_age over 20 decomposed runs: within 0.5% in 17, max deviation 47.4%
+  J2 vs J_age over 20 decomposed runs: within 0.5% in 17, within 0.6% in 18, max deviation 47.4%
+  runs outside 0.6%: sa core K=6 s=13 (40.9%); cluster_patrol core K=6 s=13 (47.4%)
   regularity_core_cl.csv sa             s=13: r_c 547 m  Gamma 712/h  tau_hop 26.1 s  E_reg 1.189  E_alloc 1.045  J 2.696e+05
   regularity_core_cl.csv sa             s=14: r_c 690 m  Gamma 734/h  tau_hop 24.5 s  E_reg 1.201  E_alloc 1.059  J 1.701e+05
   regularity_core_cl.csv cluster_patrol s=13: r_c 738 m  Gamma 812/h  tau_hop 16.6 s  E_reg 1.000  E_alloc 1.072  J 2.313e+05
@@ -247,6 +248,20 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
   depot_e.csv: ex-ante changes {}
   depot_q_fill.csv: 103 annealer sweeps extended
   depot_e_fill.csv: 19 annealer sweeps extended
+
+=== Sec. VII-F depot: C4 vs cluster patrol own optima, censoring (argmin at an end of the sweep) and the comparison without censored deployments
+  depot_q: 216 paired deployments; censored own optima: C4 3, cluster patrol 2 (ring M=200 3.0 MJ s=2, ring M=200 3.0 MJ s=4, ring M=200 3.0 MJ s=9, ring M=200 3.0 MJ s=12, core M=200 1.5 MJ s=7)
+    core  all       : median -13.9%, C4 lower 72/72
+    core  uncensored: median -13.9%, C4 lower 71/71
+    paper all       : median -22.6%, C4 lower 72/72
+    paper uncensored: median -22.6%, C4 lower 72/72
+    ring  all       : median -7.6%, C4 lower 65/72
+    ring  uncensored: median -7.8%, C4 lower 61/68
+  depot_e: 48 paired deployments; censored own optima: C4 0, cluster patrol 0 ()
+    paper all       : median -23.4%, C4 lower 24/24
+    paper uncensored: median -23.4%, C4 lower 24/24
+    ring  all       : median -2.4%, C4 lower 20/24
+    ring  uncensored: median -2.4%, C4 lower 20/24
 
 === Sec. VII-I: mean K_commute at M=100, 1.5 MJ (smallest-K inputs)
   ('paper', 100, 1500000.0): 15.5
