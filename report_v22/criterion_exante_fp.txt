@@ -23,4 +23,6 @@
   regret >20%: 30 instances, passed (missed)  3
   regret >30%: 23 instances, passed (missed)  0; max regret among passes 26.4%
 
+hover-free budget (review M1): verdict changes in 6 of 168 reach-bound instances, toward passing 1, toward flagging 5, undefined 0; regret of the changed instances 0.0%, 0.0%, 0.0%, 0.0%, 0.0%, 0.0%
+
 Result-1 interval [K0, K_R] contains the measured argmin in 146/168 reach-bound instances

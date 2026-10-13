@@ -1,0 +1,10 @@
+(1) conservation of hover time: implied hover rate Phi (Pbar - Pf)/(Ph - Pf) over sum lambda_i / R_u,
+    stranding-free runs with < 5% empty sorties, L = 12.6 km; percentiles 10/50/90
+    paper n= 479  0.96 / 1.00 / 1.03
+    ring  n= 406  0.94 / 0.99 / 1.03
+    core  n= 330  0.95 / 1.01 / 1.03
+
+(2)-(3) K_H against K_commute (Pbar fixed), per instance; rule ell = min(floor K_reach, round K_commute)
+  instances 272: K_H / K_commute - 1 median +0.4% (range +0.0% .. +2.2%)
+  dwell shift (Ph - Pf) H / (2 Pf) = 0.021 .. 0.167 UAV
+  ell changes in 0 of 272; exact agreement 0.56 -> 0.56; within one 0.80 -> 0.80

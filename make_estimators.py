@@ -6,11 +6,12 @@ where the three summaries and the rounded mean per-instance argmin are not all e
 that may differ from whatever definition produced the draft's earlier '8 of 24'."""
 import sys, csv, math, numpy as np
 from collections import defaultdict
+from kref import kref
 cells = defaultdict(lambda: defaultdict(dict))
 for r in csv.DictReader(open(sys.argv[1])):
     cells[(r["layout"], int(r["M"]), float(r["Emax"]), float(r["L"]))][int(r["seed"])][int(r["K"])] = r
 def rule(byK):
-    r0 = byK[min(byK)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
+    r0 = byK[kref(byK)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
     law = min(kr, kc); return int(law) if law == kr else int(round(law))
 st = {m: [[], []] for m in ("per-instance", "mean J", "median J", "mean rel. regret")}; dis = 0
 for key, inst in cells.items():

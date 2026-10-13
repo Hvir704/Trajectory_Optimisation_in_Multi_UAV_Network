@@ -6,12 +6,13 @@ predictor's agreement with each cap substituted."""
 import sys, csv, math, numpy as np
 from collections import defaultdict
 from dyn_env import DynParams
+from kref import kref
 p = DynParams(); inst = defaultdict(dict)
 for r in csv.DictReader(open(sys.argv[1])):
     inst[(r["layout"], int(r["M"]), float(r["Emax"]), float(r["L"]), int(r["seed"]))][int(r["K"])] = r
 ratio = []; band = 0; res = defaultdict(lambda: defaultdict(list))
 for k, byK in inst.items():
-    r0 = byK[min(byK)]; U = (1 - p.rho) * k[2]
+    r0 = byK[kref(byK)]; U = (1 - p.rho) * k[2]
     Kr = float(r0["K_reach_i"]); Kc = float(r0["K_commute_i"]); Kf = p.v * U / (2 * p.Pf * float(r0["r_max"]))
     ratio.append(Kf / Kr); band += math.floor(Kf) != math.floor(Kr)
     am = min(byK, key=lambda K: float(byK[K]["J"]))

@@ -11,6 +11,7 @@ usage: python scale_lemma.py GRID.csv [--only apriori_regret.csv]   (--only rest
 """
 import sys, csv, math, collections, numpy as np
 from dyn_env import DynParams, SensorField
+from kref import kref
 
 args = sys.argv[1:]
 only = None
@@ -31,7 +32,7 @@ for k, byK in sorted(d.items()):
         continue
     lay, M, E, seed = k
     p = DynParams(M=M, Emax=E, layout=lay); U = (1 - p.rho) * E; H = p.T_burnin + (p.T_horizon - p.T_burnin) / 2
-    Ks = sorted(byK); r0 = byK[Ks[0]]
+    Ks = sorted(byK); r0 = byK[kref(byK)]
     kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
     if min(kr, kc) != kr:
         continue                                         # commute-bound: criterion does not apply

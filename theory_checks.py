@@ -12,6 +12,7 @@ usage: python theory_checks.py SA_GRID.csv [--tour RR_TOUR.csv]
 """
 import sys, csv, collections, numpy as np
 from dyn_env import DynParams, SensorField
+from kref import kref
 
 args = sys.argv[1:]
 grid = args[0]
@@ -85,7 +86,7 @@ for cell in [("ring", 50, 3e6), ("ring", 100, 3e6), ("ring", 200, 3e6), ("ring",
     p = DynParams(M=cell[1], Emax=cell[2], layout=cell[0]); U = (1 - p.rho) * cell[2]; out = []
     for s, b in D[cell].items():
         F = SensorField(DynParams(M=cell[1], Emax=cell[2], layout=cell[0]), np.random.default_rng(s)); H = F.lam_bits.sum() / p.R
-        r0 = b[min(b)]; tc = 2 * float(r0["r_c"]) / p.v; Pb = float(r0["P_bar"])
+        r0 = b[kref(b)]; tc = 2 * float(r0["r_c"]) / p.v; Pb = float(r0["P_bar"])
         Phi = lambda K: K * (U - K * p.Pf * tc) / (U + K * tc * (Pb - p.Pf))
         G = {}
         for K, r in b.items():
@@ -106,7 +107,7 @@ for cell in [("ring", 100, 3e6), ("ring", 50, 3e6), ("ring", 200, 3e6)]:
         if 4 not in b: continue
         r4 = b[4]; tc4 = 2 * float(r4["r_c"]) / p.v
         tau4 = (float(r4["T_s_over_t_c"]) * p.t_c - tc4) / float(r4["mean_n"]); Pb4 = float(r4["P_bar"])
-        tc = 2 * float(b[min(b)]["r_c"]) / p.v            # the rule's t_c (smallest-K row)
+        tc = 2 * float(b[kref(b)]["r_c"]) / p.v            # the rule's t_c (smallest-K row)
         for K in (4, 6, 8, 10):
             if K in b:
                 out[K][0].append((U / K - p.Pf * tc) / (Pb4 * tau4)); out[K][1].append(float(b[K]["mean_n"]))

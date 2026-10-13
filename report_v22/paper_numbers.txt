@@ -8,10 +8,10 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
   ('core', 100, 1500000.0): l values [4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6]  l=4 in 6 of 12  mean 4.58  floor K_r values [4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6]
 
 === model: empty sorties, P_bar range, commute time t_c
-  paper: empty-sortie share max over all runs 8.7%, at the optimum median 0.0% max 1.6%
-  core: empty-sortie share max over all runs 18.3%, at the optimum median 0.0% max 9.3%
-  ring: empty-sortie share max over all runs 100.0%, at the optimum median 0.0% max 0.8%
-  P_bar over all SA runs that serve anything: 301-400 W;  realised commute time 2 r_c / v median 2.0 min; nominal t_c 8.0 min
+  paper: empty-sortie share max over runs that serve at least one sensor 8.7%, at the optimum median 0.0% max 1.6%
+  core: empty-sortie share max over runs that serve at least one sensor 18.3%, at the optimum median 0.0% max 9.3%
+  ring: empty-sortie share max over runs that serve at least one sensor 10.3%, at the optimum median 0.0% max 0.8%
+  P_bar over all SA runs that serve anything: 301-400 W;  realised commute time 2 r_c / v median 2.1 min; nominal t_c 8.0 min
 
 === Lemma 1: in-reach sensors unserved at floor(K_r), clustered M=400 1.5 MJ
   seed 1: K0=4 n_never at K0 = 3
@@ -55,18 +55,18 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
   ('core', 200, 1500000.0): 16.6 s (K=2) -> 16.3 s (K=5)  change -2%
   ('core', 200, 3000000.0): 21.2 s (K=5) -> 21.0 s (K=12)  change -1%
   ('paper', 50, 1500000.0): 69.9 s (K=2) -> 63.2 s (K=5)  change -10%
-  ('paper', 50, 3000000.0): 90.1 s (K=4) -> 65.7 s (K=11)  change -27%
+  ('paper', 50, 3000000.0): 90.2 s (K=4) -> 65.7 s (K=11)  change -27%
   ('paper', 100, 1500000.0): 51.5 s (K=2) -> 46.2 s (K=5)  change -10%
   ('paper', 100, 3000000.0): 58.6 s (K=4) -> 51.4 s (K=10)  change -12%
   ('paper', 100, 6000000.0): 79.4 s (K=9) -> 62.2 s (K=21)  change -22%
   ('paper', 200, 1500000.0): 38.6 s (K=2) -> 37.8 s (K=4)  change -2%
   ('paper', 200, 3000000.0): 40.3 s (K=4) -> 39.4 s (K=9)  change -2%
-  ('ring', 50, 1500000.0): 50.7 s (K=2) -> 23.8 s (K=5)  change -53%
-  ('ring', 50, 3000000.0): 70.4 s (K=4) -> 24.6 s (K=10)  change -65%
-  ('ring', 100, 1500000.0): 31.8 s (K=2) -> 25.0 s (K=4)  change -21%
-  ('ring', 100, 3000000.0): 42.5 s (K=4) -> 18.0 s (K=10)  change -58%
-  ('ring', 200, 1500000.0): 22.2 s (K=2) -> 17.4 s (K=4)  change -22%
-  ('ring', 200, 3000000.0): 24.0 s (K=4) -> 16.1 s (K=9)  change -33%
+  ('ring', 50, 1500000.0): 54.3 s (K=1) -> 23.8 s (K=5)  change -56%
+  ('ring', 50, 3000000.0): 85.9 s (K=2) -> 24.6 s (K=10)  change -71%
+  ('ring', 100, 1500000.0): 33.9 s (K=1) -> 25.0 s (K=4)  change -26%
+  ('ring', 100, 3000000.0): 48.7 s (K=2) -> 18.0 s (K=10)  change -63%
+  ('ring', 200, 1500000.0): 26.2 s (K=1) -> 17.4 s (K=4)  change -34%
+  ('ring', 200, 3000000.0): 27.0 s (K=2) -> 16.1 s (K=9)  change -40%
 
 === sorties at the optimum: duration and stops
   sortie duration at the optimum: 3.5-21.6 min (median 14.4)
@@ -76,7 +76,7 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
   clustered 1.5 MJ M=400: stops per sortie at the optimum 15.7
 
 === ring 3 MJ M=100: P_bar by K (cell mean, stranding-free)
-  K4:309  K5:309  K6:309  K7:309  K8:310  K9:312  K10:319
+  K2:315  K3:311  K4:309  K5:309  K6:309  K7:309  K8:310  K9:312  K10:319
 
 === Fig. 2: cell-mean J(K) and its argmin (M=100, 1.5 MJ)
   paper: argmin of cell mean K=4; K2:18.37 K3:10.59 K4:7.65 K5:8.64 K6:16.07 K7:34.64 K8:62.50 K9:85.27 K10:108.04
@@ -145,9 +145,9 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
 
 === Sec. VII-J ex-ante: P_bar-hat accuracy, r_max/r_c-hat
   P_bar-hat: corr 0.976, mean |error| 1.4 W, measured range 303-339 W, best constant 7.4 W
-  paper: r_c-hat/r_c median 0.61 [0.39,0.76], with measured n 0.79
-  ring: r_c-hat/r_c median 0.95 [0.94,0.96], with measured n 0.95
-  core: r_c-hat/r_c median 0.44 [0.26,0.62], with measured n 0.49
+  paper (n=128, field-size cells included; exante.txt reports the primary grid only): r_c-hat/r_c median 0.61 [0.39,0.76], with measured n 0.79
+  ring (n=72, field-size cells included; exante.txt reports the primary grid only): r_c-hat/r_c median 0.95 [0.94,0.96], with measured n 0.95
+  core (n=72, field-size cells included; exante.txt reports the primary grid only): r_c-hat/r_c median 0.44 [0.26,0.62], with measured n 0.49
   smallest ex-ante r_max/r_c over reach-limited cells 8.1; core cells: 100/1.5:25.2 100/3.0:25.2 200/1.5:25.3 200/3.0:25.4 50/1.5:22.3 50/3.0:22.1
   core per-instance range: 14.2-30.0
 
@@ -171,7 +171,7 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
   cluster_patrol core: median -29.1% (n=72)
 
 === Sec. VII-K: Gao et al. misses (|argmin - l| > 1)
-  misses 51; undershoots at 3 MJ paper/ring 39 (by exactly two: 27); core overshoots 10; other 2
+  misses 51; undershoots at 3 MJ paper/ring 39 (by exactly two: 25); core overshoots 10; other 2
   of the 3 MJ undershoots, where the test passes or does not apply: 33 (ring: 18)
 
 === Liu et al.: C4 vs Liu on the 36 previously seen deployments (M=50, 1.5 MJ) and the rest
@@ -182,7 +182,7 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
   cyc             all ring 97% (n=72); 3 MJ cells 94%
   cluster_patrol  all ring 92% (n=72); 3 MJ cells 83%
   gzz_rev         all ring 83% (n=72); 3 MJ cells 72%
-  asghar_rev      all ring 71% (n=72); 3 MJ cells 89%
+  asghar_rev      all ring 68% (n=72); 3 MJ cells 89%
   liu_mpga        all ring 92% (n=72); 3 MJ cells 83%
   rr_tour         all ring 100% (n=72); 3 MJ cells 100%
 
@@ -191,7 +191,7 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
   cyc             M=50: 7.75  M=100: 6.92  M=200: 5.08
   cluster_patrol  M=50: 7.08  M=100: 6.25  M=200: 5.00
   asghar_rev      M=50: 6.92  M=100: 6.83  M=200: 6.58
-  gzz_rev         M=50: 4.42  M=100: 4.83  M=200: 5.08
+  gzz_rev         M=50: 4.42  M=100: 4.67  M=200: 5.08
   liu_mpga        M=50: 7.67  M=100: 6.50  M=200: 5.17
   rr_tour         M=50: 8.00  M=100: 7.17  M=200: 5.92
   rr_sweep        M=50: 8.00  M=100: 7.00  M=200: 5.67
@@ -203,7 +203,7 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
   cyc             3 MJ ring: calibrated within one 21/36, closed form 27/36  per cell calibrated: M=50:67% M=100:100% M=200:8%  closed form: M=50:25% M=100:100% M=200:100%
   cluster_patrol  all ring : calibrated within one 65/72, closed form 65/72
   cluster_patrol  3 MJ ring: calibrated within one 30/36, closed form 29/36  per cell calibrated: M=50:83% M=100:92% M=200:75%  closed form: M=50:75% M=100:100% M=200:67%
-  asghar_rev      all ring : calibrated within one 46/71, closed form 70/72
+  asghar_rev      all ring : calibrated within one 43/71, closed form 60/72
   asghar_rev      3 MJ ring: calibrated within one 11/36, closed form 34/36  per cell calibrated: M=50:25% M=100:50% M=200:17%  closed form: M=50:83% M=100:100% M=200:100%
   gzz_rev         all ring : calibrated within one 62/72, closed form 54/72
   gzz_rev         3 MJ ring: calibrated within one 26/36, closed form 18/36  per cell calibrated: M=50:75% M=100:75% M=200:67%  closed form: M=50:33% M=100:42% M=200:75%
@@ -238,6 +238,28 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
   regularity_paper_cl.csv cluster_patrol s=13: r_c 4674 m  Gamma 147/h  tau_hop 42.1 s  E_reg 1.005  E_alloc 1.143  J 1.217e+06
   regularity_paper_cl.csv cluster_patrol s=14: r_c 4013 m  Gamma 166/h  tau_hop 43.2 s  E_reg 1.003  E_alloc 1.068  J 1.057e+06
 
+=== Diagnostics quoted in the text without a table of their own (sources added in v2.2.1)
+  Table VIII r_max/r_c (smallest-K row, mean): L=8 km: 5.5  L=10 km: 6.1  L=12.6 km: 6.3  L=16 km: 6.8  L=20 km: 6.3
+  ring M=100 1.5 MJ: K_reach mean 4.85 (range 4.80-5.02)
+  quarter-point depot, ring M=100: nearest sensor 2.3 km, farthest 12.2 km (means over 12 seeds); farthest/nearest 4.7-6.0
+  grounding test, gray-set sensors at floor(K_flight):
+    core M=50 1.5 MJ s=3 K=6: b*/B 0.35, b*/lambda 0.9 h
+    core M=50 1.5 MJ s=6 K=5: b*/B 0.99, b*/lambda 2.6 h
+    core M=50 3.0 MJ s=12 K=11: b*/B 0.88, b*/lambda 1.7 h
+    paper M=100 3.0 MJ s=12 K=9: b*/B 0.65, b*/lambda 2.2 h
+    paper M=50 3.0 MJ s=3 K=11: b*/B 0.61, b*/lambda 1.3 h, b*/B 0.54, b*/lambda 1.3 h
+    paper M=50 3.0 MJ s=6 K=11: b*/B 0.97, b*/lambda 4.1 h
+  uncaught episode, hotspot sensor: (exp(nu tau)-1)/nu = 124.8 min
+  uncaught episode, cold sensor: (exp(nu tau)-1)/nu = 74.2 min
+  square-root allocation vs equal frequencies, w ~ U(1,10), equal costs: E[w]/E[sqrt w]^2 - 1 = 6.9%
+  CP-SAT d15 -> d45: J identical (exact floating-point equality) in 4 of 6 runs; argmin unchanged in 3 of 3 instances
+  ('ring', 50, 1500000.0): argmax cell-mean visit rate 3, argmin cell-mean J 3
+  ('ring', 50, 3000000.0): argmax cell-mean visit rate 8, argmin cell-mean J 8
+  ('ring', 100, 1500000.0): argmax cell-mean visit rate 3, argmin cell-mean J 3
+  ('ring', 100, 3000000.0): argmax cell-mean visit rate 8, argmin cell-mean J 8
+  ('ring', 200, 1500000.0): argmax cell-mean visit rate 3, argmin cell-mean J 3
+  ('ring', 200, 3000000.0): argmax cell-mean visit rate 7, argmin cell-mean J 7
+
 === Sec. V: sufficient-type criterion variants on the zero-regret clustered instances (criterion_variants.py forms)
   corrected_KR: zero-regret clustered 72, flagged 63 (88%)
   KG: zero-regret clustered 72, flagged 68 (94%)
@@ -246,17 +268,17 @@ C:\harshvir-aoi\Trajectory_Optimisation_in_Multi_UAV_Network\venv\Lib\site-packa
 === Sec. VII-F depot: ex-ante rule changes per family (analyze_depot.py) and sweeps extended by the fills
   depot_q.csv: ex-ante changes {('core', 'toward the optimum'): 3}
   depot_e.csv: ex-ante changes {}
-  depot_q_fill.csv: 103 annealer sweeps extended
+  depot_q_fill.csv: 108 annealer sweeps extended
   depot_e_fill.csv: 19 annealer sweeps extended
 
 === Sec. VII-F depot: C4 vs cluster patrol own optima, censoring (argmin at an end of the sweep) and the comparison without censored deployments
-  depot_q: 216 paired deployments; censored own optima: C4 3, cluster patrol 2 (ring M=200 3.0 MJ s=2, ring M=200 3.0 MJ s=4, ring M=200 3.0 MJ s=9, ring M=200 3.0 MJ s=12, core M=200 1.5 MJ s=7)
+  depot_q: 216 paired deployments; censored own optima: C4 0, cluster patrol 0 ()
     core  all       : median -13.9%, C4 lower 72/72
-    core  uncensored: median -13.9%, C4 lower 71/71
+    core  uncensored: median -13.9%, C4 lower 72/72
     paper all       : median -22.6%, C4 lower 72/72
     paper uncensored: median -22.6%, C4 lower 72/72
     ring  all       : median -7.6%, C4 lower 65/72
-    ring  uncensored: median -7.8%, C4 lower 61/68
+    ring  uncensored: median -7.6%, C4 lower 65/72
   depot_e: 48 paired deployments; censored own optima: C4 0, cluster patrol 0 ()
     paper all       : median -23.4%, C4 lower 24/24
     paper uncensored: median -23.4%, C4 lower 24/24

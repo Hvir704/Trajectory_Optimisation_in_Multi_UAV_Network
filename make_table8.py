@@ -8,13 +8,14 @@ the convention that reproduces the draft's unchanged rows exactly.
 """
 import sys, csv, math, numpy as np
 from collections import defaultdict
+from kref import kref
 d = defaultdict(dict)
 for r in csv.DictReader(open(sys.argv[1])):
     if float(r["L"]) == 12600: d[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]))][int(r["K"])] = r
 recs = []
 for r in csv.DictReader(open(sys.argv[2])):
     k = (r["lay"], int(r["M"]), float(r["E"]), int(r["seed"])); byK = d[k]; Ks = sorted(byK)
-    J = {K: float(byK[K]["J"]) for K in Ks}; r0 = byK[Ks[0]]
+    J = {K: float(byK[K]["J"]) for K in Ks}; r0 = byK[kref(byK)]
     kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"]); law = min(kr, kc)
     li = int(law) if law == kr else int(round(law))
     recs.append((k[0], r["passes"] == "True", J[li] / min(J.values()) - 1))

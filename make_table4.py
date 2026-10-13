@@ -10,6 +10,7 @@ numbers the "Overall", "Two localised failure families" and "domain of validity"
 import sys, csv, math
 from collections import defaultdict
 import numpy as np
+from kref import kref
 
 rows = [r for r in csv.DictReader(open(sys.argv[1]))]
 cells = defaultdict(lambda: defaultdict(dict))
@@ -41,7 +42,7 @@ for key in keys:
     A = []; Lw = []; dplus = []; dminus = []; ratio = []; bnd = []; inrng = []
     for seed, byK in sorted(inst.items()):
         Ks = sorted(byK); J = {K: float(byK[K]["J"]) for K in Ks}
-        am = min(Ks, key=J.get); r0 = byK[Ks[0]]
+        am = min(Ks, key=J.get); r0 = byK[kref(byK)]
         kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
         law = min(kr, kc); li = int(law) if law == kr else int(round(law))
         A.append(am); Lw.append(li); ratio.append(float(r0["rmax_over_rc"])); bnd.append(float(r0["regime_bnd"]))

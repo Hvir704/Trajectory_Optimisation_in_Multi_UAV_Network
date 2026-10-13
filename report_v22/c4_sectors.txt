@@ -2,8 +2,8 @@ cyc_sector0 vs cluster_patrol: 216 paired deployments (0 unpaired dropped)
 family      n  median J_b/J_a-1               95% CI   b wins  cens a/b
 core       72           +10.75% [+6.68%, +13.31%]   18/72     0/0   
 paper      72            -7.92% [-12.02%, -4.06%]   53/72     0/0   
-ring       72            +2.75% [+0.17%, +4.27%]   27/72     9/3   
-all       216            +1.81% [-0.39%, +3.96%]   98/216    9/3   
+ring       72            +2.75% [+0.17%, +4.27%]   27/72     0/0   
+all       216            +1.81% [-0.39%, +3.96%]   98/216    0/0   
 
 per deployment:
 layout   M    Emax  seed  K_a       J_a  K_b       J_b       rel  censored_a  censored_b
@@ -151,17 +151,17 @@ layout   M    Emax  seed  K_a       J_a  K_b       J_b       rel  censored_a  ce
  paper 200   3e+06    10    8 1.331e+06    8 1.325e+06 -0.004546       False       False
  paper 200   3e+06    11    8 1.215e+06    7 1.235e+06   0.01622       False       False
  paper 200   3e+06    12    8 1.782e+06    7 1.454e+06   -0.1838       False       False
-  ring  50 1.5e+06     1    2 2.637e+05    2 2.522e+05  -0.04349        True        True
+  ring  50 1.5e+06     1    2 2.637e+05    2 2.522e+05  -0.04349       False       False
   ring  50 1.5e+06     2    3 2.231e+05    3 2.136e+05  -0.04239       False       False
   ring  50 1.5e+06     3    3  3.31e+05    3 3.454e+05   0.04359       False       False
-  ring  50 1.5e+06     4    2 3.287e+05    3 3.492e+05   0.06233        True       False
+  ring  50 1.5e+06     4    2 3.287e+05    3 3.492e+05   0.06233       False       False
   ring  50 1.5e+06     5    3 2.493e+05    3 3.139e+05    0.2589       False       False
   ring  50 1.5e+06     6    3 2.389e+05    4 2.664e+05    0.1149       False       False
   ring  50 1.5e+06     7    4 3.322e+05    4 3.604e+05   0.08481       False       False
-  ring  50 1.5e+06     8    4 2.841e+05    2 2.859e+05  0.006424       False        True
-  ring  50 1.5e+06     9    2  2.71e+05    2 2.888e+05   0.06582        True        True
-  ring  50 1.5e+06    10    2 2.988e+05    4 3.264e+05   0.09221        True       False
-  ring  50 1.5e+06    11    2 2.925e+05    3 3.157e+05   0.07938        True       False
+  ring  50 1.5e+06     8    4 2.841e+05    2 2.859e+05  0.006424       False       False
+  ring  50 1.5e+06     9    2  2.71e+05    2 2.888e+05   0.06582       False       False
+  ring  50 1.5e+06    10    2 2.988e+05    4 3.264e+05   0.09221       False       False
+  ring  50 1.5e+06    11    2 2.925e+05    3 3.157e+05   0.07938       False       False
   ring  50 1.5e+06    12    3  3.32e+05    4 3.145e+05  -0.05272       False       False
   ring  50   3e+06     1    7 1.241e+05    7  1.34e+05   0.07928       False       False
   ring  50   3e+06     2    8 1.154e+05    6 1.328e+05      0.15       False       False
@@ -212,8 +212,8 @@ layout   M    Emax  seed  K_a       J_a  K_b       J_b       rel  censored_a  ce
   ring 200 1.5e+06    11    3 2.928e+06    3 2.999e+06    0.0241       False       False
   ring 200 1.5e+06    12    3 3.521e+06    3 2.897e+06   -0.1774       False       False
   ring 200   3e+06     1    5 9.028e+05    6 1.023e+06    0.1336       False       False
-  ring 200   3e+06     2    4 1.068e+06    6 9.645e+05  -0.09669        True       False
-  ring 200   3e+06     3    4  1.06e+06    5 1.059e+06 -0.001186        True       False
+  ring 200   3e+06     2    4 1.068e+06    6 9.645e+05  -0.09669       False       False
+  ring 200   3e+06     3    4  1.06e+06    5 1.059e+06 -0.001186       False       False
   ring 200   3e+06     4    5 8.881e+05    5 1.004e+06    0.1311       False       False
   ring 200   3e+06     5    6 9.748e+05    7 1.057e+06   0.08406       False       False
   ring 200   3e+06     6    5  1.12e+06    7 1.155e+06   0.03162       False       False
@@ -221,5 +221,5 @@ layout   M    Emax  seed  K_a       J_a  K_b       J_b       rel  censored_a  ce
   ring 200   3e+06     8    6 9.469e+05    5  8.49e+05   -0.1034       False       False
   ring 200   3e+06     9    5 9.537e+05    5 8.518e+05   -0.1068       False       False
   ring 200   3e+06    10    6 1.008e+06    5 9.744e+05  -0.03358       False       False
-  ring 200   3e+06    11    4 9.897e+05    5 9.762e+05  -0.01371        True       False
-  ring 200   3e+06    12    4 1.018e+06    5 8.836e+05   -0.1324        True       False
+  ring 200   3e+06    11    4 9.897e+05    5 9.762e+05  -0.01371       False       False
+  ring 200   3e+06    12    4 1.018e+06    5 8.836e+05   -0.1324       False       False

@@ -39,3 +39,23 @@
    The paper contradicts itself; Table IV's values and its agreement stats for these cells are censored.
 5. Paper vs code: code excludes every node pending in another drone's route; Sec. III-D and
    Algorithm 2 line 4 say a node is kept if this drone would arrive first.
+
+## Liu et al. (liu_mpga.py): the missing README (review of 2026-10-12)
+`liu_mpga.py` cites a `README.md` for the reasons behind its changes and for the values it fills in. That file was
+never added to this repository. The file itself stays unchanged, because `check_liu_code.py` fingerprints it. Its
+contents are as follows.
+
+### Reasons for the changes
+These are given in the paper, Sec. VII-K:
+- The interaction point, data sharing, users and collision avoidance have no counterpart in this model.
+- The fitness is this paper's objective (the planner-side surrogate shared with C4), so that the method is compared
+  on the quantity being optimised.
+- Energy is enforced by cutting sorties at launch, as for C4 and the cluster patrol, instead of setting the fitness
+  to 0 or reducing the task.
+
+### Values the paper does not give
+All were fixed before any evaluation run:
+- `CFG`: `p_local_best = p_global_best = 0.1`, `psi = 1e-9`, `bp_shift = (1, 3)`.
+- `improved_kmeans`: the misprinted D_r is read as the plain distance sum. After the seeding, Lloyd iterations
+  with the depot-pulled centre run until the labels stop changing.
+- The slide mutation and the form of the balancing breakpoint update are documented at their functions.

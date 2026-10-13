@@ -1,6 +1,22 @@
-m40_sa.csv: 0 of 24 instances have their optimum at the largest K swept; 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
-m40_rr.csv: 0 of 24 instances have their optimum at the largest K swept; 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
-m40_cluster.csv: 0 of 24 instances have their optimum at the largest K swept; 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
-m40_cp_final.csv: 0 of 24 instances have their optimum at the largest K swept; 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
-hetero.csv: 0 of 24 instances have their optimum at the largest K swept; 24 do not meet the 1.5x rule (three largest K > 1.5 x min)
-mass.csv: 0 of 72 instances have their optimum at the largest K swept; 59 do not meet the 1.5x rule (three largest K > 1.5 x min)
+m40_sa.csv: 0 of 24 instances have their optimum at the largest K swept; 0 at the smallest K swept (> 1); 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
+m40_rr.csv: 0 of 24 instances have their optimum at the largest K swept; 0 at the smallest K swept (> 1); 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
+m40_cluster.csv: 0 of 24 instances have their optimum at the largest K swept; 0 at the smallest K swept (> 1); 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
+m40_cp_final.csv: 0 of 24 instances have their optimum at the largest K swept; 0 at the smallest K swept (> 1); 13 do not meet the 1.5x rule (three largest K > 1.5 x min)
+hetero.csv: 0 of 24 instances have their optimum at the largest K swept; 0 at the smallest K swept (> 1); 24 do not meet the 1.5x rule (three largest K > 1.5 x min)
+mass.csv: 0 of 72 instances have their optimum at the largest K swept; 0 at the smallest K swept (> 1); 59 do not meet the 1.5x rule (three largest K > 1.5 x min)
+
+own optima moved by the fleet sizes below each instance's original sweep (K < K_ref; v2.2.1 downward fill):
+  sa_rerun.csv: 0 of 216
+  eval_all_v2.csv/cyc: 0 of 216
+  eval_all_v2.csv/cluster_patrol: 0 of 216
+  eval_all_v2.csv/cyc_sector0: 0 of 216
+  gzz_eval.csv: 2 of 216: J -14.0%, -4.8%; layouts ['ring']
+  asghar_eval.csv: 10 of 216: J -8.2%, -2.9%, -1.1%, -2.4%, -12.0%, -4.2%, -3.8%, -20.8%, -0.8%, -9.2%; layouts ['ring']
+  liu_all.csv: 0 of 216
+  rr_tour_win.csv: 0 of 216
+  depot_q.csv: 0 of 324
+  depot_q_cyc.csv: 0 of 324
+  depot_q_cluster_patrol.csv: 0 of 325
+  depot_e.csv: 0 of 67
+  depot_e_cyc.csv: 0 of 67
+  depot_e_cluster_patrol.csv: 0 of 67

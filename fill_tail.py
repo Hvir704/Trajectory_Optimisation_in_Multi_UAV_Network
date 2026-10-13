@@ -10,7 +10,9 @@ K=10-11 lower).
 Rule applied here, per deployment, until nothing changes:
     extend by +3 K whenever  J(K_last) < J(K_last - 1)   (sweep ends descending)
                          or  argmin_K J == K_last        (optimum at the top edge)
-so every finished sweep ends on a RISING slope with its optimum interior. With --union, K values that
+so every finished sweep ends on a RISING slope with its optimum interior. Lower edge (v2.2.1): when the optimum
+sits at the smallest swept K and that K > 1, the two next smaller K are added (iterated, so the optimum ends
+interior or at K = 1, the physical floor). With --union, K values that
 another planner has for the same deployment are also added (own optima on a common grid). A hard cap
 (--kmax, default 60) and non-finite J stop an extension.
 
@@ -79,12 +81,15 @@ def needed(d, union, kmax, rule15=False):
         want = set()
         if math.isfinite(b[last]) and last - 1 in b and b[last] < b[last - 1]: want |= {last + 1, last + 2, last + 3}
         if am == last: want |= {last + 1, last + 2, last + 3}
+        # lower edge (added in v2.2.1): an optimum at the smallest swept K > 1 is censored from below too
+        first = Ks[0]
+        if am == first and first > 1: want |= {K for K in (first - 1, first - 2) if K >= 1}
         # registered C4 rule: the three largest K values must each exceed 1.5 x the minimum J
         if rule15 and not all(b[K] > 1.5 * fin[am] for K in Ks[-3:] if math.isfinite(b[K])):
             want |= {last + 1, last + 2, last + 3}
         if union and key in union: want |= {K for K in union[key] if K not in b}
         for K in sorted(want):
-            if K <= kmax and K not in b: jobs.append((key, K))
+            if 1 <= K <= kmax and K not in b: jobs.append((key, K))
     return jobs
 
 

@@ -8,11 +8,12 @@ os.environ["DEPOT_FRAC"] = f"{rows[0]['depot_x']},{rows[0]['depot_y']}"
 import run_depot                                   # applies the same depot override
 from dyn_env import DynParams, SensorField
 import exante_rc as X
+from kref import kref
 inst = defaultdict(dict)
 for r in rows: inst[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]))][int(r["K"])] = r
 out = []
 for k, byK in sorted(inst.items()):
-    lay, M, E, s = k; Ks = sorted(byK); J = {K: float(byK[K]["J"]) for K in Ks}; r0 = byK[Ks[0]]
+    lay, M, E, s = k; Ks = sorted(byK); J = {K: float(byK[K]["J"]) for K in Ks}; r0 = byK[kref(byK)]
     am = min(J, key=J.get); kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
     law = lambda c: (int(min(kr, c)) if min(kr, c) == kr else int(round(min(kr, c))))
     p = DynParams(M=M, Emax=E, layout=lay); F = SensorField(DynParams(M=M, Emax=E, layout=lay), np.random.default_rng(s))

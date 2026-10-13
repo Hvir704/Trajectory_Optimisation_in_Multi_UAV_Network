@@ -9,12 +9,13 @@ reported conditional on each verdict, as in Table VIII."""
 import sys, csv, math, numpy as np
 from collections import defaultdict
 from dyn_env import DynParams, SensorField
+from kref import kref
 d = defaultdict(dict)
 for r in csv.DictReader(open(sys.argv[1])):
     if float(r["L"]) == 12600: d[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]))][int(r["K"])] = r
 ap = {}
 for k_, byK_ in d.items():          # all primary instances (apriori_regret.csv lacked paper M=400 s9-12)
-    r0_ = byK_[min(byK_)]; kr_ = math.floor(float(r0_["K_reach_i"])); kc_ = float(r0_["K_commute_i"])
+    r0_ = byK_[kref(byK_)]; kr_ = math.floor(float(r0_["K_reach_i"])); kc_ = float(r0_["K_commute_i"])
     ap[k_] = {"reach_bound": str(min(kr_, kc_) == kr_), "passes": "NA"}
 EX = {}
 if len(sys.argv) > 3 and sys.argv[3].endswith(".csv"):      # optional: ex-ante commute inputs
@@ -23,11 +24,11 @@ if len(sys.argv) > 3 and sys.argv[3].endswith(".csv"):      # optional: ex-ante 
             EX[(x["layout"], int(x["M"]), float(x["Emax"]), int(x["seed"]))] = ((float(x["rc_fp"]), float(x["Pb_fp"])) if "--fixedpoint" in sys.argv else (float(x["rc_exante"]), float(x["Pb_exante"])))
 res = defaultdict(list); detail = []; VERD = {}
 for k, x in ap.items():
-    byK = d[k]; Ks = sorted(byK); J = {K: float(byK[K]["J"]) for K in Ks}; r0 = byK[Ks[0]]
+    byK = d[k]; Ks = sorted(byK); J = {K: float(byK[K]["J"]) for K in Ks}; r0 = byK[kref(byK)]
     kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"]); law = min(kr, kc)
     li = int(law) if law == kr else int(round(law)); reg = J[li] / min(J.values()) - 1
     if x["reach_bound"] != "True":
-        for v in ("corrected_KR", "KG", "global"): res[v].append((k[0], None, reg))
+        for v in ("corrected_KR", "KG", "global", "global_hoverfree"): res[v].append((k[0], None, reg))
         continue
     lay, M, E, seed = k; p = DynParams(M=M, Emax=E, layout=lay); U = (1 - p.rho) * E
     F = SensorField(DynParams(M=M, Emax=E, layout=lay), np.random.default_rng(seed))
@@ -48,6 +49,15 @@ for k, x in ap.items():
     v_KG = bool(H * WA(K0 + 1) > Js(K0) - min(Js(K) for K in Kgrid))
     F0 = Js(K0) + H * WA(K0)
     v_gl = bool(all(Js(K) + H * WA(K) > F0 for K in Kgrid))
+    # review M1: c_i^rad prices travel only, so the matching budget leaves out the fleet's fixed hover power Ph * Hh
+    # (Hh = sum lambda / R_u, nominal rates); C'(K) = Pbar Phi(K) - Ph Hh, served-set term infinite where C' <= 0
+    Hh = p.M * p.lam_bits / p.R
+    def Jt(K):
+        S = r <= reach(K); C = Pb * Phi(K) - p.Ph * Hh
+        return (np.sqrt(w[S] * c[S]).sum()) ** 2 / (2 * C) if C > 0 else math.inf
+    F0t = Jt(K0) + H * WA(K0)
+    v_hf = bool(all(Jt(K) + H * WA(K) > F0t for K in Kgrid)) if math.isfinite(F0t) else None
+    res["global_hoverfree"].append((k[0], v_hf, reg))
     VERD[str(k)] = v_gl
     res["corrected_KR"].append((k[0], v_KR, reg)); res["KG"].append((k[0], v_KG, reg)); res["global"].append((k[0], v_gl, reg))
     am = min(J, key=J.get); detail.append((k, K0, KR, am))
@@ -68,6 +78,12 @@ for v in ("corrected_KR", "KG", "global"):     # ("banked" = verdicts from an ex
         print(f"  regret >{th:.0%}: {len(big):2d} instances, passed (missed) {sum(1 for t in big if t[1]):2d}; "
               f"max regret among passes {max([t[2] for t in R if t[1] is True], default=0):.1%}" if th==0.30 else
               f"  regret >{th:.0%}: {len(big):2d} instances, passed (missed) {sum(1 for t in big if t[1]):2d}")
+ch = [(a[1], b[1]) for a, b in zip(res["global"], res["global_hoverfree"]) if a[1] is not None]
+print(f"\nhover-free budget (review M1): verdict changes in {sum(1 for a, b in ch if a != b)} of {len(ch)} reach-bound "
+      f"instances, toward passing {sum(1 for a, b in ch if a is False and b is True)}, toward flagging "
+      f"{sum(1 for a, b in ch if a is True and b is False)}, undefined {sum(1 for a, b in ch if b is None)}; regret of the "
+      f"changed instances " + ", ".join(f"{100*a[2]:.1f}%" for a, b in zip(res["global"], res["global_hoverfree"])
+                                        if a[1] is not None and a[1] != b[1]))
 ok = sum(1 for k, K0, KR, am in detail if K0 <= am <= KR)
 print(f"\nResult-1 interval [K0, K_R] contains the measured argmin in {ok}/{len(detail)} reach-bound instances")
 

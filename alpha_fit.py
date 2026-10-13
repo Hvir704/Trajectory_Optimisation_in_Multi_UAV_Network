@@ -3,7 +3,7 @@
 Table XV, per ring cell, from grid_final.csv (SA, standard settings, L = 12.6 km):
   stranding-free rows (n_never = 0); t_c = cell mean of 2 r_c / v; fit log n = log c + alpha log(U/K - Pf t_c);
   tau_s = cell mean of (T_s - t_c) / n with T_s = (T_s/t_c column) x nominal t_c; the alpha-corrected fleet size maximises
-  K n(K) / (t_c + n(K) tau_s) over integers; "alpha = 1" is round(K_commute) (cell mean of the per-instance values);
+  K n(K) / (t_c + n(K) tau_s) over integers; "alpha = 1" is round(K_commute) read at the reference K (cell mean of the per-instance values);
   "measured" is the mean per-instance argmin of J.
 Per-sortie regressions (needs --sorties, from sortie_regress.py), per cell, on ONE sample: post-burn-in sorties of
 stranding-free runs with n >= 2: slopes of log E_hop, log E_hov and log E_p on log n, with 95% intervals from a
@@ -28,10 +28,16 @@ cells = collections.defaultdict(list)
 for r in csv.DictReader(open(args[0])):
     if std(r): cells[(int(float(r["M"])), float(r["Emax"]))].append(r)
 
-print("Table XV (ring): cell, measured mean optimum, alpha=1 (round K_commute), alpha-corrected, fitted alpha, 1/alpha")
-for c in [(50, 3e6), (100, 3e6), (200, 3e6), (100, 1.5e6)]:
+for restrict in (False, True):
+  if not restrict:
+    print("Table XV (ring): cell, measured mean optimum, alpha=1 (round K_commute), alpha-corrected, fitted alpha, 1/alpha")
+  else:
+    print("Sensitivity: the same fit on K >= K_ref only (original sweep and upward extensions; without the smaller K added "
+          "for other planners)")
+  for c in [(50, 3e6), (100, 3e6), (200, 3e6), (100, 1.5e6)]:
     x = cells.get(c, [])
-    sf = [r for r in x if float(r["n_never"]) == 0]
+    sf = [r for r in x if float(r["n_never"]) == 0
+          and (not restrict or int(float(r["K"])) >= int(float(r.get("K_ref") or 0)))]
     if len(sf) < 3: print(f"  M={c[0]} {c[1]/1e6:.1f} MJ: too few stranding-free rows ({len(sf)})"); continue
     U = (1 - p.rho) * c[1]
     tc = float(np.mean([2 * float(r["r_c"]) / v for r in sf]))
@@ -49,7 +55,10 @@ for c in [(50, 3e6), (100, 3e6), (200, 3e6), (100, 1.5e6)]:
     by = collections.defaultdict(dict)
     for r in x: by[r["seed"]][int(float(r["K"]))] = float(r["J"])
     meas = np.mean([min(b, key=b.get) for b in by.values()])
-    k1 = np.mean([round(float(r["K_commute_i"])) for r in x if int(float(r["K"])) == min(by[r["seed"]])])
+    # the rule's input is read at the instance's reference K (first K of its original sweep, column K_ref), so that
+    # fills added for other planners do not change it
+    kr = {r["seed"]: int(float(r["K_ref"])) if r.get("K_ref") not in (None, "") else min(by[r["seed"]]) for r in x}
+    k1 = np.mean([round(float(r["K_commute_i"])) for r in x if int(float(r["K"])) == kr[r["seed"]]])
     print(f"  M={c[0]:3d} {c[1]/1e6:.1f} MJ  measured {meas:.2f}  alpha=1 {k1:.2f}  corrected {k_corr}  "
           f"alpha {alpha:.2f}  1/alpha {1/alpha:.2f}   ({len(sf)} stranding-free rows, {len(by)} instances)")
 

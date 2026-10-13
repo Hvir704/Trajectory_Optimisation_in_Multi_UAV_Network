@@ -5,11 +5,11 @@ held-out deployments the design-time test flags: 82 (with SA rows: 82)
   Asghar et al.   n= 82  within one of l 33%   within one of K_hat (Prop. 6) 44%
   Liu et al.      n= 82  within one of l 77%   within one of K_hat (Prop. 6) 45%
 
-warnings against the four planners' misses (189 misses in 864 planner-deployments):
-  design-time test          recall 0.57  precision 0.33
-  r_max/r_c > 6.2           recall 0.53  precision 0.29
-  r_max/r_c > 6.8           recall 0.51  precision 0.33
-  r_max/r_c > 7.0           recall 0.50  precision 0.34
-  r_max/r_c > 7.25          recall 0.49  precision 0.36
-  r_max/r_c > 7.4           recall 0.48  precision 0.36
-  r_max/r_c > 7.6           recall 0.48  precision 0.36
+warnings against the four planners' misses (197 misses in 864 planner-deployments):
+  design-time test          recall 0.55  precision 0.33
+  r_max/r_c > 6.2           recall 0.51  precision 0.29
+  r_max/r_c > 6.8           recall 0.49  precision 0.33
+  r_max/r_c > 7.0           recall 0.48  precision 0.34
+  r_max/r_c > 7.25          recall 0.47  precision 0.36
+  r_max/r_c > 7.4           recall 0.46  precision 0.36
+  r_max/r_c > 7.6           recall 0.46  precision 0.36

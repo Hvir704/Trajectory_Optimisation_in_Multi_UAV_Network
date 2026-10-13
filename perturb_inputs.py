@@ -7,6 +7,7 @@ import sys, csv, math
 from collections import defaultdict
 import numpy as np
 from dyn_env import DynParams
+from kref import kref
 p = DynParams()
 inst = defaultdict(dict)
 for r in csv.DictReader(open(sys.argv[1])):
@@ -15,7 +16,7 @@ base = dict(U=1.0, Pf=1.0, Ph=1.0, Ru=1.0, rmax=1.0)
 def score(scale):
     ex = w1 = n = clamp = 0; regs = []
     for k, byK in inst.items():
-        Ks = sorted(byK); J = {K: float(byK[K]["J"]) for K in Ks}; r0 = byK[Ks[0]]; am = min(J, key=J.get)
+        Ks = sorted(byK); J = {K: float(byK[K]["J"]) for K in Ks}; r0 = byK[kref(byK)]; am = min(J, key=J.get)
         U = (1 - p.rho) * k[2] * scale["U"]; Pf = p.Pf * scale["Pf"]; Ph = p.Ph * scale["Ph"]; Ru = p.R * scale["Ru"]
         rmax = float(r0["r_max"]) * scale["rmax"]; rc = float(r0["r_c"]); Pb = float(r0["P_bar"])
         Kr = p.v * U / (2 * Pf * rmax + p.v * Ph * p.B_bits / Ru); Kc = p.v * U / (2 * rc * (Pf + math.sqrt(Pf * Pb)))

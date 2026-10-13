@@ -1,0 +1,5 @@
+eta(M): formula (u = 0.3) | Monte Carlo, full model, 2000 fields | hotspot sensor beyond L/2 | hotspot sensor sets r_max
+  M= 50  0.851 | 0.850 |   38% |  5.8%
+  M=100  0.891 | 0.890 |   56% |  1.9%
+  M=200  0.921 | 0.921 |   74% |  1.2%
+  M=400  0.944 | 0.944 |   87% |  0.2%

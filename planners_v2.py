@@ -19,6 +19,14 @@ usage: python planners_v2.py --sa SA.csv [SA_FILL.csv ...] --files F1.csv F2.csv
 import argparse, csv, math
 from collections import defaultdict
 import numpy as np
+def _ref_better(cur, k, r):
+    """True if row r (fleet size k) should replace cur as the rule's reference row: the row at the instance's K_ref
+    (first K of its original sweep, from reproduce_v2) wins; without that column, the smallest K swept."""
+    kr = int(float(r["K_ref"])) if r.get("K_ref") not in (None, "") else None
+    if cur is None: return True
+    if kr is not None: return k == kr or (cur[0] != kr and k < cur[0])
+    return k < cur[0]
+
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--sa", nargs="+", required=True); ap.add_argument("--files", nargs="+", required=True)
@@ -41,7 +49,7 @@ def take(path, force=None):
         D[dep][pl][int(float(r["K"]))] = J
         if pl == "sa":
             k = int(float(r["K"]))
-            if dep not in RULE or k < RULE[dep][0]: RULE[dep] = (k, r)
+            if _ref_better(RULE.get(dep), k, r): RULE[dep] = (k, r)
 for f in a.sa: take(f, "sa")
 for f in a.files: take(f)
 V = {(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"])): r["verdict_current"] for r in csv.DictReader(open(a.verdicts))}

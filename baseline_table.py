@@ -16,6 +16,7 @@ with --drop-censored.
 import argparse, csv, math
 from collections import defaultdict
 import numpy as np
+from kref import kref
 
 ap = argparse.ArgumentParser()
 ap.add_argument("sa"); ap.add_argument("others", nargs="+")
@@ -43,7 +44,7 @@ def load(path):
 
 
 def rule_of(byK):
-    r0 = byK[min(byK)]
+    r0 = byK[kref(byK)]
     kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
     law = min(kr, kc)
     return int(law) if law == kr else int(round(law))

@@ -26,6 +26,7 @@ import sys, csv, math, argparse
 import numpy as np
 from collections import defaultdict
 from dyn_env import DynParams, SensorField
+from kref import kref
 
 RC_MODEL = "two"     # "two": r_c = mean of the nearest and second-nearest of n draws (r_c is the mean of the first and
                      # last legs); "nearest": the old E[min of n] (biased low by construction). Set by --rc-model.
@@ -94,17 +95,17 @@ if __name__ == "__main__":
         p = DynParams(M=M, Emax=E, layout=lay, L=L)
         F = SensorField(DynParams(M=M, Emax=E, layout=lay, L=L), np.random.default_rng(seed))
         r = np.linalg.norm(F.pos - p.home, axis=1); lam = np.full(M, p.lam_bits)   # nominal: true rates are unknown ex ante
-        Ks = sorted(byK); J = {K: float(byK[K]["J"]) for K in Ks}; r0 = byK[Ks[0]]
+        Ks = sorted(byK); J = {K: float(byK[K]["J"]) for K in Ks}; K0 = kref(byK); r0 = byK[K0]
         rc_m = float(r0["r_c"]); Pb_m = float(r0["P_bar"]); n_m = float(r0["mean_n"])
         kr = math.floor(float(r0["K_reach_i"])); am = min(J, key=J.get)
 
-        rc_o, _, _ = exante(p, r, lam, F.pos, Ks[0], n_override=n_m)
-        rc_e, Pb_e, n_e = exante(p, r, lam, F.pos, Ks[0])
+        rc_o, _, _ = exante(p, r, lam, F.pos, K0, n_override=n_m)
+        rc_e, Pb_e, n_e = exante(p, r, lam, F.pos, K0)
         # commute fixed point: g(K) = Kc(rc_hat(K), Pb_hat(K)) decreases in K (fewer stops -> larger r_c), so the
         # estimator is the smallest K with g(K) <= K, found by bisection. Where g jumps across the diagonal (n_hat hits
         # its floor) no exact fixed point exists; the crossing is then flagged (fp_jump) and its residual reported.
         g = lambda K: Kc(p, *exante(p, r, lam, F.pos, max(K, 1.0))[:2])
-        lo, hi = 1.0, max(2.0, float(Ks[0]))
+        lo, hi = 1.0, max(2.0, float(K0))
         while g(hi) > hi: hi *= 2.0
         if g(lo) <= lo: hi = lo
         for _ in range(50):

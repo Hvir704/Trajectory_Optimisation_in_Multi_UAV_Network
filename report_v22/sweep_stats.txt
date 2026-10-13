@@ -1,5 +1,6 @@
-runs (standard SA rows, grid + fills): 3801 over 272 instances
-sweeps extended by the fills: 171; per-instance optimum moved by the extension: 32
+runs (standard SA rows, grid + fills): 3880 over 272 instances
+sweeps extended by the fills: 188; per-instance optimum moved by the extension: 32
+   of these extended upward 171, downward 56 (both 39); optima moved downward 0
    moved: ('core', 200, 1500000.0, 12600.0, 1)  9 -> 13
    moved: ('core', 200, 1500000.0, 12600.0, 2)  8 -> 13
    moved: ('core', 200, 1500000.0, 12600.0, 3)  8 -> 14
@@ -39,7 +40,7 @@ sweeps extended by the fills: 171; per-instance optimum moved by the extension: 
    ('core', 200, 1500000.0, 12600.0): largest K swept 20, extended instances 12
    ('core', 200, 3000000.0, 12600.0): largest K swept 37, extended instances 12
    ('paper', 50, 1500000.0, 12600.0): largest K swept 11, extended instances 3
-   ('paper', 50, 3000000.0, 12600.0): largest K swept 17, extended instances 0
+   ('paper', 50, 3000000.0, 12600.0): largest K swept 17, extended instances 1
    ('paper', 100, 1500000.0, 8000.0): largest K swept 13, extended instances 0
    ('paper', 100, 1500000.0, 10000.0): largest K swept 12, extended instances 1
    ('paper', 100, 1500000.0, 12600.0): largest K swept 11, extended instances 12
@@ -51,8 +52,8 @@ sweeps extended by the fills: 171; per-instance optimum moved by the extension: 
    ('paper', 200, 3000000.0, 12600.0): largest K swept 15, extended instances 0
    ('paper', 400, 1500000.0, 12600.0): largest K swept 11, extended instances 12
    ('ring', 50, 1500000.0, 12600.0): largest K swept 9, extended instances 12
-   ('ring', 50, 3000000.0, 12600.0): largest K swept 15, extended instances 9
+   ('ring', 50, 3000000.0, 12600.0): largest K swept 15, extended instances 11
    ('ring', 100, 1500000.0, 12600.0): largest K swept 9, extended instances 12
-   ('ring', 100, 3000000.0, 12600.0): largest K swept 12, extended instances 0
+   ('ring', 100, 3000000.0, 12600.0): largest K swept 12, extended instances 7
    ('ring', 200, 1500000.0, 12600.0): largest K swept 9, extended instances 12
-   ('ring', 200, 3000000.0, 12600.0): largest K swept 12, extended instances 0
+   ('ring', 200, 3000000.0, 12600.0): largest K swept 12, extended instances 7

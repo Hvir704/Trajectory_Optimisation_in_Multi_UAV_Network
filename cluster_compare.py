@@ -6,6 +6,7 @@ intervals (instances resampled within cells, 10,000 replicates) and the paired r
 import sys, csv, math
 from collections import defaultdict
 import numpy as np
+from kref import kref
 rng = np.random.default_rng(20260924); B = 10_000
 def load(f, sa=False):
     d = defaultdict(dict)
@@ -14,7 +15,7 @@ def load(f, sa=False):
         d[(r["layout"], int(r["M"]), float(r["Emax"]), int(r["seed"]))][int(r["K"])] = r
     return d
 def rule(b):
-    r0 = b[min(b)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"]); law = min(kr, kc)
+    r0 = b[kref(b)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"]); law = min(kr, kc)
     return int(law) if law == kr else int(round(law))
 # The rule's point predictor is planner-independent: by default every planner is scored against the l computed from
 # the annealer's smallest-K row (as planners_v2.py and Tables XII-XIII do). --rule-from own reproduces the v1

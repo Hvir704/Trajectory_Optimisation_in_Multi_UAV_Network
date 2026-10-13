@@ -13,6 +13,7 @@ import sys, csv, math
 from collections import defaultdict
 import numpy as np
 from scipy.stats import beta
+from kref import kref
 
 B = 10_000
 rng = np.random.default_rng(20260924)
@@ -29,7 +30,7 @@ def load(path):
 
 
 def rule(byK):
-    r0 = byK[min(byK)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
+    r0 = byK[kref(byK)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
     law = min(kr, kc); return int(law) if law == kr else int(round(law))
 
 

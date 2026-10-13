@@ -1,6 +1,7 @@
 """Figures for main.tex from grid.csv. usage: python make_figures.py grid.csv  -> figs/*.pdf"""
 import sys, csv, collections, math, statistics as st
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
+from kref import kref
 rows=list(csv.DictReader(open(sys.argv[1])))
 for r in rows:
     for k in r:
@@ -15,8 +16,9 @@ def cell(layout,M,E):
 # --- Fig 1: J vs K, three families ---
 fig,ax=plt.subplots(1,3,figsize=(7.16,2.5))
 for a,lay in zip(ax,('paper','ring','core')):
-    g=cell(lay,100,1.5e6); Ks=sorted(g)
-    J=[st.mean(r['J'] for r in g[K])/1e5 for K in Ks]; Kr=st.mean(r['K_reach_i'] for r in g[Ks[0]]); Kc=st.mean(r['K_commute_i'] for r in g[Ks[0]])
+    g=cell(lay,100,1.5e6); nI=max(len(v) for v in g.values()); Ks=sorted(K for K in g if len(g[K])==nI)   # fleet sizes every instance has (as paper_numbers)
+    J=[st.mean(r['J'] for r in g[K])/1e5 for K in Ks]; ref=[r for K in sorted(g) for r in g[K] if r.get('K_ref',min(g))==K]   # each instance's reference-K row (all instances)
+    Kr=st.mean(r['K_reach_i'] for r in ref); Kc=st.mean(r['K_commute_i'] for r in ref)
     lo=min(J); a.plot(Ks,J,'o-',color='k',ms=4,lw=1.2)
     am=Ks[J.index(lo)]; a.plot([am],[lo],'o',ms=9,mfc='none',mec='k',mew=1.4)
     # NOTE: this circles the argmin of MEAN J, a cell-level summary. The paper's agreement
@@ -41,7 +43,7 @@ for (lay,M,E,L) in {(r['layout'],r['M'],r['Emax'],r.get('L',12600)) for r in bas
         ks=[K for K in served if served[K] is not None]
         if not ks: nskip+=1; continue
         nplot+=1
-        am=min(ks,key=lambda K:served[K]); r0=byK[min(byK)]
+        am=min(ks,key=lambda K:served[K]); r0=byK[kref(byK)]
         pts[lay].append((r0['rmax_over_rc'], am/r0['K_reach_i'], r0['regime_bnd']))
 for lay,c in zip(('paper','ring','core'),('C3','C0','C2')):
     p=np.array(pts[lay]); a.scatter(p[:,0],p[:,1],s=12,color=c,label=lay,alpha=.7)

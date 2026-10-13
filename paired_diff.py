@@ -5,6 +5,7 @@ usage: python paired_diff.py sa_rerun.csv rr_tour_win.csv"""
 import sys, csv, math
 from collections import defaultdict
 import numpy as np
+from kref import kref
 rng = np.random.default_rng(20260924); B = 10_000
 def load(p):
     d = defaultdict(dict)
@@ -14,7 +15,7 @@ def load(p):
     return d
 OWN = "--rule-from" in sys.argv and sys.argv[sys.argv.index("--rule-from") + 1] == "own"   # default: SA's l for both
 def rule(b):
-    r0 = b[min(b)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"]); law = min(kr, kc)
+    r0 = b[kref(b)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"]); law = min(kr, kc)
     return int(law) if law == kr else int(round(law))
 sa, rr = load(sys.argv[1]), load(sys.argv[2])
 cells = defaultdict(list)

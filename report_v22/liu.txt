@@ -1,5 +1,8 @@
 deployments with Liu: 216  (Liu sweeps not yet meeting the 1.5x rule / top-edge: 0)
 
+Note: the intervals here use this script's own bootstrap stream; Table XIII quotes planners.txt, whose intervals can
+differ in the last digit (independent resamples of the same deployments). Medians and counts are identical.
+
 PRIMARY: C4 vs Liu, own optimum (median J*_C4/J*_Liu - 1, 95% CI, C4 lower)
   paper -9.3% [-13.3%, -6.1%]  61/72
   core  -10.9% [-11.6%, -8.6%]  72/72
@@ -17,7 +20,7 @@ SECONDARY 2: each planner X vs Liu, own optimum (median J*_X/J*_Liu - 1; negativ
   SA              paper -11.1% [-15.9%,-5.2%] 48/72  core +42.0% [+29.1%,+65.2%] 9/72  ring +6.6% [+5.0%,+8.7%] 14/72  all +6.4% [+3.8%,+8.8%] 71/216
   cluster patrol  paper +15.8% [+12.0%,+18.1%] 7/72  core +2.0% [-0.9%,+4.1%] 29/72  ring +2.1% [+0.5%,+3.8%] 27/72  all +4.6% [+3.2%,+6.0%] 63/216
   Gao et al.      paper +63.0% [+55.9%,+65.7%] 0/72  core +14.8% [+10.2%,+18.7%] 5/72  ring +47.6% [+42.0%,+51.9%] 0/72  all +44.8% [+38.8%,+48.1%] 5/216
-  Asghar et al.   paper +137.8% [+124.5%,+156.4%] 0/72  core +100.9% [+91.6%,+113.1%] 0/72  ring +175.6% [+161.6%,+208.6%] 0/72  all +133.5% [+126.6%,+142.9%] 0/216
+  Asghar et al.   paper +137.8% [+124.5%,+156.4%] 0/72  core +100.9% [+91.6%,+113.1%] 0/72  ring +175.6% [+161.6%,+203.7%] 0/72  all +133.5% [+126.6%,+142.9%] 0/216
 
 SECONDARY 3-5: Liu rule agreement (exact / within one), split by the design-time test, cost of sizing with l
   all   0.55 / 0.86  (n=216)

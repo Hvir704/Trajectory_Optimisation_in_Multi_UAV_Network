@@ -7,6 +7,7 @@ import sys, os, csv, math, json
 from collections import defaultdict
 import numpy as np
 from dyn_env import DynParams, SensorField
+from kref import kref
 
 RES, ASM = sys.argv[1], sys.argv[2]
 R = lambda n: os.path.join(RES, n); A = lambda n: os.path.join(ASM, n)
@@ -37,7 +38,7 @@ def inst(rows, planner=None, primary=True):
 def am(b): return min(b, key=lambda K: float(b[K]["J"]))
 def J(b, K): return float(b[K]["J"])
 def ell(b):
-    r0 = b[min(b)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
+    r0 = b[kref(b)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
     return kr if kr <= kc else int(round(kc))
 def hdr(s): print(f"\n=== {s}")
 
@@ -56,14 +57,15 @@ hdr("abstract/intro: rule's l in the representative cell (paper M=100 1.5 MJ), c
 for c in [("paper", 100, 1.5e6), ("core", 100, 1.5e6)]:
     ls = [ell(b) for k, b in SA.items() if k[:3] == c]
     print(f"  {c}: l values {sorted(ls)}  l=4 in {sum(1 for x in ls if x == 4)} of {len(ls)}  mean {np.mean(ls):.2f}  "
-          f"floor K_r values {sorted(math.floor(float(b[min(b)]['K_reach_i'])) for k, b in SA.items() if k[:3] == c)}")
+          f"floor K_r values {sorted(math.floor(float(b[kref(b)]['K_reach_i'])) for k, b in SA.items() if k[:3] == c)}")
 
 # ------------------------------------------------------------------------------------------------ model
 hdr("model: empty sorties, P_bar range, commute time t_c")
 for fam in ("paper", "core", "ring"):
     rows = [r for k, b in SA.items() if k[0] == fam for r in b.values()]
-    e = np.array([float(r["empty_frac"]) for r in rows]); eo = np.array([float(b[am(b)]["empty_frac"]) for k, b in SA.items() if k[0] == fam])
-    print(f"  {fam}: empty-sortie share max over all runs {e.max():.1%}, at the optimum median {np.median(eo):.1%} max {eo.max():.1%}")
+    # runs that serve nothing at all (K beyond every sensor's reach) are excluded from the maximum
+    e = np.array([float(r["empty_frac"]) for r in rows if float(r["mean_n"] or 0) > 0]); eo = np.array([float(b[am(b)]["empty_frac"]) for k, b in SA.items() if k[0] == fam])
+    print(f"  {fam}: empty-sortie share max over runs that serve at least one sensor {e.max():.1%}, at the optimum median {np.median(eo):.1%} max {eo.max():.1%}")
 pb = np.array([float(r["P_bar"]) for b in SAall.values() for r in b.values() if float(r["mean_n"]) > 0])
 tc = np.array([2 * float(r["r_c"]) / P.v for b in SA.values() for r in b.values()])
 print(f"  P_bar over all SA runs that serve anything: {pb.min():.0f}-{pb.max():.0f} W;  realised commute time 2 r_c / v median {np.median(tc)/60:.1f} min; nominal t_c {P.t_c/60:.1f} min")
@@ -72,7 +74,7 @@ print(f"  P_bar over all SA runs that serve anything: {pb.min():.0f}-{pb.max():.
 hdr("Lemma 1: in-reach sensors unserved at floor(K_r), clustered M=400 1.5 MJ")
 for k, b in sorted(SA.items()):
     if k[:3] != ("paper", 400, 1.5e6): continue
-    K0 = math.floor(float(b[min(b)]["K_reach_i"]))
+    K0 = math.floor(float(b[kref(b)]["K_reach_i"]))
     print(f"  seed {k[3]}: K0={K0} n_never at K0 = {b[K0]['n_never'] if K0 in b else 'not swept'}")
 
 
@@ -80,7 +82,7 @@ def criterion(k, b, gray_served=False, rc_of_K=False):
     lay, M, E, seed = k; p = DynParams(M=M, Emax=E, layout=lay); U = (1 - p.rho) * E
     F = SensorField(DynParams(M=M, Emax=E, layout=lay), np.random.default_rng(seed))
     r = np.linalg.norm(F.pos - p.home, axis=1); w = F.wi_base; c = 2 * p.Pf * r / p.v
-    r0 = b[min(b)]; rc0 = float(r0["r_c"]); Pb0 = float(r0["P_bar"])
+    r0 = b[kref(b)]; rc0 = float(r0["r_c"]); Pb0 = float(r0["P_bar"])
     def inputs(K):
         if rc_of_K and K in b: return float(b[K]["r_c"]), float(b[K]["P_bar"])
         if rc_of_K:      # outside the sweep: nearest swept K
@@ -103,7 +105,7 @@ hdr("criterion (5): verdict changes when the gray set is treated as served / wit
 base, gs, rk = {}, {}, {}
 for k, b in SA.items():
     if not (k[1] <= 400): continue
-    r0 = b[min(b)]
+    r0 = b[kref(b)]
     if not (math.floor(float(r0["K_reach_i"])) <= float(r0["K_commute_i"])): continue
     base[k] = criterion(k, b); gs[k] = criterion(k, b, gray_served=True); rk[k] = criterion(k, b, rc_of_K=True)
 reg = {k: J(b, ell(b)) / J(b, am(b)) - 1 for k, b in SA.items()}
@@ -184,7 +186,7 @@ for k, b in SAall.items():
     full = {K: float(r["J_age"]) for K, r in b.items() if float(r["n_never"]) == 0}
     if not full: cnt["no stranding-free K"] += 1; continue
     n_pl += 1
-    r0 = b[min(b)]; kr = math.floor(float(r0["K_reach_i"])); rb = float(r0["rmax_over_rc"]) > float(r0["regime_bnd"])
+    r0 = b[kref(b)]; kr = math.floor(float(r0["K_reach_i"])); rb = float(r0["rmax_over_rc"]) > float(r0["regime_bnd"])
     a = min(full, key=full.get)
     if rb: cnt["reach side: at floor K_r" if a == kr else ("reach side: above" if a > kr else "reach side: below")] += 1
     else: cnt["commute side"] += 1
@@ -272,7 +274,7 @@ print(f"  P_bar-hat: corr {np.corrcoef(pm, pe)[0,1]:.3f}, mean |error| {np.mean(
 for fam in ("paper", "ring", "core"):
     rr = [float(x["rc_exante"]) / float(x["rc_meas"]) for x in X if x["layout"] == fam]
     ro = [float(x["rc_oracle_n"]) / float(x["rc_meas"]) for x in X if x["layout"] == fam]
-    print(f"  {fam}: r_c-hat/r_c median {np.median(rr):.2f} [{np.quantile(rr,.1):.2f},{np.quantile(rr,.9):.2f}], with measured n {np.median(ro):.2f}")
+    print(f"  {fam} (n={len(rr)}, field-size cells included; exante.txt reports the primary grid only): r_c-hat/r_c median {np.median(rr):.2f} [{np.quantile(rr,.1):.2f},{np.quantile(rr,.9):.2f}], with measured n {np.median(ro):.2f}")
 reach_cells = defaultdict(list)
 for x in X:
     reach_cells[(x["layout"], x["M"], x["Emax"], x["L"])].append(float(x["ratio_exante"]))
@@ -324,7 +326,7 @@ for pl in ("sa", "cyc", "cluster_patrol", "asghar_rev", "gzz_rev", "liu_mpga", "
                                       for M in (50, 100, 200)))
 hdr("App. B: stop count calibrated from each planner's two smallest stranding-free swept K (pilot runs), then argmax of K n/(t_c + n tau_s)")
 def calibrated(b):
-    rows = [(K, r) for K, r in sorted(b.items()) if float(r["n_never"]) == 0 and float(r["mean_n"]) > 0]
+    rows = [(K, r) for K, r in sorted(b.items()) if K >= kref(b) and float(r["n_never"]) == 0 and float(r["mean_n"]) > 0]   # pilots from the reference K up
     if len(rows) < 2: return None
     (K1, r1), (K2, r2) = rows[0], rows[1]
     E = float(r1.get("Emax")); U = (1 - P.rho) * E
@@ -389,6 +391,57 @@ for n in ("regularity_core_cl.csv", "regularity_paper_cl.csv"):
     for r in read(R(n)):
         print(f"  {n} {r['planner']:14s} s={r['seed']}: r_c {float(r['r_c']):.0f} m  Gamma {float(r['Gamma'])*3600:.0f}/h  tau_hop {float(r['tau_hop']):.1f} s  E_reg {float(r['E_reg']):.3f}  E_alloc {float(r['E_alloc']):.3f}  J {float(r['J']):.3e}")
 
+hdr("Diagnostics quoted in the text without a table of their own (sources added in v2.2.1)")
+# Table VIII (field size): r_max / r_c per L, mean over instances at the smallest swept K
+GF = read(A("grid_final.csv"))
+fs = defaultdict(dict)
+for r in GF:
+    if std(r) and r["layout"] == "paper" and int(float(r["M"])) == 100 and float(r["Emax"]) == 1.5e6 and r.get("planner", "sa") == "sa":
+        fs[(float(r["L"]), int(float(r["seed"])))][int(float(r["K"]))] = r
+byL = defaultdict(list)
+for (L_, s), b in fs.items(): byL[L_].append(float(b[kref(b)]["rmax_over_rc"]))
+print("  Table VIII r_max/r_c (smallest-K row, mean): " + "  ".join(f"L={L_/1000:g} km: {np.mean(v):.1f}" for L_, v in sorted(byL.items())))
+# Fig. 2 / Table VI: ring M=100 1.5 MJ reach cap
+rk = [float(b[kref(b)]["K_reach_i"]) for k, b in SA.items() if k[:3] == ("ring", 100, 1.5e6)]
+print(f"  ring M=100 1.5 MJ: K_reach mean {np.mean(rk):.2f} (range {min(rk):.2f}-{max(rk):.2f})")
+# Sec. VII-F: ring sensors seen from the quarter-point depot
+dq = []
+for s in range(1, 13):
+    F = SensorField(DynParams(M=100, Emax=1.5e6, layout="ring"), np.random.default_rng(s))
+    d = np.linalg.norm(F.pos - np.array([0.25 * P.L, 0.25 * P.L]), axis=1); dq.append((d.min(), d.max()))
+dq = np.array(dq)
+print(f"  quarter-point depot, ring M=100: nearest sensor {np.mean(dq[:,0])/1000:.1f} km, farthest {np.mean(dq[:,1])/1000:.1f} km (means over 12 seeds);"
+      f" farthest/nearest {np.min(dq[:,1]/dq[:,0]):.1f}-{np.max(dq[:,1]/dq[:,0]):.1f}")
+# Sec. VII-B grounding test: survival margins of the gray-set sensors at the flight-only fleet size
+print("  grounding test, gray-set sensors at floor(K_flight):")
+for (lay, M, E, s) in [("core", 50, 1.5e6, 3), ("core", 50, 1.5e6, 6), ("core", 50, 3e6, 12), ("paper", 100, 3e6, 12), ("paper", 50, 3e6, 3), ("paper", 50, 3e6, 6)]:
+    p = DynParams(M=M, Emax=E, layout=lay); F = SensorField(DynParams(M=M, Emax=E, layout=lay), np.random.default_rng(s))
+    r = np.linalg.norm(F.pos - p.home, axis=1); U = (1 - p.rho) * E
+    Kfl = math.floor(p.v * U / (2 * p.Pf * r.max())); bstar = p.R * (U / Kfl - 2 * p.Pf * r / p.v) / p.Ph
+    gray = np.where((bstar > 0) & (bstar < p.B_bits))[0]
+    print(f"    {lay} M={M} {E/1e6:.1f} MJ s={s} K={Kfl}: " + ", ".join(f"b*/B {bstar[i]/p.B_bits:.2f}, b*/lambda {bstar[i]/F.lam_bits[i]/3600:.1f} h" for i in gray))
+# Sec. VII-L: uncaught-episode length and the value of square-root allocation (analytic, Section VII-A parameters)
+tau = 67.5 * 60
+for lab, nu in (("hotspot", P.nu_hot if hasattr(P, "nu_hot") else 1 / 3600), ("cold", P.nu_cold if hasattr(P, "nu_cold") else 1 / 21600)):
+    print(f"  uncaught episode, {lab} sensor: (exp(nu tau)-1)/nu = {(math.exp(nu * tau) - 1) / nu / 60:.1f} min")
+print(f"  square-root allocation vs equal frequencies, w ~ U(1,10), equal costs: E[w]/E[sqrt w]^2 - 1 = "
+      f"{5.5 / ((2/3) * (10**1.5 - 1) / 9) ** 2 - 1:.1%}")
+# Sec. VII-K: CP-SAT tripled budget -- exact equality of J and argmin with the d45 runs substituted
+d15, d45 = defaultdict(dict), defaultdict(dict)
+for n, d in (("m40_cpsat_d15.csv", d15), ("m40_cpsat_d45.csv", d45)):
+    for r in read(R(n)): d[int(r["seed"])][int(r["K"])] = float(r["J"])
+same = sum(d45[s][K] == d15[s][K] for s in d45 for K in d45[s]); tot = sum(len(v) for v in d45.values())
+arg = [min(d15[s], key=d15[s].get) == min({**d15[s], **d45[s]}, key={**d15[s], **d45[s]}.get) for s in d45]
+print(f"  CP-SAT d15 -> d45: J identical (exact floating-point equality) in {same} of {tot} runs; argmin unchanged in {sum(arg)} of {len(arg)} instances")
+# Conclusion / Sec. V: cell-mean visit rate peak vs cell-mean J minimum on the ring
+for c in sorted({k[:3] for k in SA if k[0] == "ring"}):
+    inst = {k: b for k, b in SA.items() if k[:3] == c}
+    Ks = sorted(set.intersection(*[set(b) for b in inst.values()]))
+    Ks = [K for K in Ks if all(int(float(b[K]["n_never"])) == 0 and float(b[K]["mean_n"]) > 0 for b in inst.values())]
+    G = {K: np.mean([K * float(b[K]["mean_n"]) / (float(b[K]["T_s_over_t_c"]) * P.t_c) for b in inst.values()]) for K in Ks}
+    Jm = {K: np.mean([float(b[K]["J"]) for b in inst.values()]) for K in Ks}
+    print(f"  {c}: argmax cell-mean visit rate {max(G, key=G.get)}, argmin cell-mean J {min(Jm, key=Jm.get)}")
+
 hdr("Sec. V: sufficient-type criterion variants on the zero-regret clustered instances (criterion_variants.py forms)")
 _argv = sys.argv; sys.argv = ["criterion_variants.py", A("grid_final.csv"), "-"]
 _g = {}; exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "criterion_variants.py")).read().split("def row(lab, R):")[0], _g)
@@ -432,7 +485,7 @@ for tag in ("q", "e"):
 
 hdr("Sec. VII-I: mean K_commute at M=100, 1.5 MJ (smallest-K inputs)")
 for c in [("paper", 100, 1.5e6), ("core", 100, 1.5e6)]:
-    print(f"  {c}: {np.mean([float(b[min(b)]['K_commute_i']) for k, b in SA.items() if k[:3] == c]):.1f}")
+    print(f"  {c}: {np.mean([float(b[kref(b)]['K_commute_i']) for k, b in SA.items() if k[:3] == c]):.1f}")
 
 hdr("Sec. VII-K C4: vs cluster patrol per ring cell and largest loss; rule agreement per family vs cluster (paired bootstrap)")
 c4, cl = PL["cyc"], PL["cluster_patrol"]

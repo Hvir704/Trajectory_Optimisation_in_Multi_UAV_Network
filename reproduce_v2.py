@@ -16,6 +16,7 @@ usage:  python reproduce_v2.py results_v2 [--out results_v2/report] [--only STEP
            so one missing file does not hide the rest; the summary at the end lists failures.
 """
 import argparse, csv, glob, json, os, subprocess, sys, time
+from kref import kref
 from collections import defaultdict, Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -75,9 +76,28 @@ def main():
                 if filt and not filt(r): continue
                 k = key(r, extra)
                 if k in seen: dup += 1; continue
+                r["_fill"] = "_fill" in n
                 seen.add(k); out.append(r)
+        # K_ref: the first K of each instance's ORIGINAL sweep (base file, not a fill); the rule's measured commute
+        # inputs are read at this K (kref.py), so they do not move when a fill extends a sweep in either direction
+        def num(x):
+            try: return str(float(x))
+            except (TypeError, ValueError): return x if x is not None else ""
+        # numeric fields are normalised ('43200' and '43200.0' are the same horizon), as in key()
+        ikey = lambda r: tuple(num(r.get(k, "")) for k in ("layout", "M", "Emax", "L", "seed")) + (r.get("planner", "sa"),
+                          r.get("coord", ""), r.get("replan", "")) + tuple(num(r.get(k, "")) for k in ("divert", "q")) + (
+                          r.get("belief", ""),) + tuple(num(r.get(k, "")) for k in ("tau", "Th")) + (
+                          r.get("alloc", ""), r.get("mass_model", "")) + tuple(num(r.get(e, "")) for e in extra)
+        base, allk = {}, {}
+        for r in out:
+            K = int(float(r["K"])); i = ikey(r)
+            allk[i] = min(allk.get(i, K), K)
+            if not r["_fill"]: base[i] = min(base.get(i, K), K)
+        for r in out:
+            i = ikey(r); r["K_ref"] = base.get(i, allk[i]); del r["_fill"]
         return out, dup
     def emit(name, names, planner=None, filt=None, fields=FIELDS, extra=()):
+        fields = list(fields) + ["K_ref"]
         rows, dup = cat(names, planner, filt, extra)
         if dup: problems.append(f"{name}: {dup} duplicate run key(s) across {names} (first kept)")
         if rows: write(A(name), rows, fields)
@@ -98,12 +118,15 @@ def main():
     emit("gzz_eval.csv", ["gzz_rev.csv", "gzz_rev_fill.csv"], "gzz_rev", std)
     emit("asghar_eval.csv", ["asghar_rev.csv", "asghar_rev_fill.csv"], "asghar_rev", std)
     emit("liu_all.csv", ["liu_mpga.csv", "liu_mpga_fill.csv"], "liu_mpga", std)
-    emit("m40_sa.csv", ["m40_sa.csv"]); emit("m40_rr.csv", ["m40_rr_tour.csv"]); emit("m40_cluster.csv", ["m40_cluster_patrol.csv"])
+    emit("m40_sa.csv", ["m40_sa.csv"]); emit("m40_rr.csv", ["m40_rr_tour.csv"]); emit("m40_cluster.csv", ["m40_cluster_patrol.csv", "m40_cluster_patrol_fill.csv"])
     # Table XI bottom: CP-SAT at its default budget on paper, at the converged threefold budget on ring
     cp = [r for r in (read(R("m40_cpsat_d5.csv")) if have("m40_cpsat_d5.csv") else []) if r["layout"] == "paper"]
     cp += read(R("m40_cpsat_d15.csv")) if have("m40_cpsat_d15.csv") else []
     for r in cp: r["planner"] = "cpsat"
-    if cp: write(A("m40_cp_final.csv"), cp, FIELDS)
+    k0 = {}
+    for r in cp: i = (r["layout"], r["M"], r["Emax"], r["seed"]); k0[i] = min(k0.get(i, int(float(r["K"]))), int(float(r["K"])))
+    for r in cp: r["K_ref"] = k0[(r["layout"], r["M"], r["Emax"], r["seed"])]
+    if cp: write(A("m40_cp_final.csv"), cp, FIELDS + ["K_ref"])
     print(f"   {'m40_cp_final.csv':24s} {len(cp):6d} rows")
     DF = FIELDS + ["depot_x", "depot_y"]
     for d in ("q", "e"):
@@ -134,7 +157,7 @@ def main():
             if float(r["L"]) == 12600: inst[(r["layout"], int(float(r["M"])), float(r["Emax"]), int(float(r["seed"])))][int(float(r["K"]))] = r
         apr, ver = [], []
         for k, byK in sorted(inst.items()):
-            r0 = byK[min(byK)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
+            r0 = byK[kref(byK)]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
             rb = min(kr, kc) == kr; v = VERD.get(str(k))
             J = {K: float(x["J"]) for K, x in byK.items()}; l = kr if rb else int(round(kc))
             apr.append(dict(lay=k[0], M=k[1], E=k[2], seed=k[3], passes=("NA" if not rb else str(bool(v))),
@@ -182,7 +205,7 @@ def main():
     unions = {"primary": union, "none": None,
               "q": merged([(f"depot_q{x}.csv", None) for x in ("", "_cyc", "_cluster_patrol")]),
               "e": merged([(f"depot_e{x}.csv", None) for x in ("", "_cyc", "_cluster_patrol")])}
-    print("   censoring: runs fill_tail.py would still add (must all be 0):")
+    print("   censoring (top and, since v2.2.1, bottom edge): runs fill_tail.py would still add (must all be 0):")
     for n, pl, un in (("sa_rerun.csv", None, "primary"), ("grid.csv", None, "none"), ("rr_tour_win.csv", "rr_tour", "primary"),
                       ("rr_sweep_win.csv", "rr_sweep", "primary"), ("cluster_win.csv", "cluster_patrol", "primary"),
                       ("eval_all_v2.csv", "cyc", "primary"), ("eval_all_v2.csv", "cyc_sector0", "primary"),
@@ -255,8 +278,14 @@ def main():
          ["alpha_fit.py", gf, "--sorties", R("sortie_ring.csv")]),
         ("relcost_drift", "Sec. V-B drift of the relative-cost profile (paper M=100 1.5 MJ, seeds 1-6)",
          ["relcost_drift.py", os.path.join(RES, "nodes", "nodes_sa_paper_M100_E1500000_K*_s*_exclude_launch.npz")]),
+        ("eta_mc", "Sec. IV-D eta(M): formula and full-model Monte Carlo; hotspot sensors beyond the inscribed circle (minutes)",
+         ["eta_mc.py", "2000"]),
+        ("commute_exact", "Sec. V-B Corollary (exact productive power): hover conservation and K_H against K_commute",
+         ["commute_exact.py", gf]),
         ("paper_numbers", "remaining numbers of the text (each labelled with its section in the output)", ["paper_numbers.py", RES, ASM]),
         ("c4_classes", "Sec. VII-K: C4 frequency classes at its own optimum (rebuilds the 216 designs; minutes)", ["c4_classes.py", A("eval_all_v2.csv")]),
+        ("gao_sizing", "Sec. VII-K: Gao et al.'s own fleet-size rule (Alg. 2) on the primary grid (minutes)",
+         ["gao_sizing.py", gf, A("gzz_eval.csv")]),
         ("fig_JvsK_regime", "Figs. 2-3", ["make_figures.py", gf]),
         ("fig_planners", "Fig. 5 (planners, M=40)", ["fig_planners.py", A("m40_sa.csv"), A("m40_rr.csv"), A("m40_cp_final.csv"), o("fig_planners.pdf")]),
         ("fig_five", "Fig. 4 (five planners)", ["fig_five.py", o("fig_five.pdf"), "--sa", A("sa_rerun.csv"), "--eval", A("eval_all_v2.csv"),
@@ -343,6 +372,9 @@ def sweep_stats(RES, f):
     ext = [k for k in full if len(full[k]) > len(base.get(k, {}))]
     moved = [k for k in ext if k in base and min(base[k], key=base[k].get) != min(full[k], key=full[k].get)]
     f.write(f"sweeps extended by the fills: {len(ext)}; per-instance optimum moved by the extension: {len(moved)}\n")
+    dn = [k for k in ext if k in base and min(full[k]) < min(base[k])]; up = [k for k in ext if k in base and max(full[k]) > max(base[k])]
+    f.write(f"   of these extended upward {len(up)}, downward {len(dn)} (both {len(set(up) & set(dn))}); optima moved downward "
+            f"{sum(1 for k in moved if min(full[k], key=full[k].get) < min(base[k], key=base[k].get))}\n")
     for k in moved: f.write(f"   moved: {k}  {min(base[k], key=base[k].get)} -> {min(full[k], key=full[k].get)}\n")
     cells = defaultdict(list)
     for k, b in full.items(): cells[k[:4]].append(max(b))
@@ -356,9 +388,34 @@ def edges_summary(ASM, f):
         d = defaultdict(dict)
         for r in read(p): d[(r["layout"], r["M"], r["Emax"], r["seed"], r.get("alloc", ""))][int(float(r["K"]))] = float(r["J"])
         top = [k for k, b in d.items() if min(b, key=b.get) == max(b)]
+        bot = [k for k, b in d.items() if min(b, key=b.get) == min(b) and min(b) > 1]
         r15 = [k for k, b in d.items() if not all(b[K] > 1.5 * min(b.values()) for K in sorted(b)[-3:])]
         f.write(f"{n}: {len(top)} of {len(d)} instances have their optimum at the largest K swept{(': ' + str(top[:6])) if top else ''}; "
+                f"{len(bot)} at the smallest K swept (> 1){(': ' + str(bot[:6])) if bot else ''}; "
                 f"{len(r15)} do not meet the 1.5x rule (three largest K > 1.5 x min)\n")
+    # v2.2.1: own optima moved by fleet sizes BELOW each instance's original sweep (K < K_ref), per planner
+    f.write("\nown optima moved by the fleet sizes below each instance's original sweep (K < K_ref; v2.2.1 downward fill):\n")
+    for n, pls in (("sa_rerun.csv", None), ("eval_all_v2.csv", ("cyc", "cluster_patrol", "cyc_sector0")), ("gzz_eval.csv", None),
+                   ("asghar_eval.csv", None), ("liu_all.csv", None), ("rr_tour_win.csv", None),
+                   ("depot_q.csv", None), ("depot_q_cyc.csv", None), ("depot_q_cluster_patrol.csv", None),
+                   ("depot_e.csv", None), ("depot_e_cyc.csv", None), ("depot_e_cluster_patrol.csv", None)):
+        p = os.path.join(ASM, n)
+        if not os.path.exists(p): continue
+        d, kr = defaultdict(dict), {}
+        for r in read(p):
+            if float(r.get("Th", 43200)) != 43200: continue
+            k = (r.get("planner", ""), r["layout"], r["M"], r["Emax"], r.get("L", ""), r["seed"], r.get("depot_x", ""), r.get("depot_y", ""))
+            d[k][int(float(r["K"]))] = float(r["J"])
+            if r.get("K_ref") not in (None, ""): kr[k] = int(float(r["K_ref"]))
+        for pl in (pls or (None,)):
+            keys = [k for k in d if pl is None or k[0] == pl]
+            mv = []
+            for k in keys:
+                b = d[k]; lo = {K: J for K, J in b.items() if K >= kr.get(k, min(b))}
+                if lo and min(b, key=b.get) != min(lo, key=lo.get):
+                    mv.append((k, min(lo, key=lo.get), min(b, key=b.get), min(b.values()) / min(lo.values()) - 1))
+            f.write(f"  {n}{('/' + pl) if pl else ''}: {len(mv)} of {len(keys)}"
+                    + (": J " + ", ".join(f"{100 * x[3]:+.1f}%" for x in mv[:12]) + "; layouts " + str(sorted({x[0][1] for x in mv})) if mv else "") + "\n")
 
 
 def regularity_summary(RES, f):

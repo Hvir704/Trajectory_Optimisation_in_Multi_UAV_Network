@@ -5,6 +5,7 @@ CORRECTED = os.environ.get('P6_ALGEBRA','corrected') == 'corrected'
 SCALE = os.environ.get('P6_SCALE', 'rad')
 sys.path.insert(0,".")
 from dyn_env import DynParams, SensorField
+from kref import kref
 rows=[r for r in csv.DictReader(open(sys.argv[1] if len(sys.argv)>1 else 'grid.csv')) if r["coord"]=="exclude" and r["replan"]=="launch" and float(r.get("Th",0))==43200]
 cells=collections.defaultdict(lambda: collections.defaultdict(dict))
 for r in rows: cells[(r["layout"],int(float(r["M"])),float(r["Emax"]),float(r.get("L",12600)))][int(float(r["seed"]))][int(float(r["K"]))]=r
@@ -17,7 +18,7 @@ for key in sorted(cells):
     for s,byK in sorted(inst.items()):
         F=SensorField(DynParams(M=M,Emax=E,layout=lay,L=L), np.random.default_rng(s))
         r=np.linalg.norm(F.pos-p0.home,axis=1); w=F.wi_base; c=2*p0.Pf*r/p0.v
-        Ks=sorted(byK); r0=byK[Ks[0]]; rc=float(r0["r_c"]); Pb=float(r0["P_bar"]); tc=2*rc/p0.v
+        Ks=sorted(byK); r0=byK[kref(byK)]; rc=float(r0["r_c"]); Pb=float(r0["P_bar"]); tc=2*rc/p0.v
         if SCALE == 'consistent':
             tau_s=(float(r0["T_s_over_t_c"])*p0.t_c-tc)/float(r0["mean_n"]); c=c*(Pb*tau_s/(2*p0.Pf*r.mean()/p0.v))
         Phi=lambda K:(K*(U-K*p0.Pf*tc)/(U+K*tc*(Pb-p0.Pf))) if (U+K*tc*(Pb-p0.Pf))>0 else -1
@@ -25,7 +26,7 @@ for key in sorted(cells):
         Kc=U/(tc*(p0.Pf+(p0.Pf*Pb)**.5)); Kr=p0.v*U/(2*p0.Pf*r.max()+p0.v*p0.Ph*p0.B_bits/p0.R)
         old=min(math.floor(Kr),round(Kc))
         Kp=1
-        for K in range(1,max(Ks)+1):
+        for K in range(1,100000):                 # sequential search from K = 1; stops where Phi(K+1) <= 0 (no sweep cap)
             if Phi(K+1)<=0: break
             S=r<=reach(K); Sn=r<=reach(K+1)
             QK=np.sqrt(w[S]*c[S]).sum(); QK1=np.sqrt(w[Sn]*c[Sn]).sum()

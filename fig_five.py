@@ -13,6 +13,14 @@ import sys, csv, json, math, argparse
 from collections import defaultdict
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+def _ref_better(cur, k, r):
+    """True if row r (fleet size k) should replace cur as the rule's reference row: the row at the instance's K_ref
+    (first K of its original sweep, from reproduce_v2) wins; without that column, the smallest K swept."""
+    kr = int(float(r["K_ref"])) if r.get("K_ref") not in (None, "") else None
+    if cur is None: return True
+    if kr is not None: return k == kr or (cur[0] != kr and k < cur[0])
+    return k < cur[0]
+
 ap = argparse.ArgumentParser(); ap.add_argument("out"); ap.add_argument("--sa", required=True)
 ap.add_argument("--eval", required=True); ap.add_argument("--extra", nargs="*", default=[])
 ap.add_argument("--selected", default="selected.json")
@@ -31,7 +39,7 @@ def take(path, rename=None):
         data[lay][pl][int(float(r["K"]))] = float(r["J"])
         if pl == "sa" and "K_reach_i" in r:
             k = int(float(r["K"]))
-            if lay not in rule or k < rule[lay][0]: rule[lay] = (k, r)
+            if _ref_better(rule.get(lay), k, r): rule[lay] = (k, r)
 take(a.sa, "sa"); take(a.eval)
 for f in a.extra: take(f)
 missing = [lab for key, lab, *_ in NAMES if not all(key in data[l] for l in sel)]

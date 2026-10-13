@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from kref import kref
 
 def load(path):
     d = defaultdict(dict)
@@ -31,7 +32,7 @@ for ax, lay, title in zip(axes, ("paper", "ring"), ("clustered (reach-bound)", "
     Ks = sorted(set.intersection(*[set(d[(lay, s)]) for _, d, _, _ in PL for s in seeds]))
     rule_vals = []
     for s in seeds:
-        r0 = sa[(lay, s)][min(sa[(lay, s)])]
+        b_ = sa[(lay, s)]; r0 = b_[kref(b_)]
         kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"]); law = min(kr, kc)
         rule_vals.append(law if law == kr else round(law))
     for name, d, col, mk in PL:

@@ -1,0 +1,23 @@
+Gao et al.'s own fleet-size rule (Alg. 2) on the primary grid: K_G = smallest K whose clusters each fit one trip
+  core  M= 50 1.5 MJ: K_G none in 0/12; mean K_G 1.00, annealer optimum 6.83, Gao optimum 4.92, ell 4.67; within one of annealer 0/12, of Gao's own optimum 0/12
+  core  M= 50 3.0 MJ: K_G none in 0/12; mean K_G 1.00, annealer optimum 12.17, Gao optimum 10.00, ell 10.08; within one of annealer 0/12, of Gao's own optimum 0/12
+  core  M=100 1.5 MJ: K_G none in 12/12; smallest worst-cluster load ratio 1.35-1.45 x budget
+  core  M=100 3.0 MJ: K_G none in 0/12; mean K_G 1.00, annealer optimum 14.00, Gao optimum 10.08, ell 9.83; within one of annealer 0/12, of Gao's own optimum 0/12
+  core  M=200 1.5 MJ: K_G none in 12/12; smallest worst-cluster load ratio 2.35-2.43 x budget
+  core  M=200 3.0 MJ: K_G none in 12/12; smallest worst-cluster load ratio 1.18-1.21 x budget
+  paper M= 50 1.5 MJ: K_G none in 12/12; smallest worst-cluster load ratio 1.13-1.31 x budget
+  paper M= 50 3.0 MJ: K_G none in 0/12; mean K_G 1.00, annealer optimum 10.00, Gao optimum 6.58, ell 9.67; within one of annealer 0/12, of Gao's own optimum 0/12
+  paper M=100 1.5 MJ: K_G none in 12/12; smallest worst-cluster load ratio 1.89-2.07 x budget
+  paper M=100 3.0 MJ: K_G none in 7/12; mean K_G 1.00, annealer optimum 9.60, Gao optimum 8.00, ell 9.40; within one of annealer 0/5, of Gao's own optimum 0/5
+  paper M=100 6.0 MJ: K_G none in 0/12; mean K_G 1.00, annealer optimum 19.25, Gao not run here, ell 18.67; within one of annealer 0/12, of Gao's own optimum 0/0
+  paper M=200 1.5 MJ: K_G none in 12/12; smallest worst-cluster load ratio 3.21-3.36 x budget
+  paper M=200 3.0 MJ: K_G none in 12/12; smallest worst-cluster load ratio 1.61-1.68 x budget
+  paper M=400 1.5 MJ: K_G none in 12/12; smallest worst-cluster load ratio 5.48-5.67 x budget
+  ring  M= 50 1.5 MJ: K_G none in 12/12; smallest worst-cluster load ratio 1.13-1.20 x budget
+  ring  M= 50 3.0 MJ: K_G none in 0/12; mean K_G 1.00, annealer optimum 8.50, Gao optimum 4.42, ell 6.00; within one of annealer 0/12, of Gao's own optimum 0/12
+  ring  M=100 1.5 MJ: K_G none in 12/12; smallest worst-cluster load ratio 1.60-1.79 x budget
+  ring  M=100 3.0 MJ: K_G none in 0/12; mean K_G 1.00, annealer optimum 7.92, Gao optimum 4.67, ell 6.00; within one of annealer 0/12, of Gao's own optimum 0/12
+  ring  M=200 1.5 MJ: K_G none in 12/12; smallest worst-cluster load ratio 2.61-2.82 x budget
+  ring  M=200 3.0 MJ: K_G none in 12/12; smallest worst-cluster load ratio 1.31-1.41 x budget
+  values of K_G: {'1': 89, 'None': 151}
+  total: K_G none in 151/240; where defined, within one of the annealer's optimum 0/89, of Gao's own 0/77

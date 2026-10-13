@@ -8,6 +8,7 @@ usage: python strand_planners.py sa_rerun.csv verdicts.csv eval_all_v2.csv gzz_e
 import sys, csv, math, collections
 import numpy as np
 from dyn_env import DynParams, SensorField
+from kref import kref
 
 
 def load(path, planner=None):
@@ -25,7 +26,7 @@ def predictors(k, byK):
     p = DynParams(M=M, Emax=E, layout=lay); U = (1 - p.rho) * E; Tb, T = p.T_burnin, p.T_horizon - p.T_burnin
     F = SensorField(DynParams(M=M, Emax=E, layout=lay), np.random.default_rng(s))
     r = np.linalg.norm(F.pos - p.home, axis=1); w = F.wi_base; c = 2 * p.Pf * r / p.v
-    r0 = byK[min(byK)]; rc = float(r0["r_c"]); Pb = float(r0["P_bar"]); tc = 2 * rc / p.v
+    r0 = byK[kref(byK)]; rc = float(r0["r_c"]); Pb = float(r0["P_bar"]); tc = 2 * rc / p.v
     Phi = lambda K: (K * (U - K * p.Pf * tc) / (U + K * tc * (Pb - p.Pf))) if (U + K * tc * (Pb - p.Pf)) > 0 else -1
     reach = lambda K: p.v * (U / K - p.Ph * p.B_bits / p.R) / (2 * p.Pf)
     Kc = U / (tc * (p.Pf + (p.Pf * Pb) ** .5)); Kr = p.v * U / (2 * p.Pf * r.max() + p.v * p.Ph * p.B_bits / p.R)

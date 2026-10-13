@@ -5,6 +5,14 @@ Every statistic is over the deployments where Liu exists (216 when the extension
 import csv, math, argparse
 from collections import defaultdict
 import numpy as np
+def _ref_better(cur, k, r):
+    """True if row r (fleet size k) should replace cur as the rule's reference row: the row at the instance's K_ref
+    (first K of its original sweep, from reproduce_v2) wins; without that column, the smallest K swept."""
+    kr = int(float(r["K_ref"])) if r.get("K_ref") not in (None, "") else None
+    if cur is None: return True
+    if kr is not None: return k == kr or (cur[0] != kr and k < cur[0])
+    return k < cur[0]
+
 ap = argparse.ArgumentParser()
 ap.add_argument("--liu", nargs="+", required=True); ap.add_argument("--sa", required=True)
 ap.add_argument("--others", nargs="*", default=[]); ap.add_argument("--verdicts", required=True)
@@ -25,7 +33,7 @@ def take(path, force=None):
         D[dep][pl][int(float(r["K"]))] = float(r["J"])
         if pl == "sa":
             k = int(float(r["K"]))
-            if dep not in RULE or k < RULE[dep][0]: RULE[dep] = (k, r)
+            if _ref_better(RULE.get(dep), k, r): RULE[dep] = (k, r)
 take(a.sa, "sa")
 for f in a.others: take(f)
 for f in a.liu: take(f, "liu_mpga")
@@ -59,6 +67,8 @@ def cmp(X, at_l=False):
         rat = np.array(rat); bs = [np.median(rng.choice(rat, len(rat))) for _ in range(10000)]
         out[fam] = (np.median(rat), np.quantile(bs, .025), np.quantile(bs, .975), int(np.sum(rat < 0)), len(rat))
     return out
+print("\nNote: the intervals here use this script's own bootstrap stream; Table XIII quotes planners.txt, whose intervals can\n"
+      "differ in the last digit (independent resamples of the same deployments). Medians and counts are identical.")
 print("\nPRIMARY: C4 vs Liu, own optimum (median J*_C4/J*_Liu - 1, 95% CI, C4 lower)")
 P = cmp("cyc")
 for fam, (m, lo, hi, w, n) in P.items(): print(f"  {fam:5s} {m:+.1%} [{lo:+.1%}, {hi:+.1%}]  {w}/{n}")
