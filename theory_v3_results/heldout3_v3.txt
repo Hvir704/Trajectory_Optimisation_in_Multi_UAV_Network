@@ -1,0 +1,25 @@
+manifest sha256 275e503a021376785f8b138ca6471e8b9e6857dca060789e7c50d1e812ae871e
+
+== sa  (sweeps still needing extension: 0)
+  all   n=160 | old: ex 0.52 w1 0.79 mean 11.0% med 0.0% p90 29.7% (lin 29.7%) max 141.0% | v33: ex 0.57 w1 0.86 mean 4.6% med 0.0% p90 19.3% (lin 19.3%) max 38.7% | v34: ex 0.64 w1 0.93 mean 2.6% med 0.0% p90 10.6% (lin 10.7%) max 30.1%
+  core  n= 48 | old: ex 0.46 w1 0.58 mean 26.2% med 9.9% p90 85.2% (lin 79.7%) max 141.0% | v33: ex 0.60 w1 0.79 mean 5.1% med 0.0% p90 25.9% (lin 21.4%) max 38.7% | v34: ex 0.60 w1 0.81 mean 3.1% med 0.0% p90 12.5% (lin 11.7%) max 30.1%
+  paper n= 64 | old: ex 0.66 w1 1.00 mean 2.2% med 0.0% p90 9.6% (lin 8.6%) max 18.4% | v33: ex 0.67 w1 1.00 mean 2.1% med 0.0% p90 9.6% (lin 8.6%) max 18.4% | v34: ex 0.67 w1 1.00 mean 2.1% med 0.0% p90 9.6% (lin 8.6%) max 18.4%
+  ring  n= 48 | old: ex 0.40 w1 0.73 mean 7.5% med 2.1% p90 21.5% (lin 21.1%) max 29.2% | v33: ex 0.40 w1 0.73 mean 7.5% med 2.1% p90 21.5% (lin 21.1%) max 29.2% | v34: ex 0.62 w1 0.94 mean 2.6% med 0.0% p90 11.5% (lin 10.9%) max 15.2%
+
+== rr_tour  (sweeps still needing extension: 0)
+  all   n=160 | old: ex 0.53 w1 0.79 mean 10.1% med 0.0% p90 28.5% (lin 28.6%) max 109.0% | v33: ex 0.52 w1 0.83 mean 5.0% med 0.0% p90 16.7% (lin 16.8%) max 31.1% | v34: ex 0.54 w1 0.90 mean 3.3% med 0.0% p90 9.1% (lin 9.2%) max 25.4%
+  core  n= 48 | old: ex 0.42 w1 0.58 mean 23.1% med 8.0% p90 67.2% (lin 65.7%) max 109.0% | v33: ex 0.42 w1 0.71 mean 5.9% med 1.4% p90 18.8% (lin 18.7%) max 30.4% | v34: ex 0.42 w1 0.73 mean 4.5% med 1.8% p90 13.7% (lin 10.5%) max 25.4%
+  paper n= 64 | old: ex 0.58 w1 0.95 mean 2.8% med 0.0% p90 8.4% (lin 8.4%) max 20.3% | v33: ex 0.56 w1 0.95 mean 3.0% med 0.0% p90 9.0% (lin 8.8%) max 20.3% | v34: ex 0.56 w1 0.95 mean 3.0% med 0.0% p90 9.0% (lin 8.8%) max 20.3%
+  ring  n= 48 | old: ex 0.56 w1 0.79 mean 6.9% med 0.0% p90 24.3% (lin 24.1%) max 31.1% | v33: ex 0.56 w1 0.79 mean 6.9% med 0.0% p90 24.3% (lin 24.1%) max 31.1% | v34: ex 0.65 w1 1.00 mean 2.6% med 0.0% p90 12.1% (lin 9.4%) max 15.9%
+
+REGISTERED HYPOTHESES (primary rule v34; each for sa and rr_tour)
+  A sa: within-one all 0.925 vs v33 0.856: HOLDS
+  B sa: within-one ring 0.938 (>= 0.85) vs v33 0.729: HOLDS
+  C sa: p90 regret all 10.6% vs v33 19.3%: HOLDS
+  D sa: where v34 != v33 (n=28): better 28, worse 0, ties 0, one-sided p 0.0000: HOLDS
+  A rr_tour: within-one all 0.900 vs v33 0.831: HOLDS
+  B rr_tour: within-one ring 1.000 (>= 0.85) vs v33 0.792: HOLDS
+  C rr_tour: p90 regret all 9.1% vs v33 16.7%: HOLDS
+  D rr_tour: where v34 != v33 (n=28): better 22, worse 6, ties 0, one-sided p 0.0019: HOLDS
+
+SUMMARY A sa HOLDS  B sa HOLDS  C sa HOLDS  D sa HOLDS  A rr_tour HOLDS  B rr_tour HOLDS  C rr_tour HOLDS  D rr_tour HOLDS

@@ -1,0 +1,21 @@
+horizon experiment (T = 24 h), predictions sha256 eb955eb077a865301b5678cbd4697420a7f8ab01855d65cc52a3e724cb26eda7
+  core M=100 s=13: 24 h optimum 5 | old 5 (0.0%)  v3(12h) 5 (0.0%)  v3(24h) 5 (0.0%)
+  core M=100 s=14: 24 h optimum 6 | old 5 (20.5%)  v3(12h) 5 (20.5%)  v3(24h) 5 (20.5%)
+  core M=100 s=15: 24 h optimum 6 | old 5 (25.1%)  v3(12h) 5 (25.1%)  v3(24h) 5 (25.1%)
+  core M=100 s=16: 24 h optimum 5 | old 5 (0.0%)  v3(12h) 5 (0.0%)  v3(24h) 5 (0.0%)
+  core M=100 s=17: 24 h optimum 4 | old 4 (0.0%)  v3(12h) 14 (30.2%)  v3(24h) 4 (0.0%)  <- v3(12h) != v3(24h)
+  core M=100 s=18: 24 h optimum 4 | old 4 (0.0%)  v3(12h) 4 (0.0%)  v3(24h) 4 (0.0%)
+  core M=100 s=19: 24 h optimum 15 | old 4 (67.1%)  v3(12h) 14 (0.5%)  v3(24h) 14 (0.5%)
+  core M=100 s=20: 24 h optimum 5 | old 5 (0.0%)  v3(12h) 5 (0.0%)  v3(24h) 5 (0.0%)
+  core M=200 s=13: 24 h optimum 14 | old 4 (86.5%)  v3(12h) 14 (0.0%)  v3(24h) 14 (0.0%)
+  core M=200 s=14: 24 h optimum 5 | old 4 (25.9%)  v3(12h) 14 (26.8%)  v3(24h) 4 (25.9%)  <- v3(12h) != v3(24h)
+  core M=200 s=15: 24 h optimum 14 | old 5 (55.7%)  v3(12h) 14 (0.0%)  v3(24h) 14 (0.0%)
+  core M=200 s=16: 24 h optimum 13 | old 5 (82.3%)  v3(12h) 14 (0.0%)  v3(24h) 14 (0.0%)
+  core M=200 s=17: 24 h optimum 13 | old 4 (110.1%)  v3(12h) 14 (0.7%)  v3(24h) 14 (0.7%)
+  core M=200 s=18: 24 h optimum 5 | old 5 (0.0%)  v3(12h) 14 (36.6%)  v3(24h) 5 (0.0%)  <- v3(12h) != v3(24h)
+  core M=200 s=19: 24 h optimum 13 | old 4 (29.6%)  v3(12h) 14 (0.0%)  v3(24h) 14 (0.0%)
+  core M=200 s=20: 24 h optimum 5 | old 5 (0.0%)  v3(12h) 14 (8.9%)  v3(24h) 5 (0.0%)  <- v3(12h) != v3(24h)
+  old      regret median 22.8%  max 110.1%
+  v3(12h)  regret median 0.3%  max 36.6%
+  v3(24h)  regret median 0.0%  max 25.9%
+  H5: HOLDS (4 of 4 closer to v3(24h))

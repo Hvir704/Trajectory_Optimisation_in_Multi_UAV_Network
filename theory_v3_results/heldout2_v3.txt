@@ -1,0 +1,85 @@
+manifest sha256 9497b1f41e223b0a39c8573881110245c2b60532c5256b41405af9630c8c0b8e
+
+== sa  (sweeps still needing extension: 0)
+  all   n=160 | old: ex 0.50 w1 0.74 mean 12.2% med 0.2% p90 28.8% (lin 29.1%) max 145.8% | v3: ex 0.57 w1 0.81 mean 4.2% med 0.0% p90 16.8% (lin 16.9%) max 31.9% | v33: ex 0.54 w1 0.81 mean 4.2% med 0.0% p90 16.8% (lin 16.9%) max 31.9% | bracket 48/48
+  core  n= 48 | old: ex 0.40 w1 0.48 mean 31.2% med 12.6% p90 102.5% (lin 101.5%) max 145.8% | v3: ex 0.54 w1 0.71 mean 4.6% med 0.0% p90 19.6% (lin 17.0%) max 31.9% | v33: ex 0.54 w1 0.71 mean 4.6% med 0.0% p90 19.6% (lin 17.0%) max 31.9%
+  paper n= 64 | old: ex 0.62 w1 1.00 mean 2.1% med 0.0% p90 6.7% (lin 6.6%) max 17.3% | v3: ex 0.69 w1 1.00 mean 1.8% med 0.0% p90 6.7% (lin 6.3%) max 17.3% | v33: ex 0.62 w1 1.00 mean 2.0% med 0.0% p90 6.7% (lin 6.3%) max 17.3%
+  ring  n= 48 | old: ex 0.44 w1 0.67 mean 6.9% med 2.2% p90 19.8% (lin 18.9%) max 28.8% | v3: ex 0.44 w1 0.67 mean 6.9% med 2.2% p90 19.8% (lin 18.9%) max 28.8% | v33: ex 0.44 w1 0.67 mean 6.9% med 2.2% p90 19.8% (lin 18.9%) max 28.8% | bracket 48/48
+
+== rr_tour  (sweeps still needing extension: 0)
+  all   n=160 | old: ex 0.54 w1 0.79 mean 10.7% med 0.0% p90 26.8% (lin 27.5%) max 126.6% | v3: ex 0.51 w1 0.84 mean 5.1% med 0.0% p90 16.3% (lin 16.4%) max 33.5% | v33: ex 0.54 w1 0.84 mean 4.4% med 0.0% p90 14.7% (lin 14.8%) max 33.5% | bracket 47/48
+  core  n= 48 | old: ex 0.42 w1 0.50 mean 27.1% med 8.6% p90 92.8% (lin 86.4%) max 126.6% | v3: ex 0.46 w1 0.69 mean 5.5% med 1.9% p90 16.2% (lin 14.9%) max 33.5% | v33: ex 0.46 w1 0.69 mean 5.5% med 1.9% p90 16.2% (lin 14.9%) max 33.5%
+  paper n= 64 | old: ex 0.61 w1 0.98 mean 2.5% med 0.0% p90 8.0% (lin 8.0%) max 23.8% | v3: ex 0.48 w1 0.98 mean 4.6% med 0.1% p90 15.9% (lin 15.6%) max 23.8% | v33: ex 0.58 w1 0.98 mean 3.0% med 0.0% p90 9.0% (lin 8.7%) max 23.8%
+  ring  n= 48 | old: ex 0.58 w1 0.81 mean 5.2% med 0.0% p90 17.6% (lin 17.4%) max 26.4% | v3: ex 0.58 w1 0.81 mean 5.2% med 0.0% p90 17.6% (lin 17.4%) max 26.4% | v33: ex 0.58 w1 0.81 mean 5.2% med 0.0% p90 17.6% (lin 17.4%) max 26.4% | bracket 47/48
+
+== cyc  (sweeps still needing extension: 0)
+  all   n=160 | old: ex 0.63 w1 0.88 mean 5.1% med 0.0% p90 12.9% (lin 13.0%) max 93.0% | v3: ex 0.59 w1 0.88 mean 3.4% med 0.0% p90 11.8% (lin 11.8%) max 24.3% | v33: ex 0.61 w1 0.88 mean 3.3% med 0.0% p90 11.8% (lin 11.8%) max 24.3% | bracket 44/48
+  core  n= 48 | old: ex 0.62 w1 0.75 mean 11.0% med 0.0% p90 39.2% (lin 38.0%) max 93.0% | v3: ex 0.58 w1 0.73 mean 4.2% med 0.0% p90 16.4% (lin 16.1%) max 24.3% | v33: ex 0.58 w1 0.73 mean 4.2% med 0.0% p90 16.4% (lin 16.1%) max 24.3%
+  paper n= 64 | old: ex 0.69 w1 0.97 mean 2.0% med 0.0% p90 8.2% (lin 7.8%) max 22.2% | v3: ex 0.62 w1 0.97 mean 2.8% med 0.0% p90 8.6% (lin 8.5%) max 23.9% | v33: ex 0.66 w1 0.97 mean 2.6% med 0.0% p90 8.6% (lin 8.5%) max 23.9%
+  ring  n= 48 | old: ex 0.56 w1 0.90 mean 3.4% med 0.0% p90 10.7% (lin 10.4%) max 14.5% | v3: ex 0.56 w1 0.90 mean 3.4% med 0.0% p90 10.7% (lin 10.4%) max 14.5% | v33: ex 0.56 w1 0.90 mean 3.4% med 0.0% p90 10.7% (lin 10.4%) max 14.5% | bracket 44/48
+
+== cluster_patrol  (sweeps still needing extension: 0)
+  all   n=160 | old: ex 0.51 w1 0.84 mean 7.9% med 0.0% p90 22.2% (lin 22.4%) max 121.7% | v3: ex 0.49 w1 0.83 mean 5.2% med 0.4% p90 15.2% (lin 15.2%) max 46.5% | v33: ex 0.49 w1 0.83 mean 5.1% med 0.4% p90 15.2% (lin 15.2%) max 46.5% | bracket 38/48
+  core  n= 48 | old: ex 0.58 w1 0.71 mean 14.8% med 0.0% p90 64.6% (lin 51.6%) max 121.7% | v3: ex 0.54 w1 0.69 mean 4.8% med 0.0% p90 15.0% (lin 14.0%) max 46.5% | v33: ex 0.54 w1 0.69 mean 4.8% med 0.0% p90 15.0% (lin 14.0%) max 46.5%
+  paper n= 64 | old: ex 0.44 w1 0.89 mean 5.6% med 1.3% p90 19.0% (lin 18.0%) max 41.6% | v3: ex 0.42 w1 0.88 mean 6.3% med 1.4% p90 21.7% (lin 20.9%) max 41.6% | v33: ex 0.42 w1 0.88 mean 6.0% med 1.4% p90 19.0% (lin 18.9%) max 41.6%
+  ring  n= 48 | old: ex 0.52 w1 0.92 mean 4.1% med 0.0% p90 13.4% (lin 13.1%) max 28.2% | v3: ex 0.52 w1 0.92 mean 4.1% med 0.0% p90 13.4% (lin 13.1%) max 28.2% | v33: ex 0.52 w1 0.92 mean 4.1% med 0.0% p90 13.4% (lin 13.1%) max 28.2% | bracket 38/48
+
+REGISTERED HYPOTHESES (primary rule v33)
+  H1 SA core: p90 19.6% vs 102.5%, mean 4.6% vs 31.2%: HOLDS
+  H2 SA all within-one: 0.812 vs 0.744: HOLDS
+  H3 SA ring bracket: 48/48: HOLDS
+  H4 SA paired (v33 != old, n=19): better 18, worse 1, ties 0, one-sided p 0.0000: HOLDS
+  H5 C4 core: p90 16.4% vs 39.2%, within-one 0.729 vs 0.750: FAILS
+  H6 rr_tour clustered: mean regret v33 - old = +0.43 points (limit +1.00): HOLDS
+  H6 cyc clustered: mean regret v33 - old = +0.58 points (limit +1.00): HOLDS
+
+  horizon arm (24 h regrets):
+    ctrl core M=100 E=1.5 s=21: opt 12 h 15, 24 h 4 | v33 4 (0.0%)  v33_24 4 (0.0%)  old 4 (0.0%)
+    ctrl core M=100 E=1.5 s=22: opt 12 h 6, 24 h 6 | v33 6 (0.0%)  v33_24 6 (0.0%)  old 6 (0.0%)
+    ctrl core M=100 E=1.5 s=23: opt 12 h 4, 24 h 4 | v33 4 (0.0%)  v33_24 4 (0.0%)  old 4 (0.0%)
+    ctrl core M=100 E=1.5 s=26: opt 12 h 5, 24 h 5 | v33 5 (0.0%)  v33_24 5 (0.0%)  old 5 (0.0%)
+    ctrl core M=100 E=1.5 s=27: opt 12 h 5, 24 h 5 | v33 5 (0.0%)  v33_24 5 (0.0%)  old 5 (0.0%)
+    ctrl core M=100 E=3.0 s=21: opt 12 h 9, 24 h 9 | v33 9 (0.0%)  v33_24 9 (0.0%)  old 9 (0.0%)
+    ctrl core M=100 E=3.0 s=22: opt 12 h 12, 24 h 12 | v33 12 (0.0%)  v33_24 12 (0.0%)  old 12 (0.0%)
+    ctrl core M=100 E=3.0 s=23: opt 12 h 9, 24 h 9 | v33 9 (0.0%)  v33_24 9 (0.0%)  old 9 (0.0%)
+    ctrl core M=100 E=3.0 s=24: opt 12 h 31, 24 h 9 | v33 9 (0.0%)  v33_24 9 (0.0%)  old 9 (0.0%)
+    ctrl core M=100 E=3.0 s=25: opt 12 h 31, 24 h 12 | v33 12 (0.0%)  v33_24 12 (0.0%)  old 12 (0.0%)
+    ctrl core M=100 E=3.0 s=26: opt 12 h 11, 24 h 11 | v33 10 (11.5%)  v33_24 10 (11.5%)  old 10 (11.5%)
+    ctrl core M=100 E=3.0 s=27: opt 12 h 10, 24 h 10 | v33 10 (0.0%)  v33_24 10 (0.0%)  old 10 (0.0%)
+    ctrl core M=100 E=3.0 s=28: opt 12 h 31, 24 h 10 | v33 10 (0.0%)  v33_24 10 (0.0%)  old 10 (0.0%)
+    ctrl core M=200 E=1.5 s=21: opt 12 h 13, 24 h 13 | v33 14 (0.1%)  v33_24 14 (0.1%)  old 4 (31.4%)
+    ctrl core M=200 E=1.5 s=22: opt 12 h 14, 24 h 13 | v33 14 (0.1%)  v33_24 14 (0.1%)  old 5 (26.0%)
+    ctrl core M=200 E=1.5 s=23: opt 12 h 14, 24 h 14 | v33 14 (0.0%)  v33_24 14 (0.0%)  old 5 (36.7%)
+    ctrl core M=200 E=1.5 s=24: opt 12 h 13, 24 h 13 | v33 14 (0.3%)  v33_24 14 (0.3%)  old 6 (35.4%)
+    ctrl core M=200 E=1.5 s=25: opt 12 h 14, 24 h 13 | v33 14 (0.0%)  v33_24 14 (0.0%)  old 4 (92.9%)
+    ctrl core M=200 E=1.5 s=26: opt 12 h 14, 24 h 14 | v33 14 (0.0%)  v33_24 14 (0.0%)  old 4 (53.9%)
+    ctrl core M=200 E=1.5 s=27: opt 12 h 13, 24 h 13 | v33 14 (0.3%)  v33_24 14 (0.3%)  old 5 (70.1%)
+    ctrl core M=200 E=1.5 s=28: opt 12 h 14, 24 h 14 | v33 14 (0.0%)  v33_24 14 (0.0%)  old 4 (106.9%)
+    ctrl core M=200 E=3.0 s=21: opt 12 h 30, 24 h 9 | v33 9 (0.0%)  v33_24 9 (0.0%)  old 9 (0.0%)
+    ctrl core M=200 E=3.0 s=22: opt 12 h 30, 24 h 12 | v33 11 (8.3%)  v33_24 11 (8.3%)  old 11 (8.3%)
+    ctrl core M=200 E=3.0 s=25: opt 12 h 30, 24 h 29 | v33 28 (2.4%)  v33_24 28 (2.4%)  old 9 (54.5%)
+    ctrl core M=200 E=3.0 s=27: opt 12 h 30, 24 h 30 | v33 28 (0.6%)  v33_24 28 (0.6%)  old 10 (63.7%)
+    ctrl core M=200 E=3.0 s=28: opt 12 h 30, 24 h 30 | v33 28 (0.9%)  v33_24 28 (0.9%)  old 9 (62.4%)
+    disc core M=100 E=1.5 s=24: opt 12 h 15, 24 h 4 | v33 14 (6.1%)  v33_24 4 (0.0%)  old 4 (0.0%)
+    disc core M=100 E=1.5 s=25: opt 12 h 14, 24 h 6 | v33 14 (29.3%)  v33_24 6 (0.0%)  old 6 (0.0%)
+    disc core M=100 E=1.5 s=28: opt 12 h 14, 24 h 5 | v33 14 (21.2%)  v33_24 5 (0.0%)  old 5 (0.0%)
+    disc core M=100 E=1.5 s=30: opt 12 h 14, 24 h 4 | v33 14 (24.5%)  v33_24 4 (0.0%)  old 4 (0.0%)
+    disc core M=100 E=1.5 s=34: opt 12 h 15, 24 h 15 | v33 14 (0.9%)  v33_24 4 (1.4%)  old 4 (1.4%)
+    disc core M=100 E=3.0 s=39: opt 12 h 30, 24 h 30 | v33 28 (1.8%)  v33_24 9 (37.5%)  old 9 (37.5%)
+    disc core M=200 E=1.5 s=31: opt 12 h 14, 24 h 14 | v33 14 (0.0%)  v33_24 4 (4.8%)  old 4 (4.8%)
+    disc core M=200 E=1.5 s=32: opt 12 h 14, 24 h 14 | v33 14 (0.0%)  v33_24 4 (0.5%)  old 4 (0.5%)
+    disc core M=200 E=1.5 s=35: opt 12 h 14, 24 h 5 | v33 14 (19.6%)  v33_24 5 (0.0%)  old 5 (0.0%)
+    disc core M=200 E=1.5 s=38: opt 12 h 13, 24 h 5 | v33 14 (25.5%)  v33_24 5 (0.0%)  old 5 (0.0%)
+    disc core M=200 E=3.0 s=23: opt 12 h 30, 24 h 30 | v33 28 (1.0%)  v33_24 11 (10.1%)  old 11 (10.1%)
+    disc core M=200 E=3.0 s=24: opt 12 h 30, 24 h 30 | v33 28 (3.9%)  v33_24 12 (29.6%)  old 12 (29.6%)
+    disc core M=200 E=3.0 s=26: opt 12 h 31, 24 h 31 | v33 28 (0.8%)  v33_24 9 (12.6%)  old 9 (12.6%)
+    disc core M=200 E=3.0 s=29: opt 12 h 30, 24 h 30 | v33 28 (0.9%)  v33_24 9 (15.5%)  old 9 (15.5%)
+    disc core M=200 E=3.0 s=33: opt 12 h 30, 24 h 11 | v33 28 (10.0%)  v33_24 10 (9.5%)  old 10 (9.5%)
+    disc core M=200 E=3.0 s=34: opt 12 h 30, 24 h 30 | v33 28 (1.5%)  v33_24 11 (10.3%)  old 11 (10.3%)
+    disc core M=50 E=1.5 s=31: opt 12 h 15, 24 h 5 | v33 14 (10.2%)  v33_24 5 (0.0%)  old 5 (0.0%)
+    disc paper M=100 E=1.5 s=38: opt 12 h 5, 24 h 4 | v33 5 (0.8%)  v33_24 4 (0.0%)  old 4 (0.0%)
+    disc paper M=200 E=1.5 s=27: opt 12 h 4, 24 h 4 | v33 5 (4.7%)  v33_24 4 (0.0%)  old 4 (0.0%)
+  H7 horizon: closer to v33_24 in 10 of 19, one-sided p 0.5000: FAILS
+  2x2 (predicted switch, observed optimum change 12 h -> 24 h): TP 8  FN 6  FP 11  TN 20
+
+SUMMARY H1 HOLDS  H2 HOLDS  H3 HOLDS  H4 HOLDS  H5 FAILS  H6 HOLDS  H7 FAILS

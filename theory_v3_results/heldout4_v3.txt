@@ -1,0 +1,53 @@
+manifest sha256 4c09326fa0517ed3438cf7cc457f0864eb81ab9cb6158336d2c293775f30b0aa
+
+== sa  (rule v34; sweeps still needing extension: 0; checked sizes not swept: 0)
+  all   n=160 | old: ex 0.49 w1 0.74 mean 8.9% p90 27.4% max 87.7% [+-1: mean 4.73% max 74.2%] | v33: ex 0.51 w1 0.79 mean 5.1% p90 17.4% max 58.1% [+-1: mean 1.98% max 47.9%] | v34: ex 0.56 w1 0.88 mean 2.9% p90 10.2% max 49.0% [+-1: mean 0.88% max 34.0%] | CHECK (4.0 sizes): ex 0.92 mean 0.19% med 0.0% p90 0.0% max 8.7% >10%: 0
+  core  n= 48 | old: ex 0.33 w1 0.48 mean 20.2% p90 56.8% max 87.7% [+-1: mean 13.65% max 74.2%] | v33: ex 0.38 w1 0.65 mean 7.6% p90 18.7% max 58.1% [+-1: mean 4.51% max 47.9%] | v34: ex 0.38 w1 0.67 mean 5.3% p90 14.6% max 49.0% [+-1: mean 2.63% max 34.0%] | CHECK (6.0 sizes): ex 0.79 mean 0.33% med 0.0% p90 1.2% max 3.9% >10%: 0
+  paper n= 64 | old: ex 0.69 w1 1.00 mean 1.4% p90 5.9% max 12.6% [+-1: mean 0.00% max 0.0%] | v33: ex 0.69 w1 1.00 mean 1.4% p90 5.9% max 12.6% [+-1: mean 0.00% max 0.0%] | v34: ex 0.69 w1 1.00 mean 1.4% p90 5.9% max 12.6% [+-1: mean 0.00% max 0.0%] | CHECK (3.4 sizes): ex 1.00 mean 0.00% med 0.0% p90 0.0% max 0.0% >10%: 0
+  ring  n= 48 | old: ex 0.40 w1 0.67 mean 7.7% p90 22.1% max 28.8% [+-1: mean 2.10% max 23.1%] | v33: ex 0.40 w1 0.67 mean 7.7% p90 22.1% max 28.8% [+-1: mean 2.10% max 23.1%] | v34: ex 0.56 w1 0.94 mean 2.5% p90 7.0% max 23.1% [+-1: mean 0.31% max 8.7%] | CHECK (3.0 sizes): ex 0.94 mean 0.31% med 0.0% p90 0.0% max 8.7% >10%: 0
+
+== rr_tour  (rule v34; sweeps still needing extension: 0; checked sizes not swept: 0)
+  all   n=160 | old: ex 0.53 w1 0.78 mean 8.5% p90 26.5% max 81.4% [+-1: mean 3.59% max 52.6%] | v33: ex 0.55 w1 0.82 mean 5.5% p90 19.3% max 49.4% [+-1: mean 1.83% max 37.9%] | v34: ex 0.56 w1 0.87 mean 3.9% p90 12.0% max 38.4% [+-1: mean 1.08% max 25.9%] | CHECK (4.0 sizes): ex 0.91 mean 0.32% med 0.0% p90 0.0% max 6.7% >10%: 0
+  core  n= 48 | old: ex 0.31 w1 0.52 mean 18.4% p90 48.0% max 81.4% [+-1: mean 10.07% max 52.6%] | v33: ex 0.38 w1 0.65 mean 8.6% p90 25.4% max 49.4% [+-1: mean 4.18% max 37.9%] | v34: ex 0.38 w1 0.65 mean 6.7% p90 18.0% max 38.4% [+-1: mean 3.30% max 25.9%] | CHECK (6.0 sizes): ex 0.79 mean 0.77% med 0.0% p90 3.5% max 6.7% >10%: 0
+  paper n= 64 | old: ex 0.66 w1 0.94 mean 2.5% p90 9.2% max 26.5% [+-1: mean 0.22% max 6.1%] | v33: ex 0.66 w1 0.94 mean 2.5% p90 9.2% max 26.5% [+-1: mean 0.22% max 6.1%] | v34: ex 0.66 w1 0.94 mean 2.5% p90 9.2% max 26.5% [+-1: mean 0.22% max 6.1%] | CHECK (3.4 sizes): ex 0.94 mean 0.22% med 0.0% p90 0.0% max 6.1% >10%: 0
+  ring  n= 48 | old: ex 0.58 w1 0.83 mean 6.6% p90 22.4% max 30.0% [+-1: mean 1.62% max 23.1%] | v33: ex 0.58 w1 0.83 mean 6.6% p90 22.4% max 30.0% [+-1: mean 1.62% max 23.1%] | v34: ex 0.62 w1 1.00 mean 2.9% p90 9.3% max 23.1% [+-1: mean 0.00% max 0.0%] | CHECK (3.0 sizes): ex 1.00 mean 0.00% med 0.0% p90 0.0% max 0.0% >10%: 0
+
+== cyc  (rule v33; sweeps still needing extension: 0; checked sizes not swept: 0)
+  all   n=160 | old: ex 0.53 w1 0.93 mean 4.2% p90 13.9% max 27.6% [+-1: mean 0.43% max 27.6%] | v33: ex 0.52 w1 0.88 mean 4.9% p90 14.8% max 37.8% [+-1: mean 1.65% max 35.6%] | v34: ex 0.53 w1 0.85 mean 6.4% p90 21.9% max 70.3% [+-1: mean 3.55% max 70.3%] | CHECK (4.0 sizes): ex 0.94 mean 0.20% med 0.0% p90 0.0% max 6.2% >10%: 0
+  core  n= 48 | old: ex 0.48 w1 0.92 mean 5.7% p90 17.2% max 27.6% [+-1: mean 0.85% max 27.6%] | v33: ex 0.44 w1 0.73 mean 7.9% p90 23.4% max 37.8% [+-1: mean 4.91% max 35.6%] | v34: ex 0.38 w1 0.60 mean 13.2% p90 37.8% max 70.3% [+-1: mean 10.59% max 70.3%] | CHECK (6.0 sizes): ex 0.96 mean 0.08% med 0.0% p90 0.0% max 3.0% >10%: 0
+  paper n= 64 | old: ex 0.59 w1 1.00 mean 2.7% p90 9.7% max 23.8% [+-1: mean 0.00% max 0.0%] | v33: ex 0.59 w1 1.00 mean 2.7% p90 9.7% max 23.8% [+-1: mean 0.00% max 0.0%] | v34: ex 0.59 w1 1.00 mean 2.7% p90 9.7% max 23.8% [+-1: mean 0.00% max 0.0%] | CHECK (3.4 sizes): ex 1.00 mean 0.00% med 0.0% p90 0.0% max 0.0% >10%: 0
+  ring  n= 48 | old: ex 0.50 w1 0.85 mean 4.8% p90 13.4% max 25.1% [+-1: mean 0.57% max 6.2%] | v33: ex 0.50 w1 0.85 mean 4.8% p90 13.4% max 25.1% [+-1: mean 0.57% max 6.2%] | v34: ex 0.58 w1 0.90 mean 4.7% p90 15.9% max 30.5% [+-1: mean 1.23% max 25.1%] | CHECK (3.0 sizes): ex 0.85 mean 0.57% med 0.0% p90 2.9% max 6.2% >10%: 0
+
+== cluster_patrol  (rule v33; sweeps still needing extension: 0; checked sizes not swept: 0)
+  all   n=160 | old: ex 0.51 w1 0.88 mean 7.9% p90 24.4% max 90.3% [+-1: mean 1.35% max 31.4%] | v33: ex 0.49 w1 0.81 mean 7.5% p90 23.7% max 90.3% [+-1: mean 2.05% max 31.9%] | v34: ex 0.47 w1 0.75 mean 9.3% p90 30.0% max 90.3% [+-1: mean 4.14% max 65.8%] | CHECK (4.0 sizes): ex 0.88 mean 1.01% med 0.0% p90 1.3% max 23.3% >10%: 7
+  core  n= 48 | old: ex 0.48 w1 0.92 mean 9.3% p90 26.3% max 50.3% [+-1: mean 1.41% max 31.4%] | v33: ex 0.40 w1 0.69 mean 7.9% p90 28.3% max 35.9% [+-1: mean 3.75% max 31.9%] | v34: ex 0.33 w1 0.56 mean 12.8% p90 36.1% max 69.9% [+-1: mean 9.05% max 65.8%] | CHECK (6.0 sizes): ex 0.92 mean 0.27% med 0.0% p90 0.0% max 5.8% >10%: 0
+  paper n= 64 | old: ex 0.53 w1 0.83 mean 8.2% p90 27.6% max 90.3% [+-1: mean 1.84% max 23.3%] | v33: ex 0.53 w1 0.83 mean 8.2% p90 27.6% max 90.3% [+-1: mean 1.84% max 23.3%] | v34: ex 0.53 w1 0.83 mean 8.2% p90 27.6% max 90.3% [+-1: mean 1.84% max 23.3%] | CHECK (3.4 sizes): ex 0.83 mean 1.84% med 0.0% p90 7.1% max 23.3% >10%: 6
+  ring  n= 48 | old: ex 0.52 w1 0.90 mean 6.2% p90 21.0% max 40.1% [+-1: mean 0.64% max 20.3%] | v33: ex 0.52 w1 0.90 mean 6.2% p90 21.0% max 40.1% [+-1: mean 0.64% max 20.3%] | v34: ex 0.52 w1 0.83 mean 7.3% p90 25.7% max 40.1% [+-1: mean 2.32% max 25.6%] | CHECK (3.0 sizes): ex 0.90 mean 0.64% med 0.0% p90 1.2% max 20.3% >10%: 1
+
+REGISTERED HYPOTHESES
+  L1 sa: mean check regret 0.19% (< 1%): HOLDS
+  L2 sa: exact 0.919 (>= 0.85): HOLDS
+  L3 sa: > 10% in 0 of 160 (<= 3): HOLDS
+  L4 sa: worst 8.7% (<= 15%): HOLDS
+  L1 rr_tour: mean check regret 0.32% (< 1%): HOLDS
+  L2 rr_tour: exact 0.912 (>= 0.85): HOLDS
+  L3 rr_tour: > 10% in 0 of 160 (<= 3): HOLDS
+  L4 rr_tour: worst 6.7% (<= 15%): HOLDS
+  L1 cyc: mean check regret 0.20% (< 1%): HOLDS
+  L2 cyc: exact 0.944 (>= 0.8): HOLDS
+  L3 cyc: > 10% in 0 of 160 (<= 8): HOLDS
+  L4 cyc: worst 6.2% (<= 25%): HOLDS
+  L1 cluster_patrol: mean check regret 1.01% (< 1%): FAILS
+  L2 cluster_patrol: exact 0.875 (>= 0.8): HOLDS
+  L3 cluster_patrol: > 10% in 7 of 160 (<= 8): HOLDS
+  L4 cluster_patrol: worst 23.3% (<= 25%): HOLDS
+  R1 sa: v3.4 within-one all 0.881 (>= 0.85): HOLDS
+  R2 sa: v3.4 within-one ring 0.938 (>= 0.85): HOLDS
+  R3 sa: p90 v3.4 10.2% vs old 27.4%: HOLDS
+  R1 rr_tour: v3.4 within-one all 0.869 (>= 0.85): HOLDS
+  R2 rr_tour: v3.4 within-one ring 1.000 (>= 0.85): HOLDS
+  R3 rr_tour: p90 v3.4 12.0% vs old 26.5%: HOLDS
+  R4 cyc: worst v3.3 37.8% vs old 27.6%: FAILS
+  R4 cluster_patrol: worst v3.3 90.3% vs old 90.3%: FAILS
+
+SUMMARY L1 sa HOLDS  L2 sa HOLDS  L3 sa HOLDS  L4 sa HOLDS  L1 rr_tour HOLDS  L2 rr_tour HOLDS  L3 rr_tour HOLDS  L4 rr_tour HOLDS  L1 cyc HOLDS  L2 cyc HOLDS  L3 cyc HOLDS  L4 cyc HOLDS  L1 cluster_patrol FAILS  L2 cluster_patrol HOLDS  L3 cluster_patrol HOLDS  L4 cluster_patrol HOLDS  R1 sa HOLDS  R2 sa HOLDS  R3 sa HOLDS  R1 rr_tour HOLDS  R2 rr_tour HOLDS  R3 rr_tour HOLDS  R4 cyc FAILS  R4 cluster_patrol FAILS

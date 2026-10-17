@@ -1,0 +1,23 @@
+post-registration analyses of results_v2/heldout_v3.csv (predictions sha256 4c77e53ecad435d6adc93359a12679fcd9bd903310c19a40d2ee72eefe16fdc7)
+
+1) sweep edges: optimum at the smallest swept K (> 1) / at the largest
+   cyc      lower edge 3 ring M=50 1.5 MJ s=15, ring M=50 1.5 MJ s=17, ring M=50 1.5 MJ s=18 | upper edge 0
+   rr_tour  lower edge 2 ring M=50 1.5 MJ s=15, ring M=50 1.5 MJ s=17 | upper edge 0
+   sa       lower edge 0  | upper edge 0
+
+2) paired comparison where v3 != old (regret change = v3 - old; negative = v3 better)
+   cyc      all   n=22: v3 better 13, worse  9; sign test p=0.523; mean change -10.9% [-25.3%, +1.9%]
+   cyc      core  n=15: v3 better 11, worse  4; sign test p=0.118; mean change -20.0% [-37.1%, -2.5%]
+   cyc      paper n= 7: v3 better  2, worse  5; sign test p=0.453; mean change +8.7% [+1.8%, +16.2%]
+   rr_tour  all   n=22: v3 better 14, worse  8; sign test p=0.286; mean change -39.4% [-60.5%, -19.2%]
+   rr_tour  core  n=15: v3 better 14, worse  1; sign test p=0.001; mean change -65.1% [-83.1%, -45.6%]
+   rr_tour  paper n= 7: v3 better  0, worse  7; sign test p=0.016; mean change +15.5% [+10.2%, +21.0%]
+   sa       all   n=22: v3 better 18, worse  4; sign test p=0.004; mean change -52.9% [-74.5%, -32.1%]
+   sa       core  n=15: v3 better 15, worse  0; sign test p=0.000; mean change -78.5% [-98.6%, -56.7%]
+   sa       paper n= 7: v3 better  3, worse  4; sign test p=1.000; mean change +1.8% [-0.2%, +4.0%]
+
+3) ring bracket [round Kc, floor Kr]
+   width in UAVs (instances): {2: 23, 3: 1, 4: 23, 5: 1}
+   cyc      optimum: {'at Kc': 24, 'below': 9, 'inside, above Kc': 15}
+   rr_tour  optimum: {'inside, above Kc': 19, 'below': 3, 'at Kc': 26}
+   sa       optimum: {'inside, above Kc': 28, 'at Kc': 20}
