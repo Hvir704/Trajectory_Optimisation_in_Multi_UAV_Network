@@ -57,14 +57,14 @@ for path, pl, name in [(sys.argv[3], "cyc", "C4"), (sys.argv[3], "cluster_patrol
 
 # ---- warning indicator (r_max/r_c above a level) vs the design-time test, as warnings against each planner's miss
 # (optimum more than one UAV from l), pooled over C4, the cluster patrol, Gao et al. and Asghar et al., held-out
-# deployments; l and r_max/r_c from the annealer's smallest-K row. The level is not fixed by the grid, so three are shown.
+# deployments; l and r_max/r_c from the annealer's reference-K row (K_ref, kref.py). The level is not fixed by the grid, so three are shown.
 verd = {(v["layout"], int(float(v["M"])), float(v["Emax"]), int(float(v["seed"]))): v["verdict_current"] for v in csv.DictReader(open(sys.argv[2]))}
 rows = []
 for path, pl in [(sys.argv[3], "cyc"), (sys.argv[3], "cluster_patrol"), (sys.argv[4], "gzz_rev"), (sys.argv[5], "asghar_rev")]:
     d = load(path, pl)
     for k, v in verd.items():
         if k not in d or k not in sa: continue
-        r0 = sa[k][min(sa[k])]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
+        r0 = sa[k][kref(sa[k])]; kr = math.floor(float(r0["K_reach_i"])); kc = float(r0["K_commute_i"])
         ell = kr if kr <= kc else int(round(kc)); am = min(d[k], key=lambda K: float(d[k][K]["J"]))
         rows.append((abs(am - ell) > 1, float(r0["rmax_over_rc"]), v == "flag"))
 if rows:

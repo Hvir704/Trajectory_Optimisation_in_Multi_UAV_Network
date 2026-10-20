@@ -1,11 +1,12 @@
 """singlecell_v2.py -- the single-cell tables of Sec. VI (paper layout, M=100, 1.5 MJ unless stated).
 
-  coord    Table VII (tab:coord): mean J (x1e5) per K for coordinated launch-time SA, uncoordinated, the
+  coord    Table XII (tab:coord): mean J (x1e5) per K for coordinated launch-time SA, uncoordinated, the
            uncoordinated duplicate-visit fraction and coordinated per-leg SA; mean argmin of each; J ratio
            uncoordinated/coordinated at K=4 and at each variant's own optimum.
   perleg   per-leg vs launch-time: truncation, J change per K, optimum changes.
   horizon  Table VI (tab:horizon): J(24 h)/J(12 h) per K, paper and ring, seeds 1-6.
-  info     Table XIV (tab:info): kernel (M1) and prior-rates vs event-blind (M2), paired, with sign tests;
+  info     Table XVI (tab:info): kernel (M1) and prior-rates vs event-blind (M2), paired, with sign tests; also
+           Wilcoxon signed-rank, paired t and a paired-bootstrap 95% interval of the relative J change (review 4, M1);
            K* agreement under q=1 between kernel and event-blind per-leg planners.
 usage: python singlecell_v2.py DIR    (DIR = folder with the results_v2 files, names as in RERUN_V2.md)
 """
@@ -107,6 +108,12 @@ for tag, lab in (("q0", "67 min, q=0"), ("q0.5", "67 min, q=0.5"), ("q1", "67 mi
         evshare = np.mean([float(ref[s]["J_event"]) / float(ref[s]["J"]) for s in ss])
         print(f"   {lab:14s} {b:11s} dJ {rel('J'):+.1%}  dJ_age {rel('J_age'):+.1%}  dJ_event {rel('J_event'):+.1%}  "
               f"dcatch {rel('catch_rate'):+.1%}  worse {s_}/{n} p={p:.3f}  (event share of M2's J {evshare:.0%})")
+        from scipy import stats
+        xa = np.array([float(x[s]["J"]) for s in ss]); ra = np.array([float(ref[s]["J"]) for s in ss])
+        rng = np.random.default_rng(12345)
+        bs = [xa[i].mean() / ra[i].mean() - 1 for i in (rng.integers(0, len(ss), len(ss)) for _ in range(10000))]
+        print(f"   {'':14s} {'':11s} Wilcoxon p={stats.wilcoxon(xa, ra).pvalue:.3f}  paired t p={stats.ttest_rel(xa, ra).pvalue:.3f}  "
+              f"paired bootstrap 95% interval of dJ [{np.quantile(bs, .025):+.1%}, {np.quantile(bs, .975):+.1%}] (n={len(ss)})")
 kq = byKseed(rows("info_kernel_q1_K.csv")); pq = byKseed(rows("info_prior_q1_K.csv"))
 if kq and pq:
     a1, a2 = argmins(kq, SEEDS), argmins(pq, SEEDS)

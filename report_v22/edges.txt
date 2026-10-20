@@ -14,9 +14,9 @@ own optima moved by the fleet sizes below each instance's original sweep (K < K_
   asghar_eval.csv: 10 of 216: J -8.2%, -2.9%, -1.1%, -2.4%, -12.0%, -4.2%, -3.8%, -20.8%, -0.8%, -9.2%; layouts ['ring']
   liu_all.csv: 0 of 216
   rr_tour_win.csv: 0 of 216
-  depot_q.csv: 0 of 324
-  depot_q_cyc.csv: 0 of 324
-  depot_q_cluster_patrol.csv: 0 of 325
-  depot_e.csv: 0 of 67
-  depot_e_cyc.csv: 0 of 67
-  depot_e_cluster_patrol.csv: 0 of 67
+  depot_q.csv: 0 of 216
+  depot_q_cyc.csv: 0 of 216
+  depot_q_cluster_patrol.csv: 0 of 216
+  depot_e.csv: 0 of 48
+  depot_e_cyc.csv: 0 of 48
+  depot_e_cluster_patrol.csv: 0 of 48

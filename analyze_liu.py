@@ -88,6 +88,6 @@ ok = lambda d: V.get(d) in ("pass", "not_applicable")
 e, w, n = agree([d for d in deps if ok(d)]); print(f"  test passes: {e:.2f} / {w:.2f} (n={n})")
 e, w, n = agree([d for d in deps if not ok(d)]); print(f"  test flags:  {e:.2f} / {w:.2f} (n={n})")
 cost = np.array([D[d]["liu_mpga"][ell(d)] / min(D[d]["liu_mpga"].values()) - 1 for d in deps if ell(d) in D[d]["liu_mpga"]])
-print(f"  cost of sizing with l: median {np.median(cost):.1%}, 90th percentile {np.quantile(cost, .9):.1%} (n={len(cost)}; exploratory)")
+print(f"  cost of sizing with l: median {np.median(cost):.1%}, 90th percentile {np.quantile(cost, .9, method='inverted_cdf'):.1%} (n={len(cost)}; exploratory)")
 seen = [d for d in deps if d[1] == 50 and d[2] == 1.5e6]
 print(f"\nSECONDARY 6: already-seen deployments (M=50, 1.5 MJ): {len(seen)} of {len(deps)}")

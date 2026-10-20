@@ -65,7 +65,7 @@ for k, x in ap.items():
 def row(lab, R):
     x = np.array([t[2] for t in R])
     if len(x) == 0: return f"{lab:24s} n=  0"
-    return (f"{lab:24s} n={len(x):3d} median {np.median(x):6.1%} p90 {np.quantile(x,.9,method='higher'):6.1%} "
+    return (f"{lab:24s} n={len(x):3d} median {np.median(x):6.1%} p90 {np.quantile(x,.9,method='inverted_cdf'):6.1%} "
             f"max {x.max():6.1%} <5% {np.mean(x<0.05):4.0%}")
 for v in ("corrected_KR", "KG", "global"):     # ("banked" = verdicts from an external file; no longer used)
     print(f"--- {v}")
@@ -92,7 +92,7 @@ if "--tex" in sys.argv:
     R = res["global"]
     def tex(lab, test, S):
         x = np.array([t[2] for t in S])
-        print(f"{lab} & {test} & {len(x)} & {100*np.median(x):.1f}\\% & {100*np.quantile(x,.9,method='higher'):.1f}\\% & "
+        print(f"{lab} & {test} & {len(x)} & {100*np.median(x):.1f}\\% & {100*np.quantile(x,.9,method='inverted_cdf'):.1f}\\% & "
               f"{100*x.max():.1f}\\% & {100*np.mean(x<0.05):.0f}\\%\\\\")
     for fam in ("paper", "core"):
         tex(fam, "pass", [t for t in R if t[0] == fam and t[1] is True])

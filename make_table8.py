@@ -3,7 +3,7 @@
 usage: python make_table8.py grid_final.csv ../paper/apriori_regret.csv
 The criterion verdict (passes) and regime flag come from apriori_regret.csv -- they depend only on
 geometry and the smallest-K commute inputs, so extending the K sweeps does not change them. Regret
-J(K_rule)/J(K*) - 1 is recomputed on the extended sweeps. 90th percentile uses method='higher',
+J(K_rule)/J(K*) - 1 is recomputed on the extended sweeps. 90th percentile uses method='inverted_cdf',
 the convention that reproduces the draft's unchanged rows exactly.
 """
 import sys, csv, math, numpy as np
@@ -21,7 +21,7 @@ for r in csv.DictReader(open(sys.argv[2])):
     recs.append((k[0], r["passes"] == "True", J[li] / min(J.values()) - 1))
 def row(lab, test, R):
     x = np.array([t[2] for t in R])
-    print(f"{lab} & {test} & {len(x)} & {100*np.median(x):.1f}\\% & {100*np.quantile(x,.9,method='higher'):.1f}\\% & "
+    print(f"{lab} & {test} & {len(x)} & {100*np.median(x):.1f}\\% & {100*np.quantile(x,.9,method='inverted_cdf'):.1f}\\% & "
           f"{100*x.max():.1f}\\% & {100*np.mean(x<0.05):.0f}\\%\\\\")
 for fam in ("paper", "core"):
     row(fam, "pass", [t for t in recs if t[0] == fam and t[1]])

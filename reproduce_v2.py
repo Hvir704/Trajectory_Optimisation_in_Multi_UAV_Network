@@ -10,7 +10,7 @@ usage:  python reproduce_v2.py results_v2 [--out results_v2/report] [--only STEP
            rr_sweep_win.csv, cluster_win.csv, eval_all_v2.csv (C4, C4 sectors-only, cluster patrol), gzz_eval.csv,
            asghar_eval.csv, liu_all.csv, m40_*.csv, depot_*.csv, hetero.csv, mass.csv; then grid_final.csv.
 3. DERIVE  the design-time verdicts on the v2 commute inputs (verdicts.csv for the held-out split, apriori_regret.csv
-           for Table VIII), the Fig. 5 deployment selection (selected.json, by the registered rule), and a censoring
+           for Table VII, tab:regret), the Fig. 4 deployment selection (selected.json, by the registered rule), and a censoring
            report: every sweep must meet the registered 1.5x rule on the union K grid.
 4. RUN     every analysis step below; each writes report/<step>.txt. A failing step is reported and the run continues,
            so one missing file does not hide the rest; the summary at the end lists failures.
@@ -68,16 +68,26 @@ def main():
     # ---------------------------------------------------------------- 2. assemble
     print("\n== 2. assemble")
     def cat(names, planner=None, filt=None, extra=()):
-        out, seen, dup = [], set(), 0
+        out, seen, dup, rows = [], set(), 0, []
         for n in names:
             if not have(n): continue
             for r in read(R(n)):
                 if planner and r.get("planner") != planner: continue
                 if filt and not filt(r): continue
-                k = key(r, extra)
-                if k in seen: dup += 1; continue
-                r["_fill"] = "_fill" in n
-                seen.add(k); out.append(r)
+                r["_fill"] = "_fill" in n; rows.append(r)
+        # fill files written by run_fill.py carry no depot columns. Each depot_* base file holds one depot position, so
+        # its fills inherit it (verified: their r_max and K_reach_i equal the base rows'); without this, fill rows formed
+        # separate instances with their own K_ref (review 3, Low-8)
+        if extra:
+            vals = {tuple(r.get(e, "") for e in extra) for r in rows if not r["_fill"]}
+            if len(vals) == 1 and all(v not in ("", None) for v in next(iter(vals))):
+                for r in rows:
+                    if r["_fill"] and all(r.get(e, "") in ("", None) for e in extra):
+                        for e, v in zip(extra, next(iter(vals))): r[e] = v
+        for r in rows:
+            k = key(r, extra)
+            if k in seen: dup += 1; continue
+            seen.add(k); out.append(r)
         # K_ref: the first K of each instance's ORIGINAL sweep (base file, not a fill); the rule's measured commute
         # inputs are read at this K (kref.py), so they do not move when a fill extends a sweep in either direction
         def num(x):
@@ -119,7 +129,7 @@ def main():
     emit("asghar_eval.csv", ["asghar_rev.csv", "asghar_rev_fill.csv"], "asghar_rev", std)
     emit("liu_all.csv", ["liu_mpga.csv", "liu_mpga_fill.csv"], "liu_mpga", std)
     emit("m40_sa.csv", ["m40_sa.csv"]); emit("m40_rr.csv", ["m40_rr_tour.csv"]); emit("m40_cluster.csv", ["m40_cluster_patrol.csv", "m40_cluster_patrol_fill.csv"])
-    # Table XI bottom: CP-SAT at its default budget on paper, at the converged threefold budget on ring
+    # Table XIII (tab:baseline) bottom: CP-SAT at its default budget on paper, at the converged threefold budget on ring
     cp = [r for r in (read(R("m40_cpsat_d5.csv")) if have("m40_cpsat_d5.csv") else []) if r["layout"] == "paper"]
     cp += read(R("m40_cpsat_d15.csv")) if have("m40_cpsat_d15.csv") else []
     for r in cp: r["planner"] = "cpsat"
@@ -224,9 +234,9 @@ def main():
     # ---------------------------------------------------------------- 4. run
     o = lambda n: os.path.join(OUT, n)
     STEPS = [
-        ("table4", "Table IV (tab:law), Sec. VII-B statistics, warning indicator, Table VIII (field size)", ["make_table4.py", gf]),
+        ("table4", "Table IV (tab:law), Sec. VII-B statistics, warning indicator, Table X (tab:L, field size)", ["make_table4.py", gf]),
         ("estimators", "Appendix B: choice of estimator", ["make_estimators.py", gf]),
-        ("strand_rad", "Table V (tab:strand), Prop. 6 at the radial scale", ["strand_final.py", gf]),
+        ("strand_rad", "Table V (tab:strand), Prop. 8 at the radial scale", ["strand_final.py", gf]),
         ("strand_consistent", "Prop. 6 at the consistent scale (Lemma: cost scale)", ["strand_final.py", gf], {"P6_SCALE": "consistent"}),
         ("strand_old_algebra", "Sec. VII-C: the earlier form of Prop. 6 with Q held at Q_K (exact / within-one)", ["strand_final.py", gf], {"P6_ALGEBRA": "old"}),
         ("strand_planners", "Sec. VII-C: other planners' optima vs l and Prop. 6 on the flagged held-out deployments",
@@ -246,35 +256,35 @@ def main():
         ("theory", "Sec. V and VII-I: r_c(K), P_bar spread, tau_hop(K), Prop. 3 with measured tau_hop", ["theory_checks.py", gf, "--tour", A("rr_tour_win.csv")]),
         ("bootstrap", "95% intervals (Sec. VII-B, VII-K), per-cell CSV", ["bootstrap_ci.py", gf, A("sa_rerun.csv"), A("rr_tour_win.csv"),
                                                                         A("rr_sweep_win.csv"), A("m40_sa.csv"), A("m40_rr.csv"), A("m40_cp_final.csv"), f"--out={o('per_cell_ci.csv')}"]),
-        ("baseline_patrols", "Table XI: tour and sweep patrol rows", ["baseline_table.py", A("sa_rerun.csv"), A("rr_tour_win.csv"), A("rr_sweep_win.csv"), "--by-family", "--rule-from", "sa"]),
-        ("baseline_cluster", "Table XI: cluster patrol row", ["baseline_table.py", A("sa_rerun.csv"), A("cluster_win.csv"), "--rule-from", "sa"]),
-        ("baseline_m40", "Table XI bottom (M=40)", ["baseline_table.py", A("m40_sa.csv"), A("m40_rr.csv"), A("m40_cp_final.csv"), "--by-family", "--rule-from", "sa"]),
-        ("baseline_cluster_m40", "Table XI bottom: cluster patrol row", ["baseline_table.py", A("m40_sa.csv"), A("m40_cluster.csv"), "--rule-from", "sa"]),
+        ("baseline_patrols", "Table XIII (tab:baseline): tour and sweep patrol rows", ["baseline_table.py", A("sa_rerun.csv"), A("rr_tour_win.csv"), A("rr_sweep_win.csv"), "--by-family", "--rule-from", "sa"]),
+        ("baseline_cluster", "Table XIII (tab:baseline): cluster patrol row", ["baseline_table.py", A("sa_rerun.csv"), A("cluster_win.csv"), "--rule-from", "sa"]),
+        ("baseline_m40", "Table XIII (tab:baseline) bottom (M=40)", ["baseline_table.py", A("m40_sa.csv"), A("m40_rr.csv"), A("m40_cp_final.csv"), "--by-family", "--rule-from", "sa"]),
+        ("baseline_cluster_m40", "Table XIII (tab:baseline) bottom: cluster patrol row", ["baseline_table.py", A("m40_sa.csv"), A("m40_cluster.csv"), "--rule-from", "sa"]),
         ("paired_diff", "Sec. VII-K paired agreement differences", ["paired_diff.py", A("sa_rerun.csv"), A("rr_tour_win.csv")]),
         ("cluster", "Sec. VII-K cluster patrol vs SA", ["cluster_compare.py", A("sa_rerun.csv"), A("cluster_win.csv")]),
-        ("planners", "Tables XI (dagger rows), XII (split), XIII (published); C4 vs SA; cost of sizing",
+        ("planners", "Tables XIII (tab:baseline, dagger rows), XIV (tab:split), XV (tab:published); C4 vs SA; cost of sizing",
          ["planners_v2.py", "--sa", A("sa_rerun.csv"), "--files"] + [A(n) for n in ("eval_all_v2.csv", "gzz_eval.csv", "asghar_eval.csv", "liu_all.csv")
                                                                      if os.path.exists(A(n))] + ["--verdicts", A("verdicts.csv")]),
         ("c4_sectors", "C4 paragraph: equal sectors without search vs the published method",
          ["own_opt_compare.py", A("eval_all_v2.csv"), A("eval_all_v2.csv"), "--pa", "cluster_patrol", "--pb", "cyc_sector0"]),
         ("liu", "Liu et al. paragraph (registered analysis)", ["analyze_liu.py", "--liu", A("liu_all.csv"), "--sa", A("sa_rerun.csv"),
                                                               "--others", A("eval_all_v2.csv"), A("gzz_eval.csv"), A("asghar_eval.csv"), "--verdicts", A("verdicts.csv")]),
-        ("depot", "Table IX (depot)", ["depot_table.py", A("depot_q.csv"), A("depot_e.csv")]),
+        ("depot", "Table XI (tab:depot)", ["depot_table.py", A("depot_q.csv"), A("depot_e.csv")]),
         ("depot_c4_q", "depot: C4 vs cluster patrol, quarter point", ["own_opt_compare.py", A("depot_q_cluster_patrol.csv"), A("depot_q_cyc.csv")]),
         ("depot_c4_e", "depot: C4 vs cluster patrol, edge", ["own_opt_compare.py", A("depot_e_cluster_patrol.csv"), A("depot_e_cyc.csv")]),
         ("hetero", "Sec. VII-C reserved share vs equal shares", ["analyze_hetero.py", A("sa_rerun.csv"), A("hetero.csv")]),
         ("mass", "Remark 1 battery mass", ["analyze_mass.py", A("mass.csv"), A("sa_rerun.csv")]),
         ("mass_static", "Remark 1 battery share and static fixed point (pack = E_max/K)", ["mass_static.py", gf]),
-        ("ablation", "Table III (ablation, K=4); per-leg + diversion against per-leg alone", ["ablation.py", A("ablation.csv"), "4"]),
+        ("ablation", "Table III (tab:ablation, K=4); per-leg + diversion against per-leg alone", ["ablation.py", A("ablation.csv"), "4"]),
         ("ablation_K2", "Sec. VI hover budgeting at K=2", ["ablation.py", A("ablation.csv"), "2"]),
-        ("singlecell", "Tables VI (horizon), X (coord), XIV (info); per-leg paragraph (Sec. VII-H)", ["singlecell_v2.py", RES]),
+        ("singlecell", "Tables VI (tab:horizon), XII (tab:coord), XVI (tab:info); per-leg paragraph (Sec. VII-H)", ["singlecell_v2.py", RES]),
         ("outage", "Sec. VII-B grounding test", None),
         ("regularity", "Sec. V-B CV of inter-visit intervals; Sec. VII-K rate/allocation/regularity decomposition", None),
         ("reserve", "Sec. VII-A: reserve use, departure skips and skipped stops over the SA grid", None),
         ("sweep_stats", "Sec. VII-A: run count, largest K per cell, sweeps extended by the fills, optima moved by them", None),
         ("edges", "optima at the top of their sweep in the files the censoring check does not cover (M=40, hetero, mass)", None),
         ("cpsat_proofs", "Sec. VII-K: CP-SAT share of decisions proven optimal", None),
-        ("alpha", "Table XV (fitted commute exponent) and App. B per-sortie energy regressions",
+        ("alpha", "Table XVII (tab:alpha, fitted commute exponent) and App. B per-sortie energy regressions (pooled, between-run, within-run)",
          ["alpha_fit.py", gf, "--sorties", R("sortie_ring.csv")]),
         ("relcost_drift", "Sec. V-B drift of the relative-cost profile (paper M=100 1.5 MJ, seeds 1-6)",
          ["relcost_drift.py", os.path.join(RES, "nodes", "nodes_sa_paper_M100_E1500000_K*_s*_exclude_launch.npz")]),
@@ -404,7 +414,9 @@ def edges_summary(ASM, f):
         d, kr = defaultdict(dict), {}
         for r in read(p):
             if float(r.get("Th", 43200)) != 43200: continue
-            k = (r.get("planner", ""), r["layout"], r["M"], r["Emax"], r.get("L", ""), r["seed"], r.get("depot_x", ""), r.get("depot_y", ""))
+            # each depot_* file holds one depot position; its fill rows carry no depot columns, so the depot is not part
+            # of the key (keying on it split every filled instance in two; review 3, Low-8)
+            k = (r.get("planner", ""), r["layout"], r["M"], r["Emax"], r.get("L", ""), r["seed"])
             d[k][int(float(r["K"]))] = float(r["J"])
             if r.get("K_ref") not in (None, ""): kr[k] = int(float(r["K_ref"]))
         for pl in (pls or (None,)):
@@ -464,6 +476,16 @@ def cpsat_summary(RES, f):
                 y = [r for r in x if int(r["K"]) == K]
                 fr = [int(float(r["cp_optimal"])) / max(int(float(r["cp_decisions"])), 1) for r in y]
                 f.write(f"     K={K}: proven share per run {min(fr):.2f}-{max(fr):.2f}\n")
+    # the runs Table XIII (tab:baseline) uses: default budget on paper, threefold budget on ring (review 4, M8b)
+    tot = {}
+    for n, lay in (("m40_cpsat_d5.csv", "paper"), ("m40_cpsat_d15.csv", "ring")):
+        p = os.path.join(RES, n)
+        if not os.path.exists(p): continue
+        x = [r for r in read(p) if r.get("cp_decisions") not in (None, "") and r["layout"] == lay]
+        tot[lay] = (sum(int(float(r["cp_optimal"])) for r in x), sum(int(float(r["cp_decisions"])) for r in x))
+    if len(tot) == 2:
+        no = sum(v[0] for v in tot.values()); nd = sum(v[1] for v in tot.values())
+        f.write(f"runs used in Table XIII (paper at the default budget, ring at three times it): {no}/{nd} proven optimal ({no / nd:.1%})\n")
 
 
 if __name__ == "__main__":

@@ -14,3 +14,11 @@ Per-sortie regressions (ring, stranding-free runs, sorties with n >= 2; 95% boot
   M=100 3.0 MJ  runs 25  sorties 4907  beta_hop 0.92 [0.66, 1.06]  beta_hover 0.94 [0.82, 1.09]  beta_productive 0.90 [0.70, 1.01]  hover share 12.6%  (E_hov/n)/(Ph H/Gamma) 0.992
   M=200 3.0 MJ  runs 24  sorties 4525  beta_hop 0.93 [0.80, 0.99]  beta_hover 0.87 [0.79, 0.98]  beta_productive 0.91 [0.81, 0.97]  hover share 23.9%  (E_hov/n)/(Ph H/Gamma) 0.995
   conservation constant across cells: 0.987 +- 0.012 (sd)
+
+Per-sortie regressions split into between-run and within-run variation (same sample)
+  M= 50 3.0 MJ  runs 25  between-run beta_hop 1.76 [1.66, 1.86] beta_productive 1.72 [1.64, 1.80]  | within-run beta_hop 0.60 beta_productive 0.61 | between-run share of var(log n) 38% | logs of run means: beta_hop 1.67 beta_productive 1.64
+      hop energy per stop / Pf (s), mean over runs, by K: K=4 87.4  K=5 78.2  K=6 69.5  K=7 55.7  K=8 44.4  K=9 35.9  K=10 25.7
+  M=100 3.0 MJ  runs 25  between-run beta_hop 1.54 [1.47, 1.62] beta_productive 1.48 [1.42, 1.57]  | within-run beta_hop 0.19 beta_productive 0.26 | between-run share of var(log n) 54% | logs of run means: beta_hop 1.49 beta_productive 1.44
+      hop energy per stop / Pf (s), mean over runs, by K: K=4 50.9  K=5 50.9  K=6 44.1  K=7 35.3  K=8 28.6  K=9 25.4  K=10 19.5
+  M=200 3.0 MJ  runs 24  between-run beta_hop 1.23 [1.22, 1.25] beta_productive 1.18 [1.14, 1.23]  | within-run beta_hop -0.03 beta_productive 0.15 | between-run share of var(log n) 77% | logs of run means: beta_hop 1.26 beta_productive 1.20
+      hop energy per stop / Pf (s), mean over runs, by K: K=4 25.6  K=5 23.4  K=6 21.2  K=7 20.3  K=8 19.4  K=9 18.0

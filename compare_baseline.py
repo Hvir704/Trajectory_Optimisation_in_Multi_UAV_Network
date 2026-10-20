@@ -86,7 +86,7 @@ def summarise(name, R):
     print(f"{name:26s} n={len(R):3d} | SA am vs rule {e1:.2f}/{w1:.2f} | {a.label} am vs SA-rule {e2:.2f}/{w2:.2f}"
           f" | vs own-rule {e3:.2f}/{w3:.2f} | am_b vs am_sa {e4:.2f}/{w4:.2f} bias {signed:+.2f}"
           f" | J gap med {np.median(gap):+.1%} [{np.min(gap):+.0%},{np.max(gap):+.0%}]"
-          f" | reg_b@am_sa med {np.median(reg):.1%} p90 {np.quantile(reg,.9):.1%}"
+          f" | reg_b@am_sa med {np.median(reg):.1%} p90 {np.quantile(reg,.9,method='inverted_cdf'):.1%}"
           f" | edge b {np.mean([r['edge_b'] for r in R]):.2f} sa {np.mean([r['edge_s'] for r in R]):.2f}"
           f" both {np.mean([r['edge_b'] and r['edge_s'] for r in R]):.2f}")
 

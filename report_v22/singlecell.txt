@@ -25,13 +25,23 @@
 
 == info (tab:info): vs event-blind per-leg (M2), paired over seeds 1-12, K=4
    67 min, q=0    kernel      dJ -2.3%  dJ_age +1.2%  dJ_event -8.2%  dcatch +0.8%  worse 3/12 p=0.146  (event share of M2's J 36%)
+                              Wilcoxon p=0.064  paired t p=0.090  paired bootstrap 95% interval of dJ [-4.4%, +0.1%] (n=12)
    67 min, q=0    prior_rates dJ +3.4%  dJ_age +9.6%  dJ_event -7.3%  dcatch +0.1%  worse 9/12 p=0.146  (event share of M2's J 36%)
+                              Wilcoxon p=0.009  paired t p=0.011  paired bootstrap 95% interval of dJ [+1.5%, +5.7%] (n=12)
    67 min, q=0.5  kernel      dJ -1.9%  dJ_age +1.8%  dJ_event -8.3%  dcatch +0.4%  worse 5/12 p=0.774  (event share of M2's J 36%)
+                              Wilcoxon p=0.233  paired t p=0.193  paired bootstrap 95% interval of dJ [-4.3%, +0.7%] (n=12)
    67 min, q=0.5  prior_rates dJ +2.8%  dJ_age +9.6%  dJ_event -9.1%  dcatch -0.3%  worse 9/12 p=0.146  (event share of M2's J 36%)
+                              Wilcoxon p=0.034  paired t p=0.027  paired bootstrap 95% interval of dJ [+0.8%, +5.2%] (n=12)
    67 min, q=1    kernel      dJ -2.8%  dJ_age +1.5%  dJ_event -9.9%  dcatch +0.7%  worse 4/12 p=0.388  (event share of M2's J 37%)
+                              Wilcoxon p=0.129  paired t p=0.106  paired bootstrap 95% interval of dJ [-5.6%, +0.2%] (n=12)
    67 min, q=1    prior_rates dJ +2.4%  dJ_age +9.6%  dJ_event -9.6%  dcatch -0.1%  worse 9/12 p=0.146  (event share of M2's J 37%)
+                              Wilcoxon p=0.064  paired t p=0.075  paired bootstrap 95% interval of dJ [-0.0%, +4.7%] (n=12)
    15 min, q=1    kernel      dJ +3.6%  dJ_age +5.5%  dJ_event -4.2%  dcatch +6.3%  worse 11/12 p=0.006  (event share of M2's J 20%)
+                              Wilcoxon p=0.001  paired t p=0.001  paired bootstrap 95% interval of dJ [+2.2%, +4.9%] (n=12)
    15 min, q=1    prior_rates dJ +2.1%  dJ_age +3.7%  dJ_event -4.3%  dcatch +5.0%  worse 10/12 p=0.039  (event share of M2's J 20%)
+                              Wilcoxon p=0.012  paired t p=0.012  paired bootstrap 95% interval of dJ [+0.8%, +3.4%] (n=12)
    5 min, q=1     kernel      dJ +2.8%  dJ_age +3.0%  dJ_event -1.2%  dcatch +10.0%  worse 11/12 p=0.006  (event share of M2's J 4%)
+                              Wilcoxon p=0.002  paired t p=0.001  paired bootstrap 95% interval of dJ [+1.6%, +3.9%] (n=12)
    5 min, q=1     prior_rates dJ +1.1%  dJ_age +1.2%  dJ_event -1.1%  dcatch -3.0%  worse 9/12 p=0.146  (event share of M2's J 4%)
+                              Wilcoxon p=0.034  paired t p=0.047  paired bootstrap 95% interval of dJ [+0.2%, +2.0%] (n=12)
    K* agreement kernel vs event-blind at q=1, K=2..8: 12/12

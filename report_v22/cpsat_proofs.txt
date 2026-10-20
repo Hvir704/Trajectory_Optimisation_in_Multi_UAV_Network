@@ -22,3 +22,4 @@ m40_cpsat_d15.csv ring: 11976/12095 decisions proven optimal (99.0%)
 m40_cpsat_d45.csv ring: 844/846 decisions proven optimal (99.8%)
      K=3: proven share per run 0.98-1.00
      K=4: proven share per run 1.00-1.00
+runs used in Table XIII (paper at the default budget, ring at three times it): 42387/43424 proven optimal (97.6%)

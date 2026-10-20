@@ -118,11 +118,11 @@ print(f"  base: {len(passes)} pass of {len(base)}; largest passing regret {max(r
 
 hdr("criterion: flagged core instances, J(K0) above the minimum; sufficient variants on zero-regret clustered instances")
 fc = [k for k in base if k[0] == "core" and not base[k]]
-x = [J(SA[k], math.floor(float(SA[k][min(SA[k])]['K_reach_i']))) / J(SA[k], am(SA[k])) - 1 for k in fc if math.floor(float(SA[k][min(SA[k])]['K_reach_i'])) in SA[k]]
+x = [J(SA[k], math.floor(float(SA[k][kref(SA[k])]['K_reach_i']))) / J(SA[k], am(SA[k])) - 1 for k in fc if math.floor(float(SA[k][kref(SA[k])]['K_reach_i'])) in SA[k]]
 print(f"  flagged core: {len(fc)}; J(K0)/J* - 1 median {np.median(x):.1%} max {max(x):.1%}")
 
 hdr("regret: reach-bound passing instances (all families)")
-xp = np.array([reg[k] for k in passes]); print(f"  n={len(xp)} median {np.median(xp):.1%} p90 {np.quantile(xp, .9, method='higher'):.1%} max {xp.max():.1%}")
+xp = np.array([reg[k] for k in passes]); print(f"  n={len(xp)} median {np.median(xp):.1%} p90 {np.quantile(xp, .9, method='inverted_cdf'):.1%} max {xp.max():.1%}")
 xr = np.array([reg[k] for k, b in SA.items() if k[0] == "ring"]); print(f"  ring (commute-bound) n={len(xr)} median {np.median(xr):.1%} max {xr.max():.1%}, instances above 30%: {int((xr > .3).sum())}")
 over30 = [k for k in reg if reg[k] > .30]
 print(f"  all instances above 30%: {len(over30)}; of which reach-bound and passing: {sum(1 for k in over30 if base.get(k))}")
@@ -206,7 +206,7 @@ for pl in ("cyc", "cluster_patrol", "gzz_rev", "asghar_rev", "liu_mpga"):
     for c in sorted({k[:3] for k in SA}):
         ks = [k for k in SA if k[:3] == c and k in PL[pl]]
         if not ks or c[0] == "ring": continue
-        rb = np.mean([(am(PL[pl][k]) - ell(SA[k])) / ell(SA[k]) for k in ks]); ratio = np.mean([float(SA[k][min(SA[k])]["rmax_over_rc"]) for k in ks])
+        rb = np.mean([(am(PL[pl][k]) - ell(SA[k])) / ell(SA[k]) for k in ks]); ratio = np.mean([float(SA[k][kref(SA[k])]["rmax_over_rc"]) for k in ks])
         out.append((ratio, rb))
     out.sort(); print(f"  {pl}: " + "  ".join(f"{a:.1f}:{b:+.0%}" for a, b in out))
 
@@ -226,7 +226,7 @@ for c in [("core", 200, 1.5e6), ("core", 200, 3e6), ("core", 100, 1.5e6), ("core
     for pl in ("sa", "rr_tour", "cluster_patrol", "cyc", "gzz_rev", "asghar_rev", "liu_mpga"):
         ks = [k for k in SA if k[:3] == c and k in PL[pl]]
         if not ks: continue
-        ex = np.mean([am(PL[pl][k]) - math.floor(float(SA[k][min(SA[k])]["K_reach_i"])) for k in ks])
+        ex = np.mean([am(PL[pl][k]) - math.floor(float(SA[k][kref(SA[k])]["K_reach_i"])) for k in ks])
         strand = sum(1 for k in ks if float(PL[pl][k][am(PL[pl][k])]["n_never"]) >= 1)
         line.append(f"{pl} {np.mean([am(PL[pl][k]) for k in ks]):.2f} (+{ex:.2f}, strand {strand}/{len(ks)})")
     print(f"  {c}: " + "; ".join(line))

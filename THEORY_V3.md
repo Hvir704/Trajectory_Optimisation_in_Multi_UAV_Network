@@ -759,10 +759,13 @@ All 8 hold.
 
 **D per cell** (third review, E1). 24 of the 28 changed instances are three ring 3 MJ cells, each moved from 6 to 7;
 the design data had already put those cells' optima at 8.5, 7.9 and 6.7.
-- SA: 8/0, 8/0, 8/0 on the ring cells, 4/0 on core. With cells as units, 7 of 7 better, p = .008. Without the ring
-  3 MJ cells, 4/0, p = .06.
-- Tour: 8/0, 8/0, **3/5** (M=200), 3/1 on core. With cells as units, 5 better, 2 worse, p = .23. Without the ring
-  3 MJ cells, 3/1, p = .31.
+- SA: 8/0, 8/0, 8/0 on the ring cells, 4/0 on core (fields). The 28 changes lie in **6 cells** (ring 50/100/200 at 3 MJ;
+  core M=100 3 MJ, core M=200 1.5 MJ, core M=200 3 MJ). With cells as units (sign of the mean regret change),
+  **6 of 6 better, p = .016** (corrected 18 Oct after review 5, M3: the earlier "7 of 7, p = .008" counted the three
+  ring cells plus the four core *fields*). Without the ring 3 MJ cells, 4/0 fields, p = .06.
+- Tour: 8/0, 8/0, **3/5** (M=200), 3/1 on core (fields). By cell, **4 of 6 better, p = .34** (worse in ring M=200 3 MJ
+  and core M=200 1.5 MJ, 0/1); the earlier "5 of 7, p = .23" mixed cells and fields. Without the ring 3 MJ cells,
+  3/1 fields, p = .31.
 - So D is a replication on new fields of the same conditions, mainly ring 3 MJ, not evidence of a broad improvement.
 
 **Against the v2.2 paper rule (old)** (pre-specified, reported without a registered verdict), on all 160: SA
@@ -827,8 +830,8 @@ match its code; and the shared / territorial split was settled on seen data (the
 **Evidence, in the order a reader should weigh it.**
 1. Test 3 (registered, seeds never used): T3-A to T3-D hold for SA and the tour patrol. For v3.4 this is the **only**
    test of the rule as stated; tests 1 and 2 tested v3 and v3.3, and their v3.4 rows (section 11) are design
-   evidence. T3-D is reported per cell beside the registered verdict (11.2): with cells as units, SA 7/7 (p = .008),
-   tour 5/2 (p = .23).
+   evidence. T3-D is reported per cell beside the registered verdict (11.2): with cells as units, SA 6/6 (p = .016),
+   tour 4/6 (p = .34) (corrected; see 11.2).
 2. Test 2 (registered, seeds never used): v3.3 holds H1-H4 and H6 for the annealer and the clustered limit; it fails
    T2-H5 (C4) and T2-H7 (mission-length switch) (10.3).
 3. Test 1 (registered, hash in the project log only; 54 of 160 instances on previously swept pilot fields) and T1-H5
@@ -1016,3 +1019,28 @@ Checked sizes per field: 4.05 on average (3.0 ring, 3.4 clustered, 6.0 core).
 criterion for SA, the tour patrol and C4 (worst 6-9%, mean 0.2-0.3%, about 4 simulated fleet sizes per field) and
 three of four for the cluster patrol. For the territorial planners v3.3 *alone* should not be recommended over the
 paper rule; v3.3 is useful to them only as the source of the check's two candidates.
+
+
+## 14. Reviews 1-5 (18 Oct): corrections to this file
+
+**Test 4 and the crowding-hop solver (review 2, H-2; verified with my own fixed-point code).** The registered v3.4
+uses 20 plain iterations, which do not reach the fixed point in core 3 MJ, core M=50 1.5 MJ and clustered M=100 6 MJ
+(smaller shortfalls on clustered M=50 3 MJ and core M=100 1.5 MJ). The true fixed point changes 1 of 160 test-3
+predictions and **7 of 160 test-4 predictions** (core M=50 1.5 MJ s54: 14 -> 6; six core 3 MJ fields: 9-12 -> 28);
+19 or 21 iterations change 4 and 15. At the fixed point the rule-alone figures of test 4 would be: SA max 49.0 ->
+23.1%, p90 10.2 -> 7.1%; tour max 38.4 -> 26.5%, p90 12.0 -> 10.1%. The two worst fields (core M=50 3 MJ s52) are
+predicted within 6.2% (SA) and 5.3% (tour). So the 49% worst case in section 13 is a solver artefact as much as an
+undervalued served term. The local check is unchanged at the fixed point and at 19 iterations; at 21 iterations
+one field (core M=200 3 MJ s50: candidates 28 and 7 instead of 11 and 28, optimum 12) gives worst check regret 21.5%
+(SA) and 18.6% (tour), which would fail L4. Registered results stand as run; the paper now says all of this.
+
+**Theorem 1 and v3.4 (review 2, H-1).** Theorem 1 needs a hop that depends on the served set only. With the
+crowding hop the minimiser need not be a candidate: ring 3 MJ picks 7 against C_0 = l = 6 (24 of 160 fields in
+tests 3 and 4). Result 2 is now defined as a search over admissible integers K <= 200; for v3/v3.3 that equals the
+best Theorem-1 candidate, and C_0 = l, in 924/924 instances.
+
+**Corollary 1 (review 2, M-1).** With the exact Phi, one v3.4 prediction changes (test 4, paper M=200 1.5 MJ s51,
+4 -> 5, a 0.06% near-tie whose local-check set is unchanged), not none.
+
+**Registered verdicts overall (review 5, H3).** 38 of 43 held: T2-H5 (C4 within-one), T2-H7 (horizon), T4-R4 (C4
+and cluster patrol), T4-L1 (cluster patrol) failed. On test 1's unseen seeds 16-20 alone, T1-H1 ties (median 0 vs 0).

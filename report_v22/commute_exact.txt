@@ -1,8 +1,10 @@
-(1) conservation of hover time: implied hover rate Phi (Pbar - Pf)/(Ph - Pf) over sum lambda_i / R_u,
-    stranding-free runs with < 5% empty sorties, L = 12.6 km; percentiles 10/50/90
-    paper n= 479  0.96 / 1.00 / 1.03
-    ring  n= 406  0.94 / 0.99 / 1.03
-    core  n= 330  0.95 / 1.01 / 1.03
+(1) conservation of hover time: implied hover rate Phi (Pbar - Pf)/(Ph - Pf) over sum_i lambda_i / R_u, with each
+    instance's own generation rates lambda_i (regenerated from its seed); stranding-free runs, L = 12.6 km;
+    percentiles 10/50/90. Also shown: the nominal M lambda-bar (as in v2.2.1) and the filter on < 5% empty sorties.
+    paper actual rates: all n= 479 0.99 / 1.00 / 1.01 | <5% empty n= 479 0.99 / 1.00 / 1.01   || nominal rate, <5% empty: 0.96 / 1.00 / 1.03
+    ring  actual rates: all n= 409 0.95 / 1.00 / 1.01 | <5% empty n= 406 0.95 / 1.00 / 1.01   || nominal rate, <5% empty: 0.94 / 0.99 / 1.03
+    core  actual rates: all n= 384 1.00 / 1.00 / 1.04 | <5% empty n= 330 1.00 / 1.00 / 1.01   || nominal rate, <5% empty: 0.95 / 1.01 / 1.03
+    pooled actual rates: all 0.99 / 1.00 / 1.01; <5% empty 0.99 / 1.00 / 1.01 | nominal, <5% empty 0.94 / 1.00 / 1.03
 
 (2)-(3) K_H against K_commute (Pbar fixed), per instance; rule ell = min(floor K_reach, round K_commute)
   instances 272: K_H / K_commute - 1 median +0.4% (range +0.0% .. +2.2%)

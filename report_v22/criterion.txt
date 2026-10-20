@@ -8,7 +8,7 @@
   regret >30%: 23 instances, passed (missed)  0; max regret among passes 26.4%
 --- KG
   paper pass               n=  6 median   0.0% p90  11.4% max  11.4% <5%  67%
-  paper flagged            n= 90 median   0.0% p90   5.0% max  14.8% <5%  91%
+  paper flagged            n= 90 median   0.0% p90   4.9% max  14.8% <5%  91%
   core pass                n= 15 median   0.0% p90  19.4% max  26.4% <5%  53%
   core flagged             n= 57 median  20.7% p90 109.8% max 167.8% <5%  32%
   regret >10%: 44 instances, passed (missed)  6

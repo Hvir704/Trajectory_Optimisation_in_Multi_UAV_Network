@@ -92,3 +92,33 @@ for c in sorted({k[:2] for k in runs}):
           f"  hover share {share:.1%}  (E_hov/n)/(Ph H/Gamma) {np.mean(rat):.3f}")
 if ratios_all:
     print(f"  conservation constant across cells: {np.mean(ratios_all):.3f} +- {np.std(ratios_all, ddof=1) if len(ratios_all) > 1 else 0:.3f} (sd)")
+
+# Review 3 (H-1): the pooled slope mixes two sources of variation in n. The mechanism behind alpha concerns how hop
+# energy scales as the per-UAV budget changes, i.e. BETWEEN runs at different K; within a run n varies for other reasons
+# (backlog, truncation, region served). Decompose: between-run slope = OLS of run means of log E on run means of log n
+# (95% bootstrap over runs); within-run slope = OLS on run-demeaned logs. With means of logs the pooled slope is the
+# variance-weighted mix of the two. Sensitivity: logs of run means instead of means of logs.
+print("\nPer-sortie regressions split into between-run and within-run variation (same sample)")
+for c in sorted({k[:2] for k in runs}):
+    keys = [k for k in runs if k[:2] == c]
+    L = {}
+    for k in keys:
+        a = np.array([[float(r["n"]), float(r["E_hop"]), float(r["E_hov"]), float(r["E_p"])] for r in runs[k]])
+        a = a[(a[:, 1] > 0) & (a[:, 2] > 0)]
+        if len(a): L[k] = a
+    keys = list(L)
+    mlog = np.array([np.log(L[k]).mean(axis=0) for k in keys]); logm = np.array([np.log(L[k].mean(axis=0)) for k in keys])
+    bet = lambda m, j: np.polyfit(m[:, 0], m[:, j], 1)[0]
+    bs = np.array([[bet(mlog[i], j) for j in (1, 3)] for i in (rng.integers(0, len(keys), len(keys)) for _ in range(1000))])
+    dev = np.vstack([np.log(L[k]) - np.log(L[k]).mean(axis=0) for k in keys])
+    wit = [(dev[:, 0] * dev[:, j]).sum() / (dev[:, 0] ** 2).sum() for j in (1, 3)]
+    alln = np.concatenate([np.log(L[k][:, 0]) for k in keys]); wn = np.concatenate([np.log(L[k][:, 0]) - mlog[i, 0] for i, k in enumerate(keys)])
+    share_b = 1 - (wn ** 2).sum() / ((alln - alln.mean()) ** 2).sum()
+    print(f"  M={c[0]:3d} {c[1]/1e6:.1f} MJ  runs {len(keys)}  between-run beta_hop {bet(mlog, 1):.2f} "
+          f"[{np.quantile(bs[:, 0], .025):.2f}, {np.quantile(bs[:, 0], .975):.2f}] beta_productive {bet(mlog, 3):.2f} "
+          f"[{np.quantile(bs[:, 1], .025):.2f}, {np.quantile(bs[:, 1], .975):.2f}]  | within-run beta_hop {wit[0]:.2f} "
+          f"beta_productive {wit[1]:.2f} | between-run share of var(log n) {share_b:.0%} | logs of run means: "
+          f"beta_hop {bet(logm, 1):.2f} beta_productive {bet(logm, 3):.2f}")
+    perK = collections.defaultdict(list)
+    for k in keys: perK[k[2]].append(np.mean(L[k][:, 1] / L[k][:, 0]) / Pf)
+    print("      hop energy per stop / Pf (s), mean over runs, by K: " + "  ".join(f"K={K} {np.mean(v):.1f}" for K, v in sorted(perK.items())))

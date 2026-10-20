@@ -70,12 +70,12 @@ deployments with SA rows: 216
   test passes in 134 of 216 deployments (core 24, paper 38, ring 72)
 
 5) cost of sizing with l: J(l)/J* - 1 (exploratory)
-  SA              median  0.0%  p90  34.7%  (n=216)
-  C4              median  0.0%  p90  15.5%  (n=216)
-  cluster patrol  median  0.0%  p90  29.1%  (n=216)
-  Gao et al.      median  4.5%  p90  34.3%  (n=216)
-  Asghar et al.   median 20.9%  p90  73.3%  (n=216)
-  Liu et al.      median  0.0%  p90  17.5%  (n=216)
+  SA              median  0.0%  p90  35.1%  (n=216)
+  C4              median  0.0%  p90  15.8%  (n=216)
+  cluster patrol  median  0.0%  p90  29.2%  (n=216)
+  Gao et al.      median  4.5%  p90  35.0%  (n=216)
+  Asghar et al.   median 20.9%  p90  73.7%  (n=216)
+  Liu et al.      median  0.0%  p90  18.0%  (n=216)
 
 6) C4 vs SA (secondary comparison)
   C4 vs SA (own optimum)

@@ -132,7 +132,7 @@ print(f"  test passes in {sum(1 for d in deps if ok(d))} of {len(deps)} deployme
 print("\n5) cost of sizing with l: J(l)/J* - 1 (exploratory)")
 for p in PL:
     c = np.array([D[d][p][ell(d)] / min(D[d][p].values()) - 1 for d in deps if p in D[d] and ell(d) in D[d][p]])
-    if len(c): print(f"  {NAME[p]:15s} median {np.median(c):5.1%}  p90 {np.quantile(c, .9):6.1%}  (n={len(c)})")
+    if len(c): print(f"  {NAME[p]:15s} median {np.median(c):5.1%}  p90 {np.quantile(c, .9, method='inverted_cdf'):6.1%}  (n={len(c)})")
 
 print("\n6) C4 vs SA (secondary comparison)")
 if "cyc" in PL: show("C4 vs SA (own optimum)", "cyc", "sa")

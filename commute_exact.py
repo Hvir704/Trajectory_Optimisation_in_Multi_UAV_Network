@@ -15,17 +15,30 @@ from kref import kref
 
 rows = [r for r in csv.DictReader(open(sys.argv[1])) if r.get("planner", "sa") == "sa" and float(r["Th"]) == 43200
         and r["coord"] == "exclude" and r["replan"] == "launch"]
-print("(1) conservation of hover time: implied hover rate Phi (Pbar - Pf)/(Ph - Pf) over sum lambda_i / R_u,")
-print("    stranding-free runs with < 5% empty sorties, L = 12.6 km; percentiles 10/50/90")
+print("(1) conservation of hover time: implied hover rate Phi (Pbar - Pf)/(Ph - Pf) over sum_i lambda_i / R_u, with each")
+print("    instance's own generation rates lambda_i (regenerated from its seed); stranding-free runs, L = 12.6 km;")
+print("    percentiles 10/50/90. Also shown: the nominal M lambda-bar (as in v2.2.1) and the filter on < 5% empty sorties.")
+lamsum = {}
+def H_actual(r, p):
+    key = (r["layout"], p.M, p.Emax, int(float(r["seed"])))
+    if key not in lamsum:
+        lamsum[key] = float(SensorField(DynParams(M=p.M, Emax=p.Emax, layout=r["layout"]), np.random.default_rng(key[3])).lam_bits.sum())
+    return lamsum[key] / p.R
 agg = collections.defaultdict(list)
 for r in rows:
-    if float(r["L"]) != 12600 or float(r["n_never"]) > 0 or float(r["empty_frac"]) >= 0.05: continue
+    if float(r["L"]) != 12600 or float(r["n_never"]) > 0: continue
     p = DynParams(M=int(float(r["M"])), Emax=float(r["Emax"]), layout=r["layout"])
     K = int(float(r["K"])); Ts = float(r["T_s_over_t_c"]) * p.t_c; tc = 2 * float(r["r_c"]) / p.v
-    Phi = K * (Ts - tc) / Ts; H = p.M * p.lam_bits / p.R
-    agg[r["layout"]].append(Phi * (float(r["P_bar"]) - p.Pf) / (p.Ph - p.Pf) / H)
+    Phi = K * (Ts - tc) / Ts; hov = Phi * (float(r["P_bar"]) - p.Pf) / (p.Ph - p.Pf)
+    agg[r["layout"]].append((hov / H_actual(r, p), hov / (p.M * p.lam_bits / p.R), float(r["empty_frac"]) < 0.05))
+pc = lambda v: f"{np.percentile(v, 10):.2f} / {np.median(v):.2f} / {np.percentile(v, 90):.2f}"
+allx = []
 for k in ("paper", "ring", "core"):
-    v = agg[k]; print(f"    {k:5s} n={len(v):4d}  {np.percentile(v, 10):.2f} / {np.median(v):.2f} / {np.percentile(v, 90):.2f}")
+    v = np.array(agg[k]); f = v[:, 2] > 0; allx.append(v)
+    print(f"    {k:5s} actual rates: all n={len(v):4d} {pc(v[:, 0])} | <5% empty n={f.sum():4d} {pc(v[f, 0])}"
+          f"   || nominal rate, <5% empty: {pc(v[f, 1])}")
+v = np.vstack(allx); f = v[:, 2] > 0
+print(f"    pooled actual rates: all {pc(v[:, 0])}; <5% empty {pc(v[f, 0])} | nominal, <5% empty {pc(v[f, 1])}")
 
 by = collections.defaultdict(dict)
 for r in rows: by[(r["layout"], int(float(r["M"])), float(r["Emax"]), float(r["L"]), int(float(r["seed"])))][int(float(r["K"]))] = r

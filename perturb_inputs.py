@@ -24,7 +24,7 @@ def score(scale):
         lc = min(max(l, Ks[0]), Ks[-1]); clamp += lc != l
         n += 1; ex += lc == am; w1 += abs(lc - am) <= 1; regs.append(J[lc] / J[am] - 1)
     r = np.array(regs)
-    return ex / n, w1 / n, np.median(r), np.quantile(r, .9), clamp
+    return ex / n, w1 / n, np.median(r), np.quantile(r, .9, method='inverted_cdf'), clamp
 e0 = score(base)
 print(f"{'input':6s} {'error':>6s} | exact  within1  regret med  p90   | clamped")
 print(f"{'none':6s} {'':>6s} | {e0[0]:.3f}  {e0[1]:.3f}   {e0[2]:6.1%} {e0[3]:6.1%} | {e0[4]}")
