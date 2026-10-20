@@ -1,0 +1,4 @@
+layout,M,Emax,seed,K,J,J_age,J_event,n_never,mean_n,eval_world,train_hours,logdir
+paper,50,1500000.0,1,2,8824922.859802825,7607711.959382371,1217210.9004204555,50.0,0.0,1,2.97,/home/hvir/drl_logs/EnvDyn-v0/paper_M50_E1.5e+06_s1_K2_ActorLearner_ImpalaHostActor_Linear_2026-10-05_01-46-27
+paper,50,1500000.0,1,3,8831851.449867472,7607711.959382361,1224139.4904851115,50.0,0.0,1,4.3,/home/hvir/drl_logs/EnvDyn-v0/paper_M50_E1.5e+06_s1_K3_ActorLearner_ImpalaHostActor_Linear_2026-10-05_04-45-17
+paper,50,1500000.0,1,4,8651366.995417485,7444057.691519888,1207309.3038975957,49.0,0.5038167938931297,1,5.8,/home/hvir/drl_logs/EnvDyn-v0/paper_M50_E1.5e+06_s1_K4_ActorLearner_ImpalaHostActor_Linear_2026-10-05_09-04-23

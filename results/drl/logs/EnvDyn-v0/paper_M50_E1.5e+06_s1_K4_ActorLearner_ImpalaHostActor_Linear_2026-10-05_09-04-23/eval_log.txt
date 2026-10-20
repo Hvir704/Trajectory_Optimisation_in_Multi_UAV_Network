@@ -1,0 +1,117 @@
+2026-10-05 14:52:34,441  [INFO] actor: ACActorEval
+2026-10-05 14:52:34,441  [INFO] custom_network: RealNetwork
+2026-10-05 14:52:34,441  [INFO] end: -1.0
+2026-10-05 14:52:34,441  [INFO] epoch: 10000320
+2026-10-05 14:52:34,441  [INFO] gpu_id: 0
+2026-10-05 14:52:34,441  [INFO] logdir: /home/hvir/drl_logs/EnvDyn-v0/paper_M50_E1.5e+06_s1_K4_ActorLearner_ImpalaHostActor_Linear_2026-10-05_09-04-23
+2026-10-05 14:52:34,441  [INFO] nb_episode: 1
+2026-10-05 14:52:34,441  [INFO] seed: 1791211954
+2026-10-05 14:52:34,441  [INFO] start: 0.0
+2026-10-05 14:54:08,801  [INFO]  a_poi_collect_ratio : 0.020000000000000018
+
+2026-10-05 14:54:08,802  [INFO]  b_emergency_violation_ratio : 0.0
+
+2026-10-05 14:54:08,802  [INFO]  c_emergency_time : 0.0
+
+2026-10-05 14:54:08,802  [INFO]  d_aoi : 7444057.691519888
+
+2026-10-05 14:54:08,802  [INFO]  e_weighted_aoi : 8651366.995417485
+
+2026-10-05 14:54:08,802  [INFO]  f_weighted_bar_aoi : 8651366.995417485
+
+2026-10-05 14:54:08,802  [INFO]  h_total_energy_consuming : 0.0
+
+2026-10-05 14:54:08,802  [INFO]  h_energy_consuming_ratio : 0.0
+
+2026-10-05 14:54:08,802  [INFO]  j_event : 1207309.3038975957
+
+2026-10-05 14:54:08,802  [INFO]  mean_n : 0.5038167938931297
+
+2026-10-05 14:54:08,802  [INFO]  n_never : 49.0
+
+2026-10-05 14:54:08,802  [INFO]  z_eval_world : 1.0
+
+2026-10-05 14:54:08,802  [INFO] EPOCH_ID: 10000320 MEAN_REWARD: 23.793188095092773 STD_DEV: nan SELECTED_MODEL: model_10000320.pth
+
+2026-10-05 14:54:08,802  [INFO] *** EPOCH_ID: 10000320 MEAN_REWARD: 23.793188095092773 ***
+2026-10-05 19:15:22,379  [INFO] actor: ACActorEval
+2026-10-05 19:15:22,379  [INFO] custom_network: RealNetwork
+2026-10-05 19:15:22,379  [INFO] end: -1.0
+2026-10-05 19:15:22,379  [INFO] epoch: 10000320
+2026-10-05 19:15:22,379  [INFO] gpu_id: 0
+2026-10-05 19:15:22,379  [INFO] logdir: /home/hvir/drl_logs/EnvDyn-v0/paper_M50_E1.5e+06_s1_K4_ActorLearner_ImpalaHostActor_Linear_2026-10-05_09-04-23
+2026-10-05 19:15:22,379  [INFO] nb_episode: 1
+2026-10-05 19:15:22,379  [INFO] seed: 1791227722
+2026-10-05 19:15:22,380  [INFO] start: 0.0
+2026-10-05 19:16:25,147  [INFO] actor: ACActorEval
+2026-10-05 19:16:25,147  [INFO] custom_network: RealNetwork
+2026-10-05 19:16:25,147  [INFO] end: -1.0
+2026-10-05 19:16:25,147  [INFO] epoch: 10000320
+2026-10-05 19:16:25,147  [INFO] gpu_id: 0
+2026-10-05 19:16:25,147  [INFO] logdir: /home/hvir/drl_logs/EnvDyn-v0/paper_M50_E1.5e+06_s1_K4_ActorLearner_ImpalaHostActor_Linear_2026-10-05_09-04-23
+2026-10-05 19:16:25,147  [INFO] nb_episode: 1
+2026-10-05 19:16:25,147  [INFO] seed: 1791227785
+2026-10-05 19:16:25,147  [INFO] start: 0.0
+2026-10-05 19:17:59,690  [INFO]  a_poi_collect_ratio : 0.020000000000000018
+
+2026-10-05 19:17:59,690  [INFO]  b_emergency_violation_ratio : 0.0
+
+2026-10-05 19:17:59,691  [INFO]  c_emergency_time : 0.0
+
+2026-10-05 19:17:59,691  [INFO]  d_aoi : 7444057.691519888
+
+2026-10-05 19:17:59,691  [INFO]  e_weighted_aoi : 8651366.995417485
+
+2026-10-05 19:17:59,691  [INFO]  f_weighted_bar_aoi : 8651366.995417485
+
+2026-10-05 19:17:59,691  [INFO]  h_total_energy_consuming : 0.0
+
+2026-10-05 19:17:59,691  [INFO]  h_energy_consuming_ratio : 0.0
+
+2026-10-05 19:17:59,691  [INFO]  j_event : 1207309.3038975957
+
+2026-10-05 19:17:59,691  [INFO]  mean_n : 0.5038167938931297
+
+2026-10-05 19:17:59,691  [INFO]  n_never : 49.0
+
+2026-10-05 19:17:59,691  [INFO]  z_eval_world : 1.0
+
+2026-10-05 19:17:59,691  [INFO] EPOCH_ID: 10000320 MEAN_REWARD: 23.793188095092773 STD_DEV: nan SELECTED_MODEL: model_10000320.pth
+
+2026-10-05 19:17:59,691  [INFO] *** EPOCH_ID: 10000320 MEAN_REWARD: 23.793188095092773 ***
+2026-10-05 19:18:01,755  [INFO] actor: ACActorEval
+2026-10-05 19:18:01,755  [INFO] custom_network: RealNetwork
+2026-10-05 19:18:01,755  [INFO] end: -1.0
+2026-10-05 19:18:01,756  [INFO] epoch: 10000320
+2026-10-05 19:18:01,756  [INFO] gpu_id: 0
+2026-10-05 19:18:01,756  [INFO] logdir: /home/hvir/drl_logs/EnvDyn-v0/paper_M50_E1.5e+06_s1_K4_ActorLearner_ImpalaHostActor_Linear_2026-10-05_09-04-23
+2026-10-05 19:18:01,756  [INFO] nb_episode: 1
+2026-10-05 19:18:01,756  [INFO] seed: 1791227881
+2026-10-05 19:18:01,756  [INFO] start: 0.0
+2026-10-05 19:19:48,963  [INFO]  a_poi_collect_ratio : 0.09999999999999998
+
+2026-10-05 19:19:48,963  [INFO]  b_emergency_violation_ratio : 0.0
+
+2026-10-05 19:19:48,963  [INFO]  c_emergency_time : 0.0
+
+2026-10-05 19:19:48,963  [INFO]  d_aoi : 7300000.427993324
+
+2026-10-05 19:19:48,964  [INFO]  e_weighted_aoi : 8508134.551211996
+
+2026-10-05 19:19:48,964  [INFO]  f_weighted_bar_aoi : 8508134.551211996
+
+2026-10-05 19:19:48,964  [INFO]  h_total_energy_consuming : 0.0
+
+2026-10-05 19:19:48,964  [INFO]  h_energy_consuming_ratio : 0.0
+
+2026-10-05 19:19:48,964  [INFO]  j_event : 1208134.1232186733
+
+2026-10-05 19:19:48,964  [INFO]  mean_n : 0.06818181818181818
+
+2026-10-05 19:19:48,964  [INFO]  n_never : 45.0
+
+2026-10-05 19:19:48,964  [INFO]  z_eval_world : 1.0
+
+2026-10-05 19:19:48,964  [INFO] EPOCH_ID: 10000320 MEAN_REWARD: 57.4118537902832 STD_DEV: nan SELECTED_MODEL: model_10000320.pth
+
+2026-10-05 19:19:48,964  [INFO] *** EPOCH_ID: 10000320 MEAN_REWARD: 57.4118537902832 ***

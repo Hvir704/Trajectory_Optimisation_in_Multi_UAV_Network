@@ -1,0 +1,36 @@
+2026-10-05 04:44:24,588  [INFO] actor: ACActorEval
+2026-10-05 04:44:24,589  [INFO] custom_network: RealNetwork
+2026-10-05 04:44:24,589  [INFO] end: -1.0
+2026-10-05 04:44:24,589  [INFO] epoch: 10000320
+2026-10-05 04:44:24,589  [INFO] gpu_id: 0
+2026-10-05 04:44:24,589  [INFO] logdir: /home/hvir/drl_logs/EnvDyn-v0/paper_M50_E1.5e+06_s1_K2_ActorLearner_ImpalaHostActor_Linear_2026-10-05_01-46-27
+2026-10-05 04:44:24,589  [INFO] nb_episode: 1
+2026-10-05 04:44:24,589  [INFO] seed: 1791175464
+2026-10-05 04:44:24,589  [INFO] start: 0.0
+2026-10-05 04:45:15,080  [INFO]  a_poi_collect_ratio : 0.0
+
+2026-10-05 04:45:15,080  [INFO]  b_emergency_violation_ratio : 0.0
+
+2026-10-05 04:45:15,080  [INFO]  c_emergency_time : 0.0
+
+2026-10-05 04:45:15,080  [INFO]  d_aoi : 7607711.959382371
+
+2026-10-05 04:45:15,081  [INFO]  e_weighted_aoi : 8824922.859802825
+
+2026-10-05 04:45:15,081  [INFO]  f_weighted_bar_aoi : 8824922.859802825
+
+2026-10-05 04:45:15,081  [INFO]  h_total_energy_consuming : 0.0
+
+2026-10-05 04:45:15,081  [INFO]  h_energy_consuming_ratio : 0.0
+
+2026-10-05 04:45:15,081  [INFO]  j_event : 1217210.9004204555
+
+2026-10-05 04:45:15,081  [INFO]  mean_n : 0.0
+
+2026-10-05 04:45:15,081  [INFO]  n_never : 50.0
+
+2026-10-05 04:45:15,081  [INFO]  z_eval_world : 1.0
+
+2026-10-05 04:45:15,081  [INFO] EPOCH_ID: 10000320 MEAN_REWARD: 0.0 STD_DEV: nan SELECTED_MODEL: model_10000320.pth
+
+2026-10-05 04:45:15,081  [INFO] *** EPOCH_ID: 10000320 MEAN_REWARD: 0.0 ***

@@ -1,0 +1,349 @@
+/home/hvir/DRL-UCS-AoI-Threshold/DRL_UCS_AoI/adept/scripts/actorlearner.py:16: SyntaxWarning: invalid escape sequence '\/'
+  """
+-----------------
+/home/hvir/DRL-UCS-AoI-Threshold/DRL_UCS_AoI/adept/scripts
+/home/hvir/DRL-UCS-AoI-Threshold/DRL_UCS_AoI/adept
+/home/hvir/DRL-UCS-AoI-Threshold/DRL_UCS_AoI
+-----------------
+['/home/hvir/DRL-UCS-AoI-Threshold/DRL_UCS_AoI', '/home/hvir/venvs/drlucs/lib/python3.12/site-packages/ray/thirdparty_files', '/home/hvir/DRL-UCS-AoI-Threshold/DRL_UCS_AoI/adept/scripts', '/home/hvir/DRL-UCS-AoI-Threshold/DRL_UCS_AoI', '/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/home/hvir/venvs/drlucs/lib/python3.12/site-packages']
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+
+                         __           __
+              ____ _____/ /__  ____  / /_
+             / __ `/ __  / _ \/ __ \/ __/
+            / /_/ / /_/ /  __/ /_/ / /_
+            \__,_/\__,_/\___/ .___/\__/
+                           /_/           
+                          v0.4.0dev0 
+actor_host: ImpalaHostActor
+actor_worker: ImpalaWorkerActor
+bg: 2
+ceil: 1
+concat_obs: True
+config: /home/hvir/drl_scope_cfg_r200/paper_M50_E1.5e+06_s1_K2.json
+cuda_visible_device: 
+custom_network: RealNetwork
+dataset: dyn
+description: envdyn
+discount: 0.99
+dyn_Emax: 1500000.0
+dyn_M: 50
+dyn_aoi_th: 3600.0
+dyn_burnin_h: 3.0
+dyn_collect_radius: 50.0
+dyn_eps: 0.0
+dyn_horizon_h: 12.0
+dyn_layout: paper
+dyn_mode: train
+dyn_obs_radius: -1.0
+dyn_reward_ref: 3600.0
+dyn_seed: 1
+dyn_slot: 5.0
+entropy_weight: 0.01
+env: EnvDyn-v0
+epoch_len: 1000000
+eval: False
+exp: Rollout
+floor: -1
+fourconv_norm: bn
+frame_stack: False
+grad_norm_clip: 0.5
+head1d: Identity1D
+head2d: Identity2D
+head3d: Identity3D
+head4d: Identity4D
+independent_reward: True
+intrinsic_coef: 0.3
+learner: ImpalaLearner
+learner_cpu_alloc: 2
+learner_gpu_alloc: 0.5
+linear_nb_hidden: 256
+load_network: None
+load_optim: None
+logdir: /home/hvir/drl_logs
+lr: 0.0007
+lstm_nb_hidden: 256
+lstm_normalize: True
+manager: SubProcEnvManager
+max_episode_length: 100000
+minimum_importance_policy: 1.0
+minimum_importance_value: 1.0
+n_layers: 2
+nb_agent: 2
+nb_env: 8
+nb_layer: 2
+nb_learn_batch: 11
+nb_learners: 1
+nb_step: 10000000.0
+nb_workers: 11
+net1d: Identity1D
+net2d: Identity2D
+net3d: FourConv
+net4d: Identity4D
+netbody: Linear
+noop_max: 30
+profile: False
+prompt: False
+ray_addr: None
+resume: None
+rollout_len: 20
+rollout_queue_size: 20
+rwd_norm: Clip
+seed: 1791317195
+shared_params: True
+skip_rate: 4
+summary_freq: 10
+tag: paper_M50_E1.5e+06_s1_K2
+test_mode: False
+use_intrinsic: True
+use_transformer: True
+worker_cpu_alloc: 2
+worker_gpu_alloc: 0.04
+Using Ray on a single machine.
+2026-10-06 20:06:38,306	INFO worker.py:2015 -- Started a local Ray instance. View the dashboard at [1m[32mhttp://127.0.0.1:8265 [39m[22m
+[]
+[36m(pid=541616)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541616)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541616)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541616)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(pid=541617)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541617)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541617)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541617)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(pid=541615)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541615)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541615)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541615)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(pid=541622)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541622)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541622)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541622)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(pid=541619)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541619)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541619)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541619)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(pid=541624)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541624)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541624)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541624)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(pid=541625)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541625)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541625)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541625)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(pid=541620)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541620)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541620)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541620)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(pid=541618)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541618)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541618)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541618)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(pid=541623)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541623)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541623)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541623)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(pid=541626)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541626)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541626)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541626)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(pid=541627)[0m Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+[36m(pid=541627)[0m Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+[36m(pid=541627)[0m Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+[36m(pid=541627)[0m See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[36m(ActorLearnerWorker pid=541616)[0m Worker 4 using seed 1791317227
+[36m(ActorLearnerWorker pid=541617)[0m Worker 2 using seed 1791317211
+[36m(ActorLearnerWorker pid=541615)[0m Worker 0 using seed 1791317195
+[36m(ActorLearnerWorker pid=541622)[0m Worker 1 using seed 1791317203
+[36m(ActorLearnerWorker pid=541625)[0m Worker 6 using seed 1791317243
+[36m(ActorLearnerWorker pid=541616)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerWorker pid=541616)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541620)[0m Worker 5 using seed 1791317235
+[36m(ActorLearnerWorker pid=541624)[0m Worker 7 using seed 1791317251
+[36m(ActorLearnerWorker pid=541619)[0m Worker 3 using seed 1791317219
+[36m(ActorLearnerHost pid=541618)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerHost pid=541618)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541623)[0m Worker 8 using seed 1791317259
+[36m(ActorLearnerWorker pid=541627)[0m Worker 9 using seed 1791317267
+[36m(ActorLearnerWorker pid=541626)[0m Worker 10 using seed 1791317275
+[36m(ActorLearnerWorker pid=541617)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerWorker pid=541617)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541615)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerWorker pid=541615)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541622)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerWorker pid=541622)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541624)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerWorker pid=541624)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541625)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerWorker pid=541625)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541620)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerWorker pid=541620)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541619)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerWorker pid=541619)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541623)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerWorker pid=541623)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541627)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerWorker pid=541627)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541626)[0m /home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+[36m(ActorLearnerWorker pid=541626)[0m   self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+[36m(ActorLearnerWorker pid=541616)[0m log_probs torch.Size([8, 2, 1])
+[36m(ActorLearnerWorker pid=541616)[0m Box torch.Size([8, 2, 255])
+[36m(ActorLearnerWorker pid=541616)[0m State torch.Size([8, 255])
+[36m(ActorLearnerWorker pid=541616)[0m available_actions torch.Size([8, 2, 13])
+[36m(ActorLearnerWorker pid=541616)[0m Discrete torch.Size([8, 2])
+[36m(ActorLearnerWorker pid=541616)[0m memory torch.Size([8, 2, 3, 20, 256])
+[36m(ActorLearnerWorker pid=541616)[0m rewards torch.Size([8, 3])
+[36m(ActorLearnerWorker pid=541616)[0m terminals torch.Size([8])
+[36m(ActorLearnerWorker pid=541617)[0m log_probs torch.Size([8, 2, 1])
+[36m(ActorLearnerWorker pid=541617)[0m Box torch.Size([8, 2, 255])
+[36m(ActorLearnerWorker pid=541617)[0m State torch.Size([8, 255])
+[36m(ActorLearnerWorker pid=541617)[0m available_actions torch.Size([8, 2, 13])
+[36m(ActorLearnerWorker pid=541617)[0m Discrete torch.Size([8, 2])
+[36m(ActorLearnerWorker pid=541617)[0m memory torch.Size([8, 2, 3, 20, 256])
+[36m(ActorLearnerWorker pid=541617)[0m rewards torch.Size([8, 3])
+[36m(ActorLearnerWorker pid=541617)[0m terminals torch.Size([8])
+[36m(ActorLearnerWorker pid=541615)[0m log_probs torch.Size([8, 2, 1])
+[36m(ActorLearnerWorker pid=541615)[0m Box torch.Size([8, 2, 255])
+[36m(ActorLearnerWorker pid=541615)[0m State torch.Size([8, 255])
+[36m(ActorLearnerWorker pid=541615)[0m available_actions torch.Size([8, 2, 13])
+[36m(ActorLearnerWorker pid=541615)[0m Discrete torch.Size([8, 2])
+[36m(ActorLearnerWorker pid=541615)[0m memory torch.Size([8, 2, 3, 20, 256])
+[36m(ActorLearnerWorker pid=541615)[0m rewards torch.Size([8, 3])
+[36m(ActorLearnerWorker pid=541615)[0m terminals torch.Size([8])
+[36m(ActorLearnerWorker pid=541620)[0m log_probs torch.Size([8, 2, 1])
+[36m(ActorLearnerWorker pid=541620)[0m Box torch.Size([8, 2, 255])
+[36m(ActorLearnerWorker pid=541620)[0m State torch.Size([8, 255])
+[36m(ActorLearnerWorker pid=541620)[0m available_actions torch.Size([8, 2, 13])
+[36m(ActorLearnerWorker pid=541620)[0m Discrete torch.Size([8, 2])
+[36m(ActorLearnerWorker pid=541620)[0m memory torch.Size([8, 2, 3, 20, 256])
+[36m(ActorLearnerWorker pid=541620)[0m rewards torch.Size([8, 3])
+[36m(ActorLearnerWorker pid=541620)[0m terminals torch.Size([8])
+[36m(ActorLearnerWorker pid=541624)[0m log_probs torch.Size([8, 2, 1])
+[36m(ActorLearnerWorker pid=541624)[0m Box torch.Size([8, 2, 255])
+[36m(ActorLearnerWorker pid=541624)[0m State torch.Size([8, 255])
+[36m(ActorLearnerWorker pid=541624)[0m available_actions torch.Size([8, 2, 13])
+[36m(ActorLearnerWorker pid=541624)[0m Discrete torch.Size([8, 2])
+[36m(ActorLearnerWorker pid=541624)[0m memory torch.Size([8, 2, 3, 20, 256])
+[36m(ActorLearnerWorker pid=541624)[0m rewards torch.Size([8, 3])
+[36m(ActorLearnerWorker pid=541624)[0m terminals torch.Size([8])
+[36m(ActorLearnerWorker pid=541623)[0m log_probs torch.Size([8, 2, 1])
+[36m(ActorLearnerWorker pid=541623)[0m Box torch.Size([8, 2, 255])
+[36m(ActorLearnerWorker pid=541623)[0m State torch.Size([8, 255])
+[36m(ActorLearnerWorker pid=541623)[0m available_actions torch.Size([8, 2, 13])
+[36m(ActorLearnerWorker pid=541623)[0m Discrete torch.Size([8, 2])
+[36m(ActorLearnerWorker pid=541623)[0m memory torch.Size([8, 2, 3, 20, 256])
+[36m(ActorLearnerWorker pid=541623)[0m rewards torch.Size([8, 3])
+[36m(ActorLearnerWorker pid=541623)[0m terminals torch.Size([8])
+[36m(ActorLearnerWorker pid=541627)[0m log_probs torch.Size([8, 2, 1])
+[36m(ActorLearnerWorker pid=541627)[0m Box torch.Size([8, 2, 255])
+[36m(ActorLearnerWorker pid=541627)[0m State torch.Size([8, 255])
+[36m(ActorLearnerWorker pid=541627)[0m available_actions torch.Size([8, 2, 13])
+[36m(ActorLearnerWorker pid=541627)[0m Discrete torch.Size([8, 2])
+[36m(ActorLearnerWorker pid=541627)[0m memory torch.Size([8, 2, 3, 20, 256])
+[36m(ActorLearnerWorker pid=541627)[0m rewards torch.Size([8, 3])
+[36m(ActorLearnerWorker pid=541627)[0m terminals torch.Size([8])
+[36m(ActorLearnerWorker pid=541625)[0m log_probs torch.Size([8, 2, 1])
+[36m(ActorLearnerWorker pid=541625)[0m Box torch.Size([8, 2, 255])
+[36m(ActorLearnerWorker pid=541625)[0m State torch.Size([8, 255])
+[36m(ActorLearnerWorker pid=541625)[0m available_actions torch.Size([8, 2, 13])
+[36m(ActorLearnerWorker pid=541625)[0m Discrete torch.Size([8, 2])
+[36m(ActorLearnerWorker pid=541625)[0m memory torch.Size([8, 2, 3, 20, 256])
+[36m(ActorLearnerWorker pid=541625)[0m rewards torch.Size([8, 3])
+[36m(ActorLearnerWorker pid=541625)[0m terminals torch.Size([8])
+[36m(ActorLearnerWorker pid=541619)[0m log_probs torch.Size([8, 2, 1])
+[36m(ActorLearnerWorker pid=541619)[0m Box torch.Size([8, 2, 255])
+[36m(ActorLearnerWorker pid=541619)[0m State torch.Size([8, 255])
+[36m(ActorLearnerWorker pid=541619)[0m available_actions torch.Size([8, 2, 13])
+[36m(ActorLearnerWorker pid=541619)[0m Discrete torch.Size([8, 2])
+[36m(ActorLearnerWorker pid=541619)[0m memory torch.Size([8, 2, 3, 20, 256])
+[36m(ActorLearnerWorker pid=541619)[0m rewards torch.Size([8, 3])
+[36m(ActorLearnerWorker pid=541619)[0m terminals torch.Size([8])
+[36m(ActorLearnerWorker pid=541622)[0m log_probs torch.Size([8, 2, 1])
+[36m(ActorLearnerWorker pid=541622)[0m Box torch.Size([8, 2, 255])
+[36m(ActorLearnerWorker pid=541622)[0m State torch.Size([8, 255])
+[36m(ActorLearnerWorker pid=541622)[0m available_actions torch.Size([8, 2, 13])
+[36m(ActorLearnerWorker pid=541622)[0m Discrete torch.Size([8, 2])
+[36m(ActorLearnerWorker pid=541622)[0m memory torch.Size([8, 2, 3, 20, 256])
+[36m(ActorLearnerWorker pid=541622)[0m rewards torch.Size([8, 3])
+[36m(ActorLearnerWorker pid=541622)[0m terminals torch.Size([8])
+[36m(ActorLearnerWorker pid=541626)[0m log_probs torch.Size([8, 2, 1])
+[36m(ActorLearnerWorker pid=541626)[0m Box torch.Size([8, 2, 255])
+[36m(ActorLearnerWorker pid=541626)[0m State torch.Size([8, 255])
+[36m(ActorLearnerWorker pid=541626)[0m available_actions torch.Size([8, 2, 13])
+[36m(ActorLearnerWorker pid=541626)[0m Discrete torch.Size([8, 2])
+[36m(ActorLearnerWorker pid=541626)[0m memory torch.Size([8, 2, 3, 20, 256])
+[36m(ActorLearnerWorker pid=541626)[0m rewards torch.Size([8, 3])
+[36m(ActorLearnerWorker pid=541626)[0m terminals torch.Size([8])
+[36m(ActorLearnerHost pid=541618)[0m log_softmaxes torch.Size([88, 2, 1, 13])
+[36m(ActorLearnerHost pid=541618)[0m entropies torch.Size([88, 2, 1])
+[36m(ActorLearnerHost pid=541618)[0m values torch.Size([88, 2])
+[36m(ActorLearnerHost pid=541618)[0m log_probs torch.Size([88, 2, 1])
+[36m(ActorLearnerHost pid=541618)[0m Box torch.Size([88, 2, 255])
+[36m(ActorLearnerHost pid=541618)[0m State torch.Size([88, 255])
+[36m(ActorLearnerHost pid=541618)[0m available_actions torch.Size([88, 2, 13])
+[36m(ActorLearnerHost pid=541618)[0m Discrete torch.Size([88, 2])
+[36m(ActorLearnerHost pid=541618)[0m memory torch.Size([88, 2, 3, 20, 256])
+[36m(ActorLearnerHost pid=541618)[0m rewards torch.Size([88, 3])
+[36m(ActorLearnerHost pid=541618)[0m terminals torch.Size([88])
+[36m(ActorLearnerHost pid=541618)[0m log_softmaxes torch.Size([88, 2, 1, 13])
+[36m(ActorLearnerHost pid=541618)[0m entropies torch.Size([88, 2, 1])
+[36m(ActorLearnerHost pid=541618)[0m values torch.Size([88, 2])
+[36m(ActorLearnerHost pid=541618)[0m log_probs torch.Size([88, 2, 1])
+[36m(ActorLearnerHost pid=541618)[0m Box torch.Size([88, 2, 255])
+[36m(ActorLearnerHost pid=541618)[0m State torch.Size([88, 255])
+[36m(ActorLearnerHost pid=541618)[0m available_actions torch.Size([88, 2, 13])
+[36m(ActorLearnerHost pid=541618)[0m Discrete torch.Size([88, 2])
+[36m(ActorLearnerHost pid=541618)[0m memory torch.Size([88, 2, 3, 20, 256])
+[36m(ActorLearnerHost pid=541618)[0m rewards torch.Size([88, 3])
+[36m(ActorLearnerHost pid=541618)[0m terminals torch.Size([88])
+[36m(ActorLearnerHost pid=541618)[0m Network parameters: 2701742
+[36m(ActorLearnerHost pid=541618)[0m 0 starting training
+[36m(ActorLearnerHost pid=541618)[0m Rank 0 Metrics: {'Host wait time': 2.8629534244537354, 'Worker wait time': 2.284280300140381}
+*** SIGTERM received at time=1791317224 on cpu 21 ***
+PC: @     0x73647a698e51  (unknown)  (unknown)
+    @     0x73647a645330  (unknown)  (unknown)
+    @     0x73647a69bd6e        224  pthread_cond_timedwait
+    @     0x736478c86e0f       1184  ray::core::GetRequest::Wait()
+    @     0x736478c88f67       1328  ray::core::CoreWorkerMemoryStore::GetImpl()
+    @     0x736478c899b9         64  ray::core::CoreWorkerMemoryStore::Get()
+    @     0x736478c89bbf        208  ray::core::CoreWorkerMemoryStore::Get()
+    @     0x736478b1a03a       1472  ray::core::CoreWorker::GetObjects()
+    @     0x736478b1ad20        160  ray::core::CoreWorker::Get()
+    @     0x736478a327d0        272  __pyx_pw_3ray_7_raylet_10CoreWorker_35get_objects()
+    @           0x5499b5         32  PyObject_Vectorcall
+    @           0x5d710f        384  _PyEval_EvalFrameDefault
+    @           0x5d55eb        128  PyEval_EvalCode
+    @           0x608852         48  (unknown)
+    @           0x6b50d3         80  (unknown)
+    @           0x6b4e3a        128  _PyRun_SimpleFileObject
+    @           0x6b4c6f         64  _PyRun_AnyFileObject
+    @           0x6bccd5        288  Py_RunMain
+    @           0x6bc7bd         48  Py_BytesMain
+    @     0x73647a62a1ca        160  (unknown)
+    @     0x73647a62a28b         96  __libc_start_main
+    @           0x657a05  (unknown)  _start
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474: *** SIGTERM received at time=1791317224 on cpu 21 ***
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474: PC: @     0x73647a698e51  (unknown)  (unknown)
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @     0x73647a645330  (unknown)  (unknown)
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @     0x73647a69bd6e        224  pthread_cond_timedwait
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @     0x736478c86e0f       1184  ray::core::GetRequest::Wait()
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @     0x736478c88f67       1328  ray::core::CoreWorkerMemoryStore::GetImpl()
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @     0x736478c899b9         64  ray::core::CoreWorkerMemoryStore::Get()
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @     0x736478c89bbf        208  ray::core::CoreWorkerMemoryStore::Get()
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @     0x736478b1a03a       1472  ray::core::CoreWorker::GetObjects()
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @     0x736478b1ad20        160  ray::core::CoreWorker::Get()
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @     0x736478a327d0        272  __pyx_pw_3ray_7_raylet_10CoreWorker_35get_objects()
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @           0x5499b5         32  PyObject_Vectorcall
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @           0x5d710f        384  _PyEval_EvalFrameDefault
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @           0x5d55eb        128  PyEval_EvalCode
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @           0x608852         48  (unknown)
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @           0x6b50d3         80  (unknown)
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @           0x6b4e3a        128  _PyRun_SimpleFileObject
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @           0x6b4c6f         64  _PyRun_AnyFileObject
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @           0x6bccd5        288  Py_RunMain
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @           0x6bc7bd         48  Py_BytesMain
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @     0x73647a62a1ca        160  (unknown)
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @     0x73647a62a28b         96  __libc_start_main
+[2026-10-06 20:07:04,416 E 540778 540778] logging.cc:474:     @           0x657a05  (unknown)  _start

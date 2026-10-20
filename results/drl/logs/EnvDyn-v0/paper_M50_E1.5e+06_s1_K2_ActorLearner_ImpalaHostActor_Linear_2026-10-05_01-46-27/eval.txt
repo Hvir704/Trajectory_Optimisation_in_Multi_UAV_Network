@@ -1,0 +1,54 @@
+
+                         __           __
+              ____ _____/ /__  ____  / /_
+             / __ `/ __  / _ \/ __ \/ __/
+            / /_/ / /_/ /  __/ /_/ / /_
+            \__,_/\__,_/\___/ .___/\__/
+                           /_/           
+                          v0.4.0dev0 
+/home/hvir/DRL-UCS-AoI-Threshold/DRL_UCS_AoI/adept/scripts/evaluate.py:16: SyntaxWarning: invalid escape sequence '\/'
+  """
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+actor: ACActorEval
+custom_network: RealNetwork
+end: -1.0
+epoch: 10000320
+gpu_id: 0
+logdir: /home/hvir/drl_logs/EnvDyn-v0/paper_M50_E1.5e+06_s1_K2_ActorLearner_ImpalaHostActor_Linear_2026-10-05_01-46-27
+nb_episode: 1
+seed: 1791175464
+start: 0.0
+/home/hvir/venvs/drlucs/lib/python3.12/site-packages/torch/nn/modules/loss.py:48: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
+  self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+/home/hvir/DRL-UCS-AoI-Threshold/DRL_UCS_AoI/adept/container/evaluation.py:201: UserWarning: std(): degrees of freedom is <= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/native/ReduceOps.cpp:1913.)
+  std = reward_buf.std().item()
+ a_poi_collect_ratio : 0.0
+
+ b_emergency_violation_ratio : 0.0
+
+ c_emergency_time : 0.0
+
+ d_aoi : 7607711.959382371
+
+ e_weighted_aoi : 8824922.859802825
+
+ f_weighted_bar_aoi : 8824922.859802825
+
+ h_total_energy_consuming : 0.0
+
+ h_energy_consuming_ratio : 0.0
+
+ j_event : 1217210.9004204555
+
+ mean_n : 0.0
+
+ n_never : 50.0
+
+ z_eval_world : 1.0
+
+EPOCH_ID: 10000320 MEAN_REWARD: 0.0 STD_DEV: nan SELECTED_MODEL: model_10000320.pth
+
+*** EPOCH_ID: 10000320 MEAN_REWARD: 0.0 ***

@@ -14,8 +14,8 @@ conclusion was wrong and is rewritten (R3 H-1). The registration and summary wor
 
 | item | why | what I wrote meanwhile |
 |---|---|---|
-| R4 H1: Gao/Asghar/Liu/DRL registration records | not in the public repo | "fixed before any held-out run (the record is kept outside the public repository)"; "hashed" removed. If the BMP-repo records exist, commit them and the wording can be strengthened |
-| R4 M6: DRL run logs | not released | the paper says they are not among the released files |
+| R4 H1: Gao/Asghar/Liu/DRL registration records | **resolved 20 Oct**: found on the author's machines and published in `registrations/baselines/` (README there). Gao/Asghar code is byte-identical from the 2 Oct hashed handover to the commit with their results | paper: registered in documents of 2 and 5 Oct recording the code hashes; dates are file dates, not public timestamps |
+| R4 M6: DRL run logs | **resolved 20 Oct**: `results/drl/` (results, eval and train logs, configs). Checked: 50 m served <= 1 (5 sampled) confirmed; 200 m served 2 / **14** (paper said 16); 200 m was a post-failure departure from the registered 50 m (paper said "rule fixed in advance"); "about 20x" is 14-26x | paper corrected on all three; registered comparison has no data (no deployment completed) |
 | R5 M5: `results_v2` | not public | App. C says it is attached to the tagged release, so the release must be made before submission |
 | R4 H2 (optional run) | the registered downward fill was never run | counts and near-ties are disclosed in VII-A |
 | R3 M-2 (optional run) | the 24 split-fleet sweeps were not extended | disclosed: reductions are lower bounds, location claims provisional |
